@@ -1,0 +1,27 @@
+{
+    "name": "lenga/engine",
+    "description": "Lenga Engine PHP runtime bindings",
+    "type": "library",
+    "license": "proprietary",
+    "require": {
+        "php": "^8.5",
+        "ext-json": "*",
+        "ext-mbstring": "*"
+    },
+    "require-dev": {
+        "phpunit/phpunit": "^11.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "Lenga\\Engine\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Lenga\\Engine\\Tests\\": "tests/"
+        }
+    },
+    "scripts": {
+        "test": "phpunit"
+    }
+}
