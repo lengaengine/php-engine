@@ -1023,6 +1023,46 @@ if (!function_exists("lenga_internal_transform_set_local_euler_angles3d_by_id"))
     }
 }
 
+if (!function_exists("lenga_internal_transform_get_rotation3d_by_id")) {
+    function lenga_internal_transform_get_rotation3d_by_id(int $transformId): array|false
+    {
+        Debug::error("[lenga_internal_transform_get_rotation3d_by_id] Function not implemented. TransformId: $transformId");
+        return false;
+    }
+}
+
+if (!function_exists("lenga_internal_transform_set_rotation3d_by_id")) {
+    function lenga_internal_transform_set_rotation3d_by_id(int $transformId, float $x, float $y, float $z, float $w): bool
+    {
+        Debug::error("[lenga_internal_transform_set_rotation3d_by_id] Function not implemented. TransformId: $transformId");
+        return false;
+    }
+}
+
+if (!function_exists("lenga_internal_transform_get_local_rotation3d_by_id")) {
+    function lenga_internal_transform_get_local_rotation3d_by_id(int $transformId): array|false
+    {
+        Debug::error("[lenga_internal_transform_get_local_rotation3d_by_id] Function not implemented. TransformId: $transformId");
+        return false;
+    }
+}
+
+if (!function_exists("lenga_internal_transform_set_local_rotation3d_by_id")) {
+    function lenga_internal_transform_set_local_rotation3d_by_id(int $transformId, float $x, float $y, float $z, float $w): bool
+    {
+        Debug::error("[lenga_internal_transform_set_local_rotation3d_by_id] Function not implemented. TransformId: $transformId");
+        return false;
+    }
+}
+
+if (!function_exists("lenga_internal_transform_rotate3d_by_id")) {
+    function lenga_internal_transform_rotate3d_by_id(int $transformId, float $x, float $y, float $z, bool $relativeToSelf): bool
+    {
+        Debug::error("[lenga_internal_transform_rotate3d_by_id] Function not implemented. TransformId: $transformId");
+        return false;
+    }
+}
+
 if (!function_exists("lenga_internal_transform_get_scale3d_by_id")) {
     function lenga_internal_transform_get_scale3d_by_id(int $transformId): array|false
     {

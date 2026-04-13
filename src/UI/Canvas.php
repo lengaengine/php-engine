@@ -186,6 +186,36 @@ final class Canvas
         return $element instanceof Button ? $element : null;
     }
 
+    public function getSelectedElement(): ?UIElement
+    {
+        /** @var array{id?: int, name?: string, type?: string, canvasId?: int|null}|null|false $data */
+        $data = \lenga_internal_ui_canvas_get_selected_element($this->canvasId);
+
+        return \is_array($data) ? UIElement::fromNativeLookupData($data) : null;
+    }
+
+    public function getFirstSelectedElement(): ?UIElement
+    {
+        $data = $this->getState()['firstSelectedElement'] ?? null;
+
+        return \is_array($data) ? UIElement::fromNativeLookupData($data) : null;
+    }
+
+    public function selectElement(UIElement $element, bool $viaPointer = false): bool
+    {
+        return \lenga_internal_ui_canvas_select_element($this->canvasId, $element->getId(), $viaPointer);
+    }
+
+    public function clearSelection(): bool
+    {
+        return \lenga_internal_ui_canvas_clear_selection($this->canvasId);
+    }
+
+    public function submitSelected(): bool
+    {
+        return \lenga_internal_ui_canvas_submit_selected($this->canvasId);
+    }
+
     /**
      * @param array{id?: int, name?: string} $data
      */

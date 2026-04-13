@@ -322,6 +322,19 @@ final class MathUtil
      *
      * This is a Lenga-specific helper that generalises {@see repeat()} to
      * an arbitrary range.
+     *
+     * Important: the upper bound is exclusive. The returned value is always
+     * greater than or equal to $min and strictly less than $max when
+     * $max > $min.
+     *
+     * For example, wrapping menu indices for a 3-item list should use:
+     *
+     * - `MathUtil::wrap($index, 0, 3)` for the range `0, 1, 2`
+     * - not `MathUtil::wrap($index, 0, 2)`, because `2` would be treated as
+     *   the exclusive upper bound and only `0, 1` would be reachable
+     *
+     * If you need an inclusive integer clamp instead of wraparound behavior,
+     * use {@see clamp()}.
      */
     public static function wrap(float $value, float $min, float $max): float
     {

@@ -71,6 +71,15 @@ final class Button extends UIElement
     }
 
     /**
+     * Whether the button currently has keyboard/gamepad focus.
+     */
+    public bool $focused {
+        get {
+            return (bool) ($this->getState()['focused'] ?? false);
+        }
+    }
+
+    /**
      * Whether the button is currently pressed.
      */
     public bool $pressed {
