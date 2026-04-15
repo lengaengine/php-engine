@@ -442,9 +442,9 @@ final class Transform
         $this->position = Vector3::sum($this->position, $delta);
     }
 
-    public function translate2D(float $dx, float $dy, bool $relativeToSelf = true): void
+    public function translate2D(Vector2 $offset, bool $relativeToSelf = true): void
     {
-        $this->translate(new Vector3($dx, $dy, 0.0), $relativeToSelf);
+        $this->translate(new Vector3($offset->x, $offset->y, 0.0), $relativeToSelf);
     }
 
     public function rotate(Vector3|float $xOrEuler, ?float $y = null, ?float $z = null, bool $relativeToSelf = true): void
