@@ -213,6 +213,6 @@ composer test
 
 ## License
 
-This package is being prepared for source-available distribution, but the final public license terms have not been locked yet.
+This package is being prepared for source-available distribution under SSAL for the initial standalone release.
 
-Do not assume MIT or open-source terms until the standalone repository includes its final `LICENSE` file.
+Until the standalone repository includes its final `LICENSE` file, do not assume MIT or open-source terms.

@@ -19,6 +19,7 @@ final class Transform
         $this->parentValue = $parent;
         $this->localPositionValue = $localPosition ?? new Vector3(0.0, 0.0, 0.0);
         $this->localEulerAnglesValue = $localEulerAngles ?? new Vector3(0.0, 0.0, 0.0);
+        $this->localRotationValue = Quaternion::fromEulerAngles($this->localEulerAnglesValue);
         $this->localScaleValue = $localScale ?? new Vector3(1.0, 1.0, 1.0);
         $this->worldPositionCache = new Vector3(
             $this->localPositionValue->x,
@@ -41,6 +42,7 @@ final class Transform
 
     private Vector3 $localPositionValue;
     private Vector3 $localEulerAnglesValue;
+    private Quaternion $localRotationValue;
     private Vector3 $localScaleValue;
     private Vector3 $worldPositionCache;
 
@@ -120,6 +122,7 @@ final class Transform
 
         set(Vector3 $value) {
             $this->localEulerAnglesValue = $value;
+            $this->localRotationValue = Quaternion::fromEulerAngles($value);
 
             if ($this->nativeId !== null) {
                 \lenga_internal_transform_set_local_euler_angles3d_by_id(
@@ -127,6 +130,32 @@ final class Transform
                     $value->x,
                     $value->y,
                     $value->z,
+                );
+            }
+        }
+    }
+
+    public Quaternion $localRotation {
+        get {
+            if ($this->nativeId !== null) {
+                return $this->fetchQuaternionFromNative('lenga_internal_transform_get_local_rotation3d_by_id');
+            }
+
+            return $this->localRotationValue;
+        }
+
+        set(Quaternion $value) {
+            $rotation = $value->normalized;
+            $this->localRotationValue = $rotation;
+            $this->localEulerAnglesValue = $rotation->toEulerAngles();
+
+            if ($this->nativeId !== null) {
+                \lenga_internal_transform_set_local_rotation3d_by_id(
+                    $this->nativeId,
+                    $rotation->x,
+                    $rotation->y,
+                    $rotation->z,
+                    $rotation->w,
                 );
             }
         }
@@ -176,7 +205,14 @@ final class Transform
             if ($this->parentValue === null) {
                 $this->localPositionValue = $value;
             } else {
-                $this->localPositionValue = Vector3::difference($value, $this->parentValue->position);
+                $parentOffset = Vector3::difference($value, $this->parentValue->position);
+                $unrotatedOffset = $this->parentValue->rotation->inverse()->rotateVector($parentOffset);
+                $parentScale = $this->parentValue->lossyScale;
+                $this->localPositionValue = new Vector3(
+                    \abs($parentScale->x) > 0.000001 ? $unrotatedOffset->x / $parentScale->x : $unrotatedOffset->x,
+                    \abs($parentScale->y) > 0.000001 ? $unrotatedOffset->y / $parentScale->y : $unrotatedOffset->y,
+                    \abs($parentScale->z) > 0.000001 ? $unrotatedOffset->z / $parentScale->z : $unrotatedOffset->z,
+                );
             }
         }
     }
@@ -191,10 +227,12 @@ final class Transform
                 return $this->localEulerAnglesValue;
             }
 
-            return Vector3::sum($this->parentValue->eulerAngles, $this->localEulerAnglesValue);
+            return $this->rotation->toEulerAngles();
         }
 
         set(Vector3 $value) {
+            $rotation = Quaternion::fromEulerAngles($value);
+
             if ($this->nativeId !== null) {
                 \lenga_internal_transform_set_euler_angles3d_by_id(
                     $this->nativeId,
@@ -207,9 +245,50 @@ final class Transform
 
             if ($this->parentValue === null) {
                 $this->localEulerAnglesValue = $value;
+                $this->localRotationValue = $rotation;
             } else {
-                $this->localEulerAnglesValue = Vector3::difference($value, $this->parentValue->eulerAngles);
+                $this->localRotationValue = $this->parentValue->rotation->inverse()->multiply($rotation)->normalized;
+                $this->localEulerAnglesValue = $this->localRotationValue->toEulerAngles();
             }
+        }
+    }
+
+    public Quaternion $rotation {
+        get {
+            if ($this->nativeId !== null) {
+                return $this->fetchQuaternionFromNative('lenga_internal_transform_get_rotation3d_by_id');
+            }
+
+            if ($this->parentValue === null) {
+                return $this->localRotationValue;
+            }
+
+            return $this->parentValue->rotation->multiply($this->localRotationValue)->normalized;
+        }
+
+        set(Quaternion $value) {
+            $rotation = $value->normalized;
+            $this->localRotationValue = $rotation;
+            $this->localEulerAnglesValue = $rotation->toEulerAngles();
+
+            if ($this->nativeId !== null) {
+                \lenga_internal_transform_set_rotation3d_by_id(
+                    $this->nativeId,
+                    $rotation->x,
+                    $rotation->y,
+                    $rotation->z,
+                    $rotation->w,
+                );
+                return;
+            }
+
+            if ($this->parentValue === null) {
+                $this->localRotationValue = $rotation;
+            } else {
+                $this->localRotationValue = $this->parentValue->rotation->inverse()->multiply($rotation)->normalized;
+            }
+
+            $this->localEulerAnglesValue = $this->localRotationValue->toEulerAngles();
         }
     }
 
@@ -233,19 +312,19 @@ final class Transform
 
     public Vector3 $right {
         get {
-            return self::basisRightByEuler($this->eulerAngles);
+            return $this->rotation->rotateVector(Vector3::right())->normalized;
         }
     }
 
     public Vector3 $up {
         get {
-            return self::basisUpByEuler($this->eulerAngles);
+            return $this->rotation->rotateVector(Vector3::up())->normalized;
         }
     }
 
     public Vector3 $forward {
         get {
-            return self::basisForwardByEuler($this->eulerAngles);
+            return $this->rotation->rotateVector(Vector3::back())->normalized;
         }
     }
 
@@ -283,7 +362,7 @@ final class Transform
         }
 
         $worldPosition = $this->position;
-        $worldEuler = $this->eulerAngles;
+        $worldRotation = $this->rotation;
         $worldScale = $this->lossyScale;
 
         if ($this->parentValue !== null) {
@@ -298,7 +377,7 @@ final class Transform
 
         if ($worldPositionStays) {
             $this->position = $worldPosition;
-            $this->eulerAngles = $worldEuler;
+            $this->rotation = $worldRotation;
             $this->setWorldScaleFromFallback($worldScale);
         }
     }
@@ -422,24 +501,32 @@ final class Transform
 
     public function translate(Vector3 $offset, bool $relativeToSelf = true): void
     {
-        $delta = $relativeToSelf ? self::transformDirectionByEuler($offset, $this->eulerAngles) : $offset;
-
         if ($this->nativeId !== null) {
-            \lenga_internal_transform_translate3d_by_id(
-                $this->nativeId,
-                $delta->x,
-                $delta->y,
-                $delta->z,
-            );
+            if ($relativeToSelf) {
+                \lenga_internal_transform_translate3d_by_id(
+                    $this->nativeId,
+                    $offset->x,
+                    $offset->y,
+                    $offset->z,
+                );
+            } else {
+                $targetPosition = Vector3::sum($this->position, $offset);
+                \lenga_internal_transform_set_position3d_by_id(
+                    $this->nativeId,
+                    $targetPosition->x,
+                    $targetPosition->y,
+                    $targetPosition->z,
+                );
+            }
             return;
         }
 
         if ($relativeToSelf) {
-            $this->localPositionValue->add($delta);
+            $this->localPositionValue->add($offset);
             return;
         }
 
-        $this->position = Vector3::sum($this->position, $delta);
+        $this->position = Vector3::sum($this->position, $offset);
     }
 
     public function translate2D(Vector2 $offset, bool $relativeToSelf = true): void
@@ -453,12 +540,25 @@ final class Transform
             ? $xOrEuler
             : new Vector3((float) $xOrEuler, (float) ($y ?? 0.0), (float) ($z ?? 0.0));
 
-        if ($relativeToSelf) {
-            $this->localEulerAngles = Vector3::sum($this->localEulerAngles, $delta);
+        if ($this->nativeId !== null) {
+            \lenga_internal_transform_rotate3d_by_id(
+                $this->nativeId,
+                $delta->x,
+                $delta->y,
+                $delta->z,
+                $relativeToSelf,
+            );
             return;
         }
 
-        $this->eulerAngles = Vector3::sum($this->eulerAngles, $delta);
+        if ($relativeToSelf) {
+            $deltaRotation = Quaternion::fromEulerAngles($delta);
+            $this->localRotation = $this->localRotation->multiply($deltaRotation);
+            return;
+        }
+
+        $deltaRotation = Quaternion::fromEulerAngles($delta);
+        $this->rotation = $deltaRotation->multiply($this->rotation);
     }
 
     public function rotate2D(float $degrees, bool $relativeToSelf = true): void
@@ -510,6 +610,7 @@ final class Transform
             $this->children = [];
             $this->localPositionValue = $resolved->localPosition;
             $this->localEulerAnglesValue = $resolved->localEulerAngles;
+            $this->localRotationValue = $resolved->localRotation;
             $this->localScaleValue = $resolved->localScale;
             $this->worldPositionCache = $resolved->position;
             return;
@@ -522,6 +623,7 @@ final class Transform
         $this->children = [];
         $this->localPositionValue = new Vector3(0.0, 0.0, 0.0);
         $this->localEulerAnglesValue = new Vector3(0.0, 0.0, 0.0);
+        $this->localRotationValue = Quaternion::identity();
         $this->localScaleValue = new Vector3(1.0, 1.0, 1.0);
         $this->worldPositionCache = new Vector3(0.0, 0.0, 0.0);
     }
@@ -546,7 +648,17 @@ final class Transform
             return $this->localPositionValue;
         }
 
-        return Vector3::sum($this->parentValue->position, $this->localPositionValue);
+        $parentScale = $this->parentValue->lossyScale;
+        $scaledLocal = new Vector3(
+            $this->localPositionValue->x * $parentScale->x,
+            $this->localPositionValue->y * $parentScale->y,
+            $this->localPositionValue->z * $parentScale->z,
+        );
+
+        return Vector3::sum(
+            $this->parentValue->position,
+            $this->parentValue->rotation->rotateVector($scaledLocal),
+        );
     }
 
     private function fetchWorldScaleFromFallback(): Vector3
@@ -594,52 +706,26 @@ final class Transform
         );
     }
 
-    private static function rotateVectorByEuler(Vector3 $vector, Vector3 $eulerAngles): Vector3
+    private function fetchQuaternionFromNative(string $getter): Quaternion
     {
-        $xRadians = deg2rad($eulerAngles->x);
-        $yRadians = deg2rad($eulerAngles->y);
-        $zRadians = deg2rad($eulerAngles->z);
+        if ($this->nativeId === null) {
+            return Quaternion::identity();
+        }
 
-        $x1 = $vector->x;
-        $y1 = $vector->y * cos($xRadians) - $vector->z * sin($xRadians);
-        $z1 = $vector->y * sin($xRadians) + $vector->z * cos($xRadians);
+        $callable = '\\' . $getter;
 
-        $x2 = $x1 * cos($yRadians) + $z1 * sin($yRadians);
-        $y2 = $y1;
-        $z2 = -$x1 * sin($yRadians) + $z1 * cos($yRadians);
+        /** @var array{x?: float, y?: float, z?: float, w?: float}|false $data */
+        $data = $callable($this->nativeId);
+        if (!\is_array($data)) {
+            return Quaternion::identity();
+        }
 
-        return new Vector3(
-            $x2 * cos($zRadians) - $y2 * sin($zRadians),
-            $x2 * sin($zRadians) + $y2 * cos($zRadians),
-            $z2,
+        return new Quaternion(
+            (float) ($data['x'] ?? 0.0),
+            (float) ($data['y'] ?? 0.0),
+            (float) ($data['z'] ?? 0.0),
+            (float) ($data['w'] ?? 1.0),
         );
     }
 
-    private static function basisRightByEuler(Vector3 $eulerAngles): Vector3
-    {
-        return self::rotateVectorByEuler(new Vector3(1.0, 0.0, 0.0), $eulerAngles)->normalized;
-    }
-
-    private static function basisUpByEuler(Vector3 $eulerAngles): Vector3
-    {
-        return self::rotateVectorByEuler(new Vector3(0.0, 1.0, 0.0), $eulerAngles)->normalized;
-    }
-
-    private static function basisForwardByEuler(Vector3 $eulerAngles): Vector3
-    {
-        return self::rotateVectorByEuler(new Vector3(0.0, 0.0, -1.0), $eulerAngles)->normalized;
-    }
-
-    private static function transformDirectionByEuler(Vector3 $vector, Vector3 $eulerAngles): Vector3
-    {
-        $right = self::basisRightByEuler($eulerAngles);
-        $up = self::basisUpByEuler($eulerAngles);
-        $forward = self::basisForwardByEuler($eulerAngles);
-
-        return new Vector3(
-            ($right->x * $vector->x) + ($up->x * $vector->y) + ($forward->x * $vector->z),
-            ($right->y * $vector->x) + ($up->y * $vector->y) + ($forward->y * $vector->z),
-            ($right->z * $vector->x) + ($up->z * $vector->y) + ($forward->z * $vector->z),
-        );
-    }
 }

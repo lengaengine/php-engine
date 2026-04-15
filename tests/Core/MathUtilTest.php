@@ -245,6 +245,8 @@ final class MathUtilTest extends TestCase
     {
         self::assertEqualsWithDelta(2.0, MathUtil::wrap(5.0, 0.0, 3.0), 1e-12);
         self::assertEqualsWithDelta(0.0, MathUtil::wrap(0.0, 0.0, 3.0), 1e-12);
+        self::assertEqualsWithDelta(0.0, MathUtil::wrap(3.0, 0.0, 3.0), 1e-12);
+        self::assertEqualsWithDelta(2.0, MathUtil::wrap(-1.0, 0.0, 3.0), 1e-12);
     }
 
     // ──────────────────────────────────────────
