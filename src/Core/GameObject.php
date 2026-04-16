@@ -735,7 +735,7 @@ final class GameObject
             return null;
         }
 
-        return match ($componentType) {
+        $component = match ($componentType) {
             'Camera' => new Camera($this, $componentId),
             'Rigidbody2D' => new Rigidbody2D($this, $componentId),
             'BoxCollider2D' => new BoxCollider2D($this, $componentId),
@@ -759,5 +759,15 @@ final class GameObject
             'ModelRenderer' => new ModelRenderer($this, $componentId),
             default => new NativeComponent($this, $componentId, $componentType),
         };
+
+        if (
+            isset($nativeResult['sceneComponentId']) &&
+            \is_string($nativeResult['sceneComponentId']) &&
+            \method_exists($component, '__internalAttachSceneComponentId')
+        ) {
+            $component->__internalAttachSceneComponentId($nativeResult['sceneComponentId']);
+        }
+
+        return $component;
     }
 }

@@ -12,6 +12,7 @@ abstract class Behaviour implements ComponentInterface
 {
     private ?GameObject $gameObjectValue = null;
     private ?int $componentId = null;
+    private ?string $sceneComponentId = null;
     /**
      * @var array<int, Coroutine>
      */
@@ -59,6 +60,11 @@ abstract class Behaviour implements ComponentInterface
     public function __internalAttachComponentId(int $componentId): void
     {
         $this->componentId = $componentId;
+    }
+
+    public function __internalAttachSceneComponentId(string $sceneComponentId): void
+    {
+        $this->sceneComponentId = $sceneComponentId;
     }
 
     private function __internalEnsureRequiredComponents(GameObject $gameObject): void
@@ -131,6 +137,7 @@ abstract class Behaviour implements ComponentInterface
         return [
             '__lengaRefKind' => 'Behaviour',
             'className' => static::class,
+            'componentSceneId' => $this->sceneComponentId,
             'gameObject' => $this->gameObject->__serialize(),
             'instanceId' => $this->componentId,
         ];
@@ -141,13 +148,32 @@ abstract class Behaviour implements ComponentInterface
         $className = isset($data['className']) && \is_string($data['className'])
             ? $data['className']
             : static::class;
+        $componentSceneId = isset($data['componentSceneId']) && \is_string($data['componentSceneId'])
+            ? $data['componentSceneId']
+            : null;
         $gameObjectData = \is_array($data['gameObject'] ?? null) ? $data['gameObject'] : [];
         $gameObject = GameObject::fromSerializedReference($gameObjectData);
         if ($gameObject !== null) {
-            $resolved = $gameObject->getComponent($className);
+            $resolved = null;
+            if ($componentSceneId !== null && $componentSceneId !== '') {
+                foreach ($gameObject->getComponents($className) as $candidate) {
+                    if (
+                        $candidate instanceof self &&
+                        \property_exists($candidate, 'sceneComponentId') &&
+                        $candidate->sceneComponentId === $componentSceneId
+                    ) {
+                        $resolved = $candidate;
+                        break;
+                    }
+                }
+            }
+            if ($resolved === null) {
+                $resolved = $gameObject->getComponent($className);
+            }
             if ($resolved instanceof self) {
                 $this->gameObjectValue = $resolved->gameObject;
                 $this->componentId = $resolved->getInstanceId();
+                $this->sceneComponentId = $resolved->sceneComponentId ?? $componentSceneId;
 
                 $resolvedReflection = new \ReflectionObject($resolved);
                 foreach ($resolvedReflection->getProperties() as $property) {
@@ -169,6 +195,7 @@ abstract class Behaviour implements ComponentInterface
         }
 
         $this->componentId = isset($data['instanceId']) && \is_int($data['instanceId']) ? $data['instanceId'] : null;
+        $this->sceneComponentId = $componentSceneId;
         if ($gameObject !== null) {
             $this->gameObjectValue = $gameObject;
         }
@@ -228,6 +255,20 @@ abstract class Behaviour implements ComponentInterface
             $componentClass = isset($value['className']) && \is_string($value['className']) && $resolvedTypeName === Behaviour::class
                 ? $value['className']
                 : $resolvedTypeName;
+            $componentSceneId = isset($value['componentSceneId']) && \is_string($value['componentSceneId'])
+                ? $value['componentSceneId']
+                : null;
+            if ($componentSceneId !== null && $componentSceneId !== '') {
+                foreach ($gameObject->getComponents($componentClass) as $candidate) {
+                    if (
+                        $candidate instanceof Behaviour &&
+                        \property_exists($candidate, 'sceneComponentId') &&
+                        $candidate->sceneComponentId === $componentSceneId
+                    ) {
+                        return $candidate;
+                    }
+                }
+            }
             return $gameObject->getComponent($componentClass);
         }
 
@@ -238,6 +279,20 @@ abstract class Behaviour implements ComponentInterface
 
             if ($componentType === Transform::class || $componentType === 'Transform') {
                 return $gameObject->transform;
+            }
+
+            $componentSceneId = isset($value['componentSceneId']) && \is_string($value['componentSceneId'])
+                ? $value['componentSceneId']
+                : null;
+            if ($componentSceneId !== null && $componentSceneId !== '') {
+                foreach ($gameObject->getComponents($componentType) as $candidate) {
+                    if (
+                        $candidate instanceof Component &&
+                        $candidate->getSceneComponentId() === $componentSceneId
+                    ) {
+                        return $candidate;
+                    }
+                }
             }
 
             return $gameObject->getComponent($componentType);

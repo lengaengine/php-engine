@@ -66,6 +66,54 @@ if (!function_exists("lenga_internal_time_get_fixed_step_count")) {
     }
 }
 
+if (!function_exists("lenga_internal_time_get_time_scale")) {
+    function lenga_internal_time_get_time_scale(): float
+    {
+        Debug::error("[lenga_internal_time_get_time_scale] Function not implemented.");
+        return 1.0;
+    }
+}
+
+if (!function_exists("lenga_internal_time_get_effective_time_scale")) {
+    function lenga_internal_time_get_effective_time_scale(): float
+    {
+        Debug::error("[lenga_internal_time_get_effective_time_scale] Function not implemented.");
+        return 1.0;
+    }
+}
+
+if (!function_exists("lenga_internal_time_set_time_scale")) {
+    function lenga_internal_time_set_time_scale(float $scale): bool
+    {
+        Debug::error("[lenga_internal_time_set_time_scale] Function not implemented.");
+        return false;
+    }
+}
+
+if (!function_exists("lenga_internal_time_set_gameplay_paused")) {
+    function lenga_internal_time_set_gameplay_paused(bool $paused): bool
+    {
+        Debug::error("[lenga_internal_time_set_gameplay_paused] Function not implemented.");
+        return false;
+    }
+}
+
+if (!function_exists("lenga_internal_time_toggle_gameplay_paused")) {
+    function lenga_internal_time_toggle_gameplay_paused(): bool
+    {
+        Debug::error("[lenga_internal_time_toggle_gameplay_paused] Function not implemented.");
+        return false;
+    }
+}
+
+if (!function_exists("lenga_internal_time_is_gameplay_paused")) {
+    function lenga_internal_time_is_gameplay_paused(): bool
+    {
+        Debug::error("[lenga_internal_time_is_gameplay_paused] Function not implemented.");
+        return false;
+    }
+}
+
 if (!function_exists("lenga_internal_time_is_paused")) {
     function lenga_internal_time_is_paused(): bool
     {

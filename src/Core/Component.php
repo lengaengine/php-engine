@@ -12,6 +12,7 @@ abstract class Component implements ComponentInterface
         protected GameObject $gameObjectValue,
         protected int $componentId,
         protected string $componentType,
+        protected ?string $sceneComponentId = null,
     ) {
     }
 
@@ -42,11 +43,22 @@ abstract class Component implements ComponentInterface
         return $this->componentId;
     }
 
+    public function getSceneComponentId(): ?string
+    {
+        return $this->sceneComponentId;
+    }
+
+    public function __internalAttachSceneComponentId(string $sceneComponentId): void
+    {
+        $this->sceneComponentId = $sceneComponentId;
+    }
+
     public function __serialize(): array
     {
         return [
             '__lengaRefKind' => 'Component',
             'componentType' => $this->componentType,
+            'componentSceneId' => $this->sceneComponentId,
             'gameObject' => $this->gameObjectValue->__serialize(),
             'instanceId' => $this->componentId,
         ];
@@ -60,16 +72,38 @@ abstract class Component implements ComponentInterface
         $componentType = isset($data['componentType']) && \is_string($data['componentType'])
             ? $data['componentType']
             : $this->componentType;
+        $componentSceneId = isset($data['componentSceneId']) && \is_string($data['componentSceneId'])
+            ? $data['componentSceneId']
+            : null;
 
         if ($gameObject !== null) {
-            $resolved = $componentType === 'Transform'
-                ? $gameObject->transform
-                : $gameObject->getComponent($componentType);
+            $resolved = null;
+            if ($componentType === 'Transform') {
+                $resolved = $gameObject->transform;
+            } elseif ($componentSceneId !== null && $componentSceneId !== '') {
+                foreach ($gameObject->getComponents($componentType) as $candidate) {
+                    if (
+                        $candidate instanceof self &&
+                        \method_exists($candidate, 'getSceneComponentId') &&
+                        $candidate->getSceneComponentId() === $componentSceneId
+                    ) {
+                        $resolved = $candidate;
+                        break;
+                    }
+                }
+            }
+
+            if ($resolved === null) {
+                $resolved = $gameObject->getComponent($componentType);
+            }
 
             if ($resolved instanceof self) {
                 $this->gameObjectValue = $resolved->gameObject;
                 $this->componentId = $resolved->getInstanceId();
                 $this->componentType = $resolved->type;
+                $this->sceneComponentId = \method_exists($resolved, 'getSceneComponentId')
+                    ? $resolved->getSceneComponentId()
+                    : $componentSceneId;
                 return;
             }
         }
@@ -77,5 +111,6 @@ abstract class Component implements ComponentInterface
         $this->gameObjectValue = $gameObject ?? new GameObject('GameObject');
         $this->componentId = isset($data['instanceId']) && \is_int($data['instanceId']) ? $data['instanceId'] : 0;
         $this->componentType = $componentType;
+        $this->sceneComponentId = $componentSceneId;
     }
 }
