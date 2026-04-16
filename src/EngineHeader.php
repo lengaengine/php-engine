@@ -2949,6 +2949,38 @@ if (!function_exists("lenga_internal_sprite_animation_set_bool")) {
     }
 }
 
+if (!function_exists("lenga_internal_sprite_animation_get_int")) {
+    function lenga_internal_sprite_animation_get_int(int $componentId, string $parameterName): int
+    {
+        Debug::error("[lenga_internal_sprite_animation_get_int] Function not implemented. ComponentId: $componentId");
+        return 0;
+    }
+}
+
+if (!function_exists("lenga_internal_sprite_animation_set_int")) {
+    function lenga_internal_sprite_animation_set_int(int $componentId, string $parameterName, int $value): bool
+    {
+        Debug::error("[lenga_internal_sprite_animation_set_int] Function not implemented. ComponentId: $componentId");
+        return false;
+    }
+}
+
+if (!function_exists("lenga_internal_sprite_animation_get_float")) {
+    function lenga_internal_sprite_animation_get_float(int $componentId, string $parameterName): float
+    {
+        Debug::error("[lenga_internal_sprite_animation_get_float] Function not implemented. ComponentId: $componentId");
+        return 0.0;
+    }
+}
+
+if (!function_exists("lenga_internal_sprite_animation_set_float")) {
+    function lenga_internal_sprite_animation_set_float(int $componentId, string $parameterName, float $value): bool
+    {
+        Debug::error("[lenga_internal_sprite_animation_set_float] Function not implemented. ComponentId: $componentId");
+        return false;
+    }
+}
+
 if (!function_exists("lenga_internal_sprite_animation_set_trigger")) {
     function lenga_internal_sprite_animation_set_trigger(int $componentId, string $parameterName): bool
     {

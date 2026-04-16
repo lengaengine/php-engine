@@ -86,6 +86,26 @@ final class SpriteAnimation extends Component
         return \lenga_internal_sprite_animation_set_bool($this->componentId, $parameterName, $value);
     }
 
+    public function getInt(string $parameterName): int
+    {
+        return \lenga_internal_sprite_animation_get_int($this->componentId, $parameterName);
+    }
+
+    public function setInt(string $parameterName, int $value): bool
+    {
+        return \lenga_internal_sprite_animation_set_int($this->componentId, $parameterName, $value);
+    }
+
+    public function getFloat(string $parameterName): float
+    {
+        return \lenga_internal_sprite_animation_get_float($this->componentId, $parameterName);
+    }
+
+    public function setFloat(string $parameterName, float $value): bool
+    {
+        return \lenga_internal_sprite_animation_set_float($this->componentId, $parameterName, $value);
+    }
+
     public function setTrigger(string $parameterName): bool
     {
         return \lenga_internal_sprite_animation_set_trigger($this->componentId, $parameterName);
