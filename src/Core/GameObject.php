@@ -621,6 +621,11 @@ final class GameObject
             Transform::class, 'Transform' => ['nativeType' => 'Transform', 'scriptClass' => null],
             Camera::class, 'Camera' => ['nativeType' => 'Camera', 'scriptClass' => null],
             Rigidbody2D::class, 'Rigidbody2D' => ['nativeType' => 'Rigidbody2D', 'scriptClass' => null],
+            PlatformEffector2D::class, 'PlatformEffector2D' => ['nativeType' => 'PlatformEffector2D', 'scriptClass' => null],
+            AreaEffector2D::class, 'AreaEffector2D' => ['nativeType' => 'AreaEffector2D', 'scriptClass' => null],
+            PointEffector2D::class, 'PointEffector2D' => ['nativeType' => 'PointEffector2D', 'scriptClass' => null],
+            SurfaceEffector2D::class, 'SurfaceEffector2D' => ['nativeType' => 'SurfaceEffector2D', 'scriptClass' => null],
+            BuoyancyEffector2D::class, 'BuoyancyEffector2D' => ['nativeType' => 'BuoyancyEffector2D', 'scriptClass' => null],
             BoxCollider2D::class, 'BoxCollider2D' => ['nativeType' => 'BoxCollider2D', 'scriptClass' => null],
             CircleCollider2D::class, 'CircleCollider2D' => ['nativeType' => 'CircleCollider2D', 'scriptClass' => null],
             BoxCollider3D::class, 'BoxCollider3D' => ['nativeType' => 'BoxCollider3D', 'scriptClass' => null],
@@ -735,9 +740,14 @@ final class GameObject
             return null;
         }
 
-        return match ($componentType) {
+        $component = match ($componentType) {
             'Camera' => new Camera($this, $componentId),
             'Rigidbody2D' => new Rigidbody2D($this, $componentId),
+            'PlatformEffector2D' => new PlatformEffector2D($this, $componentId),
+            'AreaEffector2D' => new AreaEffector2D($this, $componentId),
+            'PointEffector2D' => new PointEffector2D($this, $componentId),
+            'SurfaceEffector2D' => new SurfaceEffector2D($this, $componentId),
+            'BuoyancyEffector2D' => new BuoyancyEffector2D($this, $componentId),
             'BoxCollider2D' => new BoxCollider2D($this, $componentId),
             'CircleCollider2D' => new CircleCollider2D($this, $componentId),
             'BoxCollider3D' => new BoxCollider3D($this, $componentId),
@@ -759,5 +769,15 @@ final class GameObject
             'ModelRenderer' => new ModelRenderer($this, $componentId),
             default => new NativeComponent($this, $componentId, $componentType),
         };
+
+        if (
+            isset($nativeResult['sceneComponentId']) &&
+            \is_string($nativeResult['sceneComponentId']) &&
+            \method_exists($component, '__internalAttachSceneComponentId')
+        ) {
+            $component->__internalAttachSceneComponentId($nativeResult['sceneComponentId']);
+        }
+
+        return $component;
     }
 }

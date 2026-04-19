@@ -57,6 +57,22 @@ final class Time
         return (float) lenga_internal_time_get_fixed_delta_time();
     }
 
+    /**
+     * Returns the configured gameplay time scale.
+     */
+    public static function timeScale(): float
+    {
+        return (float) lenga_internal_time_get_time_scale();
+    }
+
+    /**
+     * Returns the effective gameplay time scale after gameplay pause is applied.
+     */
+    public static function effectiveTimeScale(): float
+    {
+        return (float) lenga_internal_time_get_effective_time_scale();
+    }
+
     public static function fixedStepCount(): int
     {
         return (int) lenga_internal_time_get_fixed_step_count();
@@ -65,5 +81,50 @@ final class Time
     public static function isPaused(): bool
     {
         return (bool) lenga_internal_time_is_paused();
+    }
+
+    /**
+     * Sets the gameplay time scale. Values below zero are clamped by the native runtime.
+     */
+    public static function setTimeScale(float $scale): void
+    {
+        lenga_internal_time_set_time_scale($scale);
+    }
+
+    /**
+     * Pauses gameplay time without invoking a full engine pause.
+     */
+    public static function pauseGameplay(): void
+    {
+        lenga_internal_time_set_gameplay_paused(true);
+    }
+
+    /**
+     * Resumes gameplay time after a gameplay pause.
+     */
+    public static function resumeGameplay(): void
+    {
+        lenga_internal_time_set_gameplay_paused(false);
+    }
+
+    /**
+     * Toggles gameplay pause without affecting engine/editor-level pause state.
+     */
+    public static function toggleGameplayPause(): void
+    {
+        lenga_internal_time_toggle_gameplay_paused();
+    }
+
+    /**
+     * Backwards-compatible alias.
+     */
+    public static function toggleGameplayPaused(): void
+    {
+        self::toggleGameplayPause();
+    }
+
+    public static function isGameplayPaused(): bool
+    {
+        return (bool) lenga_internal_time_is_gameplay_paused();
     }
 }

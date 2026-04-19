@@ -66,6 +66,54 @@ if (!function_exists("lenga_internal_time_get_fixed_step_count")) {
     }
 }
 
+if (!function_exists("lenga_internal_time_get_time_scale")) {
+    function lenga_internal_time_get_time_scale(): float
+    {
+        Debug::error("[lenga_internal_time_get_time_scale] Function not implemented.");
+        return 1.0;
+    }
+}
+
+if (!function_exists("lenga_internal_time_get_effective_time_scale")) {
+    function lenga_internal_time_get_effective_time_scale(): float
+    {
+        Debug::error("[lenga_internal_time_get_effective_time_scale] Function not implemented.");
+        return 1.0;
+    }
+}
+
+if (!function_exists("lenga_internal_time_set_time_scale")) {
+    function lenga_internal_time_set_time_scale(float $scale): bool
+    {
+        Debug::error("[lenga_internal_time_set_time_scale] Function not implemented.");
+        return false;
+    }
+}
+
+if (!function_exists("lenga_internal_time_set_gameplay_paused")) {
+    function lenga_internal_time_set_gameplay_paused(bool $paused): bool
+    {
+        Debug::error("[lenga_internal_time_set_gameplay_paused] Function not implemented.");
+        return false;
+    }
+}
+
+if (!function_exists("lenga_internal_time_toggle_gameplay_paused")) {
+    function lenga_internal_time_toggle_gameplay_paused(): bool
+    {
+        Debug::error("[lenga_internal_time_toggle_gameplay_paused] Function not implemented.");
+        return false;
+    }
+}
+
+if (!function_exists("lenga_internal_time_is_gameplay_paused")) {
+    function lenga_internal_time_is_gameplay_paused(): bool
+    {
+        Debug::error("[lenga_internal_time_is_gameplay_paused] Function not implemented.");
+        return false;
+    }
+}
+
 if (!function_exists("lenga_internal_time_is_paused")) {
     function lenga_internal_time_is_paused(): bool
     {
@@ -2397,6 +2445,182 @@ if (!function_exists("lenga_internal_rigidbody2d_get_contacts")) {
     }
 }
 
+if (!function_exists("lenga_internal_platform_effector2d_get_state")) {
+    function lenga_internal_platform_effector2d_get_state(int $componentId): array|false
+    {
+        Debug::error("[lenga_internal_platform_effector2d_get_state] Function not implemented. ComponentId: $componentId");
+        return false;
+    }
+}
+
+if (!function_exists("lenga_internal_platform_effector2d_set_use_one_way")) {
+    function lenga_internal_platform_effector2d_set_use_one_way(int $componentId, bool $value): bool
+    {
+        Debug::error("[lenga_internal_platform_effector2d_set_use_one_way] Function not implemented. ComponentId: $componentId");
+        return false;
+    }
+}
+
+if (!function_exists("lenga_internal_platform_effector2d_set_surface_buffer")) {
+    function lenga_internal_platform_effector2d_set_surface_buffer(int $componentId, float $value): bool
+    {
+        Debug::error("[lenga_internal_platform_effector2d_set_surface_buffer] Function not implemented. ComponentId: $componentId");
+        return false;
+    }
+}
+
+if (!function_exists("lenga_internal_area_effector2d_get_state")) {
+    function lenga_internal_area_effector2d_get_state(int $componentId): array|false
+    {
+        Debug::error("[lenga_internal_area_effector2d_get_state] Function not implemented. ComponentId: $componentId");
+        return false;
+    }
+}
+
+if (!function_exists("lenga_internal_area_effector2d_set_use_global_angle")) {
+    function lenga_internal_area_effector2d_set_use_global_angle(int $componentId, bool $value): bool
+    {
+        Debug::error("[lenga_internal_area_effector2d_set_use_global_angle] Function not implemented. ComponentId: $componentId");
+        return false;
+    }
+}
+
+if (!function_exists("lenga_internal_area_effector2d_set_force_angle")) {
+    function lenga_internal_area_effector2d_set_force_angle(int $componentId, float $value): bool
+    {
+        Debug::error("[lenga_internal_area_effector2d_set_force_angle] Function not implemented. ComponentId: $componentId");
+        return false;
+    }
+}
+
+if (!function_exists("lenga_internal_area_effector2d_set_force_magnitude")) {
+    function lenga_internal_area_effector2d_set_force_magnitude(int $componentId, float $value): bool
+    {
+        Debug::error("[lenga_internal_area_effector2d_set_force_magnitude] Function not implemented. ComponentId: $componentId");
+        return false;
+    }
+}
+
+if (!function_exists("lenga_internal_area_effector2d_set_drag")) {
+    function lenga_internal_area_effector2d_set_drag(int $componentId, float $value): bool
+    {
+        Debug::error("[lenga_internal_area_effector2d_set_drag] Function not implemented. ComponentId: $componentId");
+        return false;
+    }
+}
+
+if (!function_exists("lenga_internal_point_effector2d_get_state")) {
+    function lenga_internal_point_effector2d_get_state(int $componentId): array|false
+    {
+        Debug::error("[lenga_internal_point_effector2d_get_state] Function not implemented. ComponentId: $componentId");
+        return false;
+    }
+}
+
+if (!function_exists("lenga_internal_point_effector2d_set_force_magnitude")) {
+    function lenga_internal_point_effector2d_set_force_magnitude(int $componentId, float $value): bool
+    {
+        Debug::error("[lenga_internal_point_effector2d_set_force_magnitude] Function not implemented. ComponentId: $componentId");
+        return false;
+    }
+}
+
+if (!function_exists("lenga_internal_point_effector2d_set_distance_scale")) {
+    function lenga_internal_point_effector2d_set_distance_scale(int $componentId, float $value): bool
+    {
+        Debug::error("[lenga_internal_point_effector2d_set_distance_scale] Function not implemented. ComponentId: $componentId");
+        return false;
+    }
+}
+
+if (!function_exists("lenga_internal_point_effector2d_set_inverse_squared")) {
+    function lenga_internal_point_effector2d_set_inverse_squared(int $componentId, bool $value): bool
+    {
+        Debug::error("[lenga_internal_point_effector2d_set_inverse_squared] Function not implemented. ComponentId: $componentId");
+        return false;
+    }
+}
+
+if (!function_exists("lenga_internal_surface_effector2d_get_state")) {
+    function lenga_internal_surface_effector2d_get_state(int $componentId): array|false
+    {
+        Debug::error("[lenga_internal_surface_effector2d_get_state] Function not implemented. ComponentId: $componentId");
+        return false;
+    }
+}
+
+if (!function_exists("lenga_internal_surface_effector2d_set_use_global_direction")) {
+    function lenga_internal_surface_effector2d_set_use_global_direction(int $componentId, bool $value): bool
+    {
+        Debug::error("[lenga_internal_surface_effector2d_set_use_global_direction] Function not implemented. ComponentId: $componentId");
+        return false;
+    }
+}
+
+if (!function_exists("lenga_internal_surface_effector2d_set_speed")) {
+    function lenga_internal_surface_effector2d_set_speed(int $componentId, float $value): bool
+    {
+        Debug::error("[lenga_internal_surface_effector2d_set_speed] Function not implemented. ComponentId: $componentId");
+        return false;
+    }
+}
+
+if (!function_exists("lenga_internal_surface_effector2d_set_force_scale")) {
+    function lenga_internal_surface_effector2d_set_force_scale(int $componentId, float $value): bool
+    {
+        Debug::error("[lenga_internal_surface_effector2d_set_force_scale] Function not implemented. ComponentId: $componentId");
+        return false;
+    }
+}
+
+if (!function_exists("lenga_internal_buoyancy_effector2d_get_state")) {
+    function lenga_internal_buoyancy_effector2d_get_state(int $componentId): array|false
+    {
+        Debug::error("[lenga_internal_buoyancy_effector2d_get_state] Function not implemented. ComponentId: $componentId");
+        return false;
+    }
+}
+
+if (!function_exists("lenga_internal_buoyancy_effector2d_set_density")) {
+    function lenga_internal_buoyancy_effector2d_set_density(int $componentId, float $value): bool
+    {
+        Debug::error("[lenga_internal_buoyancy_effector2d_set_density] Function not implemented. ComponentId: $componentId");
+        return false;
+    }
+}
+
+if (!function_exists("lenga_internal_buoyancy_effector2d_set_linear_drag")) {
+    function lenga_internal_buoyancy_effector2d_set_linear_drag(int $componentId, float $value): bool
+    {
+        Debug::error("[lenga_internal_buoyancy_effector2d_set_linear_drag] Function not implemented. ComponentId: $componentId");
+        return false;
+    }
+}
+
+if (!function_exists("lenga_internal_buoyancy_effector2d_set_flow_angle")) {
+    function lenga_internal_buoyancy_effector2d_set_flow_angle(int $componentId, float $value): bool
+    {
+        Debug::error("[lenga_internal_buoyancy_effector2d_set_flow_angle] Function not implemented. ComponentId: $componentId");
+        return false;
+    }
+}
+
+if (!function_exists("lenga_internal_buoyancy_effector2d_set_flow_magnitude")) {
+    function lenga_internal_buoyancy_effector2d_set_flow_magnitude(int $componentId, float $value): bool
+    {
+        Debug::error("[lenga_internal_buoyancy_effector2d_set_flow_magnitude] Function not implemented. ComponentId: $componentId");
+        return false;
+    }
+}
+
+if (!function_exists("lenga_internal_buoyancy_effector2d_set_surface_level")) {
+    function lenga_internal_buoyancy_effector2d_set_surface_level(int $componentId, float $value): bool
+    {
+        Debug::error("[lenga_internal_buoyancy_effector2d_set_surface_level] Function not implemented. ComponentId: $componentId");
+        return false;
+    }
+}
+
 if (!function_exists("lenga_internal_box_collider2d_get_state")) {
     function lenga_internal_box_collider2d_get_state(int $componentId): array|false
     {
@@ -2897,6 +3121,38 @@ if (!function_exists("lenga_internal_sprite_animation_set_bool")) {
     function lenga_internal_sprite_animation_set_bool(int $componentId, string $parameterName, bool $value): bool
     {
         Debug::error("[lenga_internal_sprite_animation_set_bool] Function not implemented. ComponentId: $componentId");
+        return false;
+    }
+}
+
+if (!function_exists("lenga_internal_sprite_animation_get_int")) {
+    function lenga_internal_sprite_animation_get_int(int $componentId, string $parameterName): int
+    {
+        Debug::error("[lenga_internal_sprite_animation_get_int] Function not implemented. ComponentId: $componentId");
+        return 0;
+    }
+}
+
+if (!function_exists("lenga_internal_sprite_animation_set_int")) {
+    function lenga_internal_sprite_animation_set_int(int $componentId, string $parameterName, int $value): bool
+    {
+        Debug::error("[lenga_internal_sprite_animation_set_int] Function not implemented. ComponentId: $componentId");
+        return false;
+    }
+}
+
+if (!function_exists("lenga_internal_sprite_animation_get_float")) {
+    function lenga_internal_sprite_animation_get_float(int $componentId, string $parameterName): float
+    {
+        Debug::error("[lenga_internal_sprite_animation_get_float] Function not implemented. ComponentId: $componentId");
+        return 0.0;
+    }
+}
+
+if (!function_exists("lenga_internal_sprite_animation_set_float")) {
+    function lenga_internal_sprite_animation_set_float(int $componentId, string $parameterName, float $value): bool
+    {
+        Debug::error("[lenga_internal_sprite_animation_set_float] Function not implemented. ComponentId: $componentId");
         return false;
     }
 }
