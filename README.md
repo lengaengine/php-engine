@@ -6,6 +6,8 @@
 
 `lenga/engine` is the PHP gameplay API for the Lenga Engine.
 
+Release history and package-level changes are tracked in [CHANGELOG.md](./CHANGELOG.md).
+
 It provides the PHP-side classes that game scripts use at runtime, including:
 
 - `Behaviour`
@@ -39,13 +41,14 @@ use Lenga\Engine\Core\Behaviour;
 use Lenga\Engine\Core\Input;
 use Lenga\Engine\Core\KeyCode;
 use Lenga\Engine\Core\Time;
+use Lenga\Engine\Core\Vector2;
 
 final class PlayerController extends Behaviour
 {
     public function update(): void
     {
         if (Input::getKey(KeyCode::SPACE)) {
-            $this->transform->translate2D(0, -100 * Time::$deltaTime);
+            $this->transform->translate2D(new Vector2(0, -100 * Time::$deltaTime));
         }
     }
 }
