@@ -64,6 +64,7 @@ final class VectorTypesTest extends TestCase
     {
         $lerped = Vector4::lerp(new Vector4(0.0, 0.0, 0.0, 0.0), new Vector4(8.0, 4.0, 2.0, 6.0), 0.25);
         $moved = Vector4::moveTowards(new Vector4(0.0, 0.0, 0.0, 0.0), new Vector4(4.0, 0.0, 0.0, 0.0), 2.5);
+        $movedAway = Vector4::moveTowards(new Vector4(0.0, 0.0, 0.0, 0.0), new Vector4(1.0, 0.0, 0.0, 0.0), -2.0);
         $clamped = Vector4::clampMagnitude(new Vector4(3.0, 4.0, 0.0, 0.0), 2.0);
         $projected = Vector4::project(new Vector4(2.0, 2.0, 0.0, 0.0), new Vector4(1.0, 0.0, 0.0, 0.0));
 
@@ -72,6 +73,7 @@ final class VectorTypesTest extends TestCase
         self::assertEqualsWithDelta(0.5, $lerped->z, 1e-9);
         self::assertEqualsWithDelta(1.5, $lerped->w, 1e-9);
         self::assertEqualsWithDelta(2.5, $moved->x, 1e-9);
+        self::assertEqualsWithDelta(-2.0, $movedAway->x, 1e-9);
         self::assertEqualsWithDelta(2.0, $clamped->magnitude, 1e-9);
         self::assertSame(["x" => 2.0, "y" => 0.0, "z" => 0.0, "w" => 0.0], $projected->toArray());
     }

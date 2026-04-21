@@ -278,24 +278,39 @@ final class Vector4 implements ArrayAccess
 
     public static function lerp(self $a, self $b, float $t): self
     {
-        /** @var array{x: float, y: float, z: float, w: float}|false $result */
-        $result = \lenga_internal_vector4_lerp(
-            $a->x,
-            $a->y,
-            $a->z,
-            $a->w,
-            $b->x,
-            $b->y,
-            $b->z,
-            $b->w,
-            $t,
-        );
+        if (\function_exists('lenga_internal_vector4_lerp')) {
+            /** @var array{x: float, y: float, z: float, w: float}|false $result */
+            $result = \lenga_internal_vector4_lerp(
+                $a->x,
+                $a->y,
+                $a->z,
+                $a->w,
+                $b->x,
+                $b->y,
+                $b->z,
+                $b->w,
+                $t,
+            );
 
-        if (!\is_array($result)) {
-            return new self();
+            if (\is_array($result)) {
+                return self::fromArray($result);
+            }
         }
 
-        return self::fromArray($result);
+        if ($t <= 0.0) {
+            return new self($a->x, $a->y, $a->z, $a->w);
+        }
+
+        if ($t >= 1.0) {
+            return new self($b->x, $b->y, $b->z, $b->w);
+        }
+
+        return new self(
+            $a->x + ($b->x - $a->x) * $t,
+            $a->y + ($b->y - $a->y) * $t,
+            $a->z + ($b->z - $a->z) * $t,
+            $a->w + ($b->w - $a->w) * $t,
+        );
     }
 
     public static function lerpUnclamped(self $a, self $b, float $t): self
@@ -315,63 +330,100 @@ final class Vector4 implements ArrayAccess
 
     public static function clampMagnitude(self $vector, float $maxLength): self
     {
-        /** @var array{x: float, y: float, z: float, w: float}|false $result */
-        $result = \lenga_internal_vector4_clamp_magnitude(
-            $vector->x,
-            $vector->y,
-            $vector->z,
-            $vector->w,
-            $maxLength,
-        );
+        if (\function_exists('lenga_internal_vector4_clamp_magnitude')) {
+            /** @var array{x: float, y: float, z: float, w: float}|false $result */
+            $result = \lenga_internal_vector4_clamp_magnitude(
+                $vector->x,
+                $vector->y,
+                $vector->z,
+                $vector->w,
+                $maxLength,
+            );
 
-        if (!\is_array($result)) {
+            if (\is_array($result)) {
+                return self::fromArray($result);
+            }
+        }
+
+        if ($maxLength < 0.0) {
+            $maxLength = 0.0;
+        }
+
+        if ($vector->sqrMagnitude <= $maxLength * $maxLength) {
             return new self($vector->x, $vector->y, $vector->z, $vector->w);
         }
 
-        return self::fromArray($result);
+        return self::scaleNew($vector->normalized, $maxLength);
     }
 
     public static function moveTowards(self $current, self $target, float $maxDelta): self
     {
-        /** @var array{x: float, y: float, z: float, w: float}|false $result */
-        $result = \lenga_internal_vector4_move_towards(
-            $current->x,
-            $current->y,
-            $current->z,
-            $current->w,
-            $target->x,
-            $target->y,
-            $target->z,
-            $target->w,
-            $maxDelta,
-        );
+        if (\function_exists('lenga_internal_vector4_move_towards')) {
+            /** @var array{x: float, y: float, z: float, w: float}|false $result */
+            $result = \lenga_internal_vector4_move_towards(
+                $current->x,
+                $current->y,
+                $current->z,
+                $current->w,
+                $target->x,
+                $target->y,
+                $target->z,
+                $target->w,
+                $maxDelta,
+            );
 
-        if (!\is_array($result)) {
-            return new self($current->x, $current->y, $current->z, $current->w);
+            if (\is_array($result)) {
+                return self::fromArray($result);
+            }
         }
 
-        return self::fromArray($result);
+        $delta = self::difference($target, $current);
+        $sqrDistance = $delta->sqrMagnitude;
+
+        if ($sqrDistance <= self::EPSILON) {
+            return new self($target->x, $target->y, $target->z, $target->w);
+        }
+
+        if ($maxDelta >= 0.0 && $sqrDistance <= $maxDelta * $maxDelta) {
+            return new self($target->x, $target->y, $target->z, $target->w);
+        }
+
+        $distance = sqrt($sqrDistance);
+
+        return new self(
+            $current->x + ($delta->x / $distance) * $maxDelta,
+            $current->y + ($delta->y / $distance) * $maxDelta,
+            $current->z + ($delta->z / $distance) * $maxDelta,
+            $current->w + ($delta->w / $distance) * $maxDelta,
+        );
     }
 
     public static function project(self $vector, self $onNormal): self
     {
-        /** @var array{x: float, y: float, z: float, w: float}|false $result */
-        $result = \lenga_internal_vector4_project(
-            $vector->x,
-            $vector->y,
-            $vector->z,
-            $vector->w,
-            $onNormal->x,
-            $onNormal->y,
-            $onNormal->z,
-            $onNormal->w,
-        );
+        if (\function_exists('lenga_internal_vector4_project')) {
+            /** @var array{x: float, y: float, z: float, w: float}|false $result */
+            $result = \lenga_internal_vector4_project(
+                $vector->x,
+                $vector->y,
+                $vector->z,
+                $vector->w,
+                $onNormal->x,
+                $onNormal->y,
+                $onNormal->z,
+                $onNormal->w,
+            );
 
-        if (!\is_array($result)) {
+            if (\is_array($result)) {
+                return self::fromArray($result);
+            }
+        }
+
+        $sqrMagnitude = $onNormal->sqrMagnitude;
+        if ($sqrMagnitude <= self::EPSILON) {
             return self::zero();
         }
 
-        return self::fromArray($result);
+        return self::scaleNew($onNormal, self::dot($vector, $onNormal) / $sqrMagnitude);
     }
 
     public function offsetExists(mixed $offset): bool
