@@ -1,0 +1,71 @@
+name: Sync VERSION from Release Branch
+
+on:
+  create:
+  push:
+    branches:
+      - "release/**"
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Semver version to write into VERSION
+        required: true
+
+permissions:
+  contents: write
+
+jobs:
+  sync-version:
+    if: ${{ github.event_name != 'create' || (github.event.ref_type == 'branch' && startsWith(github.event.ref, 'release/')) }}
+    runs-on: ubuntu-latest
+    env:
+      INPUT_VERSION: ${{ github.event.inputs.version || '' }}
+      REF_NAME: ${{ github.event_name == 'create' && github.event.ref || github.ref_name }}
+    steps:
+      - name: Check out branch
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: ${{ github.event_name == 'create' && format('refs/heads/{0}', github.event.ref) || github.ref }}
+
+      - name: Resolve target version
+        id: resolve
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          RAW_VERSION="$INPUT_VERSION"
+          if [[ -z "$RAW_VERSION" ]]; then
+            RAW_VERSION="${REF_NAME#release/}"
+          fi
+
+          VERSION="${RAW_VERSION#v}"
+
+          if [[ ! "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+([.-][0-9A-Za-z.-]+)?$ ]]; then
+            echo "Release version '$RAW_VERSION' is not valid semver." >&2
+            exit 1
+          fi
+
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+
+      - name: Update VERSION file
+        shell: bash
+        run: |
+          set -euo pipefail
+          printf '%s\n' '${{ steps.resolve.outputs.version }}' > VERSION
+
+      - name: Commit synced version
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          if git diff --quiet -- VERSION; then
+            echo 'VERSION already matches the release branch.'
+            exit 0
+          fi
+
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add VERSION
+          git commit -m 'chore: sync VERSION for ${{ steps.resolve.outputs.version }}'
+          git push
