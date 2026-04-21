@@ -2,6 +2,24 @@
 
 All notable changes to `lenga/engine` will be documented in this file.
 
+## 0.7.1 - 2026-04-21
+
+### Fixed
+
+- Fixed `Vector4::moveTowards()` so negative `maxDelta` values move away from the target instead of snapping to it.
+
+### Changed
+
+- Added pure-PHP fallbacks for bridge-backed `Vector4` helpers when the native bridge functions are unavailable:
+  - `lerp()`
+  - `moveTowards()`
+  - `clampMagnitude()`
+  - `project()`
+
+### Testing
+
+- Added regression coverage for negative-distance `Vector4::moveTowards()` behavior.
+
 ## 0.6.0 - 2026-04-19
 
 ### Added
