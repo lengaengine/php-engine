@@ -48,7 +48,7 @@ final class Debug
             'info' => 'Info',
             'warn', 'warning' => 'Warning',
             'error' => 'Error',
-            default => 'Debug',
+            default => 'Info',
         };
         error_log($fallbackLevel . ': ' . $logMessage);
     }

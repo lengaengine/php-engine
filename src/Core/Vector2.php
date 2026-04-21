@@ -328,6 +328,11 @@ final class Vector2 implements ArrayAccess
     {
         return new Vector3($this->x, $this->y, $z);
     }
+    public function toVector4(float $z = 0.0, float $w = 0.0): Vector4
+    {
+        return new Vector4($this->x, $this->y, $z, $w);
+    }
+
 
     // -------------------------------------------------------------------------
     // Static pure helpers (return new vectors; no mutation)
@@ -656,5 +661,15 @@ final class Vector2 implements ArrayAccess
     {
         return new self($v->x, $v->y);
     }
-}
 
+    /**
+     * Converts a Vector4 to a Vector2 by dropping the z and w components.
+     *
+     * @param Vector4 $v
+     * @return self
+     */
+    public static function fromVector4(Vector4 $v): self
+    {
+        return new self($v->x, $v->y);
+    }
+}

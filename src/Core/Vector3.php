@@ -253,6 +253,16 @@ final class Vector3 implements ArrayAccess
     {
         return "({$this->x}, {$this->y}, {$this->z})";
     }
+    public function toVector2(): Vector2
+    {
+        return new Vector2($this->x, $this->y);
+    }
+
+    public function toVector4(float $w = 0.0): Vector4
+    {
+        return new Vector4($this->x, $this->y, $this->z, $w);
+    }
+
 
     /**
      * @return array{x: float, y: float, z: float}
@@ -272,6 +282,16 @@ final class Vector3 implements ArrayAccess
             (float) ($data['y'] ?? 0.0),
             (float) ($data['z'] ?? 0.0),
         );
+    }
+
+    public static function fromVector2(Vector2 $vector, float $z = 0.0): self
+    {
+        return new self($vector->x, $vector->y, $z);
+    }
+
+    public static function fromVector4(Vector4 $vector): self
+    {
+        return new self($vector->x, $vector->y, $vector->z);
     }
 
     // ---------------------------------------------------------------------
