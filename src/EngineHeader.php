@@ -597,6 +597,116 @@ if (!function_exists("lenga_internal_vector3_smooth_damp")) {
     }
 }
 
+if (!function_exists("lenga_internal_vector4_lerp")) {
+    function lenga_internal_vector4_lerp(
+        float $ax,
+        float $ay,
+        float $az,
+        float $aw,
+        float $bx,
+        float $by,
+        float $bz,
+        float $bw,
+        float $t,
+    ): array {
+        $t = max(0.0, min(1.0, $t));
+        return [
+            "x" => $ax + (($bx - $ax) * $t),
+            "y" => $ay + (($by - $ay) * $t),
+            "z" => $az + (($bz - $az) * $t),
+            "w" => $aw + (($bw - $aw) * $t),
+        ];
+    }
+}
+
+if (!function_exists("lenga_internal_vector4_move_towards")) {
+    function lenga_internal_vector4_move_towards(
+        float $currentX,
+        float $currentY,
+        float $currentZ,
+        float $currentW,
+        float $targetX,
+        float $targetY,
+        float $targetZ,
+        float $targetW,
+        float $maxDelta,
+    ): array {
+        $deltaX = $targetX - $currentX;
+        $deltaY = $targetY - $currentY;
+        $deltaZ = $targetZ - $currentZ;
+        $deltaW = $targetW - $currentW;
+        $sqrDistance = ($deltaX * $deltaX) + ($deltaY * $deltaY) + ($deltaZ * $deltaZ) + ($deltaW * $deltaW);
+
+        if ($sqrDistance <= 0.000001 || $sqrDistance <= ($maxDelta * $maxDelta)) {
+            return ["x" => $targetX, "y" => $targetY, "z" => $targetZ, "w" => $targetW];
+        }
+
+        $distance = sqrt($sqrDistance);
+        $scale = $maxDelta / $distance;
+
+        return [
+            "x" => $currentX + ($deltaX * $scale),
+            "y" => $currentY + ($deltaY * $scale),
+            "z" => $currentZ + ($deltaZ * $scale),
+            "w" => $currentW + ($deltaW * $scale),
+        ];
+    }
+}
+
+if (!function_exists("lenga_internal_vector4_project")) {
+    function lenga_internal_vector4_project(
+        float $vectorX,
+        float $vectorY,
+        float $vectorZ,
+        float $vectorW,
+        float $normalX,
+        float $normalY,
+        float $normalZ,
+        float $normalW,
+    ): array {
+        $denominator = ($normalX * $normalX) + ($normalY * $normalY) + ($normalZ * $normalZ) + ($normalW * $normalW);
+        if ($denominator <= 0.000001) {
+            return ["x" => 0.0, "y" => 0.0, "z" => 0.0, "w" => 0.0];
+        }
+
+        $scale = (($vectorX * $normalX) + ($vectorY * $normalY) + ($vectorZ * $normalZ) + ($vectorW * $normalW)) / $denominator;
+
+        return [
+            "x" => $normalX * $scale,
+            "y" => $normalY * $scale,
+            "z" => $normalZ * $scale,
+            "w" => $normalW * $scale,
+        ];
+    }
+}
+
+if (!function_exists("lenga_internal_vector4_clamp_magnitude")) {
+    function lenga_internal_vector4_clamp_magnitude(
+        float $x,
+        float $y,
+        float $z,
+        float $w,
+        float $maxLength,
+    ): array {
+        $maxLength = max(0.0, $maxLength);
+        $sqrMagnitude = ($x * $x) + ($y * $y) + ($z * $z) + ($w * $w);
+        $maxLengthSquared = $maxLength * $maxLength;
+
+        if ($sqrMagnitude <= $maxLengthSquared || $sqrMagnitude <= 0.000001) {
+            return ["x" => $x, "y" => $y, "z" => $z, "w" => $w];
+        }
+
+        $magnitude = sqrt($sqrMagnitude);
+        $scale = $maxLength / $magnitude;
+
+        return [
+            "x" => $x * $scale,
+            "y" => $y * $scale,
+            "z" => $z * $scale,
+            "w" => $w * $scale,
+        ];
+    }
+}
 /** --- Physics2D Functions --- */
 if (!function_exists("lenga_internal_physics2d_raycast")) {
     function lenga_internal_physics2d_raycast(

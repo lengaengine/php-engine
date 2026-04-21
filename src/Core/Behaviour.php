@@ -21,6 +21,14 @@ abstract class Behaviour implements ComponentInterface
      * @var array<int, Signal>
      */
     private array $ownedSignals = [];
+    /**
+     * @var array<int, SignalSubscription>
+     */
+    private array $ownedSubscriptionsOnDisable = [];
+    /**
+     * @var array<int, SignalSubscription>
+     */
+    private array $ownedSubscriptionsUntilDestroy = [];
 
     public function __construct() {}
 
@@ -553,6 +561,51 @@ abstract class Behaviour implements ComponentInterface
         return $signal;
     }
 
+    protected function emitEvent(string $eventName, mixed $payload = null): void
+    {
+        EventBus::emit($eventName, $payload);
+    }
+
+    protected function dispatchEvent(string $eventName, mixed $payload = null): void
+    {
+        $this->emitEvent($eventName, $payload);
+    }
+
+    protected function onEvent(
+        string $eventName,
+        callable $listener,
+        bool $disposeOnDisable = true
+    ): SignalSubscription
+    {
+        return $this->trackSubscription(EventBus::on($eventName, $listener), $disposeOnDisable);
+    }
+
+    protected function onceEvent(
+        string $eventName,
+        callable $listener,
+        bool $disposeOnDisable = true
+    ): SignalSubscription
+    {
+        return $this->trackSubscription(EventBus::once($eventName, $listener), $disposeOnDisable);
+    }
+
+    protected function trackSubscription(
+        SignalSubscription $subscription,
+        bool $disposeOnDisable = true
+    ): SignalSubscription
+    {
+        $subscriptionId = \spl_object_id($subscription);
+        if ($disposeOnDisable) {
+            $this->ownedSubscriptionsOnDisable[$subscriptionId] = $subscription;
+            unset($this->ownedSubscriptionsUntilDestroy[$subscriptionId]);
+        } else {
+            $this->ownedSubscriptionsUntilDestroy[$subscriptionId] = $subscription;
+            unset($this->ownedSubscriptionsOnDisable[$subscriptionId]);
+        }
+
+        return $subscription;
+    }
+
     final public function __lengaInternalAwake(): void
     {
         $this->awake();
@@ -587,11 +640,13 @@ abstract class Behaviour implements ComponentInterface
 
     final public function __lengaInternalOnDisable(): void
     {
+        $this->releaseOwnedSubscriptionsOnDisable();
         $this->onDisable();
     }
 
     final public function __lengaInternalOnDestroy(): void
     {
+        $this->releaseOwnedSubscriptions();
         $this->onDestroy();
         $this->stopAllCoroutines();
         $this->releaseOwnedSignals();
@@ -633,6 +688,25 @@ abstract class Behaviour implements ComponentInterface
                 unset($this->coroutines[$id]);
             }
         }
+    }
+
+    private function releaseTrackedSubscriptions(array &$subscriptions): void
+    {
+        foreach ($subscriptions as $subscriptionId => $subscription) {
+            $subscription->dispose();
+            unset($subscriptions[$subscriptionId]);
+        }
+    }
+
+    private function releaseOwnedSubscriptionsOnDisable(): void
+    {
+        $this->releaseTrackedSubscriptions($this->ownedSubscriptionsOnDisable);
+    }
+
+    private function releaseOwnedSubscriptions(): void
+    {
+        $this->releaseTrackedSubscriptions($this->ownedSubscriptionsOnDisable);
+        $this->releaseTrackedSubscriptions($this->ownedSubscriptionsUntilDestroy);
     }
 
     private function releaseOwnedSignals(): void
