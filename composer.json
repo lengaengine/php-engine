@@ -11,6 +11,11 @@
     "require-dev": {
         "phpunit/phpunit": "^11.0"
     },
+    "extra": {
+        "lenga": {
+            "compatibility": "0.8"
+        }
+    },
     "autoload": {
         "psr-4": {
             "Lenga\\Engine\\": "src/"
