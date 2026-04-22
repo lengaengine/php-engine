@@ -85,10 +85,10 @@ This package is designed for source projects. Exported Lenga builds are expected
 When the package is available through Composer, the normal install command will be:
 
 ```bash
-composer require lenga/engine:^0.8
+composer require lenga/engine:^<sdk-major>.<sdk-minor>
 ```
 
-The 0.8.x package line targets the Lenga SDK/runtime 0.8.x line.
+Use the same major.minor line as your installed Lenga SDK/runtime.
 
 If you are evaluating the package directly from source before it is published, you can install it through a Composer `path` or `vcs` repository.
 
