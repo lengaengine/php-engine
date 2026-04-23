@@ -1433,6 +1433,54 @@ if (!function_exists("lenga_internal_scene_create_canvas")) {
     }
 }
 
+if (!function_exists("lenga_internal_scene_get_backdrop_layers")) {
+    function lenga_internal_scene_get_backdrop_layers(): array|false
+    {
+        Debug::error("[lenga_internal_scene_get_backdrop_layers] Function not implemented.");
+        return false;
+    }
+}
+
+if (!function_exists("lenga_internal_scene_get_backdrop_layer_state")) {
+    function lenga_internal_scene_get_backdrop_layer_state(int $layerIndex): array|false
+    {
+        Debug::error("[lenga_internal_scene_get_backdrop_layer_state] Function not implemented. LayerIndex: $layerIndex");
+        return false;
+    }
+}
+
+if (!function_exists("lenga_internal_scene_backdrop_layer_set_offset")) {
+    function lenga_internal_scene_backdrop_layer_set_offset(int $layerIndex, float $x, float $y): bool
+    {
+        Debug::error("[lenga_internal_scene_backdrop_layer_set_offset] Function not implemented. LayerIndex: $layerIndex");
+        return false;
+    }
+}
+
+if (!function_exists("lenga_internal_scene_backdrop_layer_translate_offset")) {
+    function lenga_internal_scene_backdrop_layer_translate_offset(int $layerIndex, float $x, float $y): bool
+    {
+        Debug::error("[lenga_internal_scene_backdrop_layer_translate_offset] Function not implemented. LayerIndex: $layerIndex");
+        return false;
+    }
+}
+
+if (!function_exists("lenga_internal_scene_backdrop_layer_set_repeat")) {
+    function lenga_internal_scene_backdrop_layer_set_repeat(int $layerIndex, float $x, float $y): bool
+    {
+        Debug::error("[lenga_internal_scene_backdrop_layer_set_repeat] Function not implemented. LayerIndex: $layerIndex");
+        return false;
+    }
+}
+
+if (!function_exists("lenga_internal_scene_backdrop_layer_set_parallax")) {
+    function lenga_internal_scene_backdrop_layer_set_parallax(int $layerIndex, float $x, float $y): bool
+    {
+        Debug::error("[lenga_internal_scene_backdrop_layer_set_parallax] Function not implemented. LayerIndex: $layerIndex");
+        return false;
+    }
+}
+
 if (!function_exists("lenga_internal_ui_canvas_get_state")) {
     function lenga_internal_ui_canvas_get_state(int $canvasId): array|false
     {

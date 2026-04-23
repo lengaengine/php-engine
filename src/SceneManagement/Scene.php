@@ -79,6 +79,36 @@ final class Scene
         return null;
     }
 
+    /**
+     * @return list<BackdropLayer>
+     */
+    public function getBackdropLayers(): array
+    {
+        /** @var list<array{index?: int}>|false $data */
+        $data = \lenga_internal_scene_get_backdrop_layers();
+        if (!\is_array($data)) {
+            return [];
+        }
+
+        return array_values(array_map(
+            static fn (array $item): BackdropLayer => BackdropLayer::fromNativeData($item),
+            $data,
+        ));
+    }
+
+    public function getBackdropLayer(int $index): ?BackdropLayer
+    {
+        /** @var array{index?: int}|false $data */
+        $data = \lenga_internal_scene_get_backdrop_layer_state($index);
+
+        return \is_array($data) ? BackdropLayer::fromNativeData($data) : null;
+    }
+
+    public function getBackdropLayerCount(): int
+    {
+        return \count($this->getBackdropLayers());
+    }
+
     public function instantiateGameObject(GameObject $original, ?string $name = null): GameObject
     {
         return GameObject::instantiate($original, $name);
