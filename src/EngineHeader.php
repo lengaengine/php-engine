@@ -1809,6 +1809,22 @@ if (!function_exists("lenga_internal_ui_button_set_background_color")) {
     }
 }
 
+if (!function_exists("lenga_internal_ui_button_set_outline_color")) {
+    function lenga_internal_ui_button_set_outline_color(int $elementId, int $red, int $green, int $blue, int $alpha): bool
+    {
+        Debug::error("[lenga_internal_ui_button_set_outline_color] Function not implemented. ElementId: $elementId");
+        return false;
+    }
+}
+
+if (!function_exists("lenga_internal_ui_button_set_outline_width")) {
+    function lenga_internal_ui_button_set_outline_width(int $elementId, float $value): bool
+    {
+        Debug::error("[lenga_internal_ui_button_set_outline_width] Function not implemented. ElementId: $elementId");
+        return false;
+    }
+}
+
 if (!function_exists("lenga_internal_ui_button_set_background_image")) {
     function lenga_internal_ui_button_set_background_image(int $elementId, string $filename): bool
     {

@@ -168,6 +168,45 @@ final class Button extends UIElement
     }
 
     /**
+     * Gets the button outline color.
+     *
+     * @return array{r:int, g:int, b:int, a:int}
+     */
+    public function getOutlineColor(): array
+    {
+        /** @var array{r?: int, g?: int, b?: int, a?: int} $value */
+        $value = $this->getState()['outlineColor'] ?? [];
+
+        return [
+            'r' => (int) ($value['r'] ?? 255),
+            'g' => (int) ($value['g'] ?? 255),
+            'b' => (int) ($value['b'] ?? 255),
+            'a' => (int) ($value['a'] ?? 255),
+        ];
+    }
+
+    /**
+     * Sets the button outline color.
+     */
+    public function setOutlineColor(int $red, int $green, int $blue, int $alpha = 255): void
+    {
+        \lenga_internal_ui_button_set_outline_color($this->getId(), $red, $green, $blue, $alpha);
+    }
+
+    /**
+     * Button outline width in UI pixels. Use 0 to hide the outline.
+     */
+    public float $outlineWidth {
+        get {
+            return (float) ($this->getState()['outlineWidth'] ?? 0.0);
+        }
+
+        set(float $value) {
+            \lenga_internal_ui_button_set_outline_width($this->getId(), \max(0.0, $value));
+        }
+    }
+
+    /**
      * Sets the default (idle) background image.
      *
      * @param string $filename The relative path
