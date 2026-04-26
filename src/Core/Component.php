@@ -48,11 +48,6 @@ abstract class Component implements ComponentInterface
         return $this->sceneComponentId;
     }
 
-    public function __internalAttachSceneComponentId(string $sceneComponentId): void
-    {
-        $this->sceneComponentId = $sceneComponentId;
-    }
-
     public function __serialize(): array
     {
         return [

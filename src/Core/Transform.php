@@ -328,12 +328,6 @@ final class Transform
         }
     }
 
-    public function __internalAttachGameObject(GameObject $gameObject, ?int $gameObjectId = null): void
-    {
-        $this->gameObjectValue = $gameObject;
-        $this->gameObjectId = $gameObjectId ?? $gameObject->getInstanceId();
-    }
-
     public function getParent(): ?Transform
     {
         if ($this->nativeId !== null) {

@@ -7,6 +7,8 @@ namespace Lenga\Engine\Core;
 use Lenga\Engine\Attributes\RequireComponent;
 use Lenga\Engine\Attributes\SerializeReference;
 use Lenga\Engine\Interfaces\ComponentInterface;
+use Lenga\Engine\UI\Canvas;
+use Lenga\Engine\UI\UIElement;
 
 abstract class Behaviour implements ComponentInterface
 {
@@ -58,24 +60,7 @@ abstract class Behaviour implements ComponentInterface
         }
     }
 
-    // INTERNAL: Called by the engine bridge
-    public function __internalAttachGameObject(GameObject $gameObject): void
-    {
-        $this->gameObjectValue = $gameObject;
-        $this->__internalEnsureRequiredComponents($gameObject);
-    }
-
-    public function __internalAttachComponentId(int $componentId): void
-    {
-        $this->componentId = $componentId;
-    }
-
-    public function __internalAttachSceneComponentId(string $sceneComponentId): void
-    {
-        $this->sceneComponentId = $sceneComponentId;
-    }
-
-    private function __internalEnsureRequiredComponents(GameObject $gameObject): void
+    private function ensureRequiredComponents(GameObject $gameObject): void
     {
         static $resolving = [];
 
@@ -209,23 +194,6 @@ abstract class Behaviour implements ComponentInterface
         }
     }
 
-    /**
-     * INTERNAL: Apply serialized scene properties before lifecycle callbacks run.
-     *
-     * MVP support is intentionally limited to properties that already exist on the
-     * behaviour class. Unknown keys are ignored.
-     *
-     * @param array<string, mixed> $properties
-     */
-    public function __internalApplyProperties(array $properties): void
-    {
-        if ($properties === []) {
-            return;
-        }
-
-        $this->applySerializedPropertiesToObject($this, $properties);
-    }
-
     private function resolveSerializedPropertyValue(\ReflectionProperty $property, mixed $value): mixed
     {
         if ($value instanceof Vector2 || $value instanceof Vector3) {
@@ -244,6 +212,23 @@ abstract class Behaviour implements ComponentInterface
         $resolvedTypeName = $this->resolvePropertyTypeName($type);
         if ($resolvedTypeName === null) {
             return $value;
+        }
+
+        if ($value['__lengaRefKind'] === 'Canvas') {
+            return $resolvedTypeName === Canvas::class
+                ? Canvas::fromSerializedReference($value)
+                : null;
+        }
+
+        if ($value['__lengaRefKind'] === 'UIElement') {
+            $element = UIElement::fromSerializedReference($value);
+            if ($element === null) {
+                return null;
+            }
+
+            return $resolvedTypeName === UIElement::class || $element instanceof $resolvedTypeName
+                ? $element
+                : null;
         }
 
         $gameObject = GameObject::fromSerializedReference($value);
@@ -604,52 +589,6 @@ abstract class Behaviour implements ComponentInterface
         }
 
         return $subscription;
-    }
-
-    final public function __lengaInternalAwake(): void
-    {
-        $this->awake();
-    }
-
-    final public function __lengaInternalOnEnable(): void
-    {
-        $this->onEnable();
-    }
-
-    final public function __lengaInternalStart(): void
-    {
-        $this->start();
-    }
-
-    final public function __lengaInternalFixedUpdate(): void
-    {
-        $this->fixedUpdate();
-        $this->tickCoroutinesFixedUpdate();
-    }
-
-    final public function __lengaInternalUpdate(): void
-    {
-        $this->update();
-        $this->tickCoroutines();
-    }
-
-    final public function __lengaInternalLateUpdate(): void
-    {
-        $this->lateUpdate();
-    }
-
-    final public function __lengaInternalOnDisable(): void
-    {
-        $this->releaseOwnedSubscriptionsOnDisable();
-        $this->onDisable();
-    }
-
-    final public function __lengaInternalOnDestroy(): void
-    {
-        $this->releaseOwnedSubscriptions();
-        $this->onDestroy();
-        $this->stopAllCoroutines();
-        $this->releaseOwnedSignals();
     }
 
     private function tickCoroutines(): void

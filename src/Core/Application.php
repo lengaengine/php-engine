@@ -7,9 +7,9 @@ namespace Lenga\Engine\Core;
 /**
  * Engine/application-level utilities.
  *
- * This class intentionally mirrors the idea of Application.* in other engines:
- * - Application::quit() – request engine shutdown from script code.
- * - Application::pauseEngine() / resumeEngine() – control engine-level pause.
+ * Application pause is gameplay-level pause: Update and UI remain alive while
+ * gameplay time is stopped. Engine pause is the editor/debug transport pause
+ * that freezes simulation more aggressively.
  */
 final class Application
 {
@@ -21,7 +21,7 @@ final class Application
     /**
      * Request the running game to shut down.
      *
-     * This maps to the native engine "quit" flag and will cause the main
+     * This maps to the native engine quit flag and will cause the main
      * loop to exit cleanly at the end of the current frame.
      */
     public static function quit(): void
@@ -29,55 +29,70 @@ final class Application
         \lenga_internal_engine_quit();
     }
 
+    /**
+     * Full engine/editor transport pause. Use this for debugging/tooling, not
+     * normal pause menus.
+     */
     public static function pauseEngine(): void
     {
         \lenga_internal_engine_set_paused(true);
     }
 
+    /**
+     * Resume from full engine/editor transport pause.
+     */
     public static function resumeEngine(): void
     {
         \lenga_internal_engine_set_paused(false);
     }
 
+    /**
+     * Toggle full engine/editor transport pause.
+     */
     public static function toggleEnginePause(): void
     {
         \lenga_internal_engine_toggle_paused();
     }
 
+    /**
+     * True only when the low-level engine/editor transport pause is active.
+     */
     public static function isEnginePaused(): bool
     {
         return (bool) \lenga_internal_engine_is_paused();
     }
 
     /**
-     * Backwards-compatible alias for engine-level pause.
+     * Gameplay/application pause. Update and UI continue to run.
      */
     public static function pause(): void
     {
-        self::pauseEngine();
+        Time::pauseGameplay();
     }
 
     /**
-     * Backwards-compatible alias for engine-level resume.
+     * Resume gameplay/application pause.
      */
     public static function resume(): void
     {
-        self::resumeEngine();
+        Time::resumeGameplay();
     }
 
     /**
-     * Backwards-compatible alias for engine-level pause toggle.
+     * Toggle gameplay/application pause.
      */
     public static function togglePause(): void
     {
-        self::toggleEnginePause();
+        Time::toggleGameplayPause();
     }
 
     /**
-     * Backwards-compatible alias for engine-level paused state.
+     * True when the application is effectively paused from user code. This
+     * includes gameplay pause, explicit engine pause, and a zero effective time
+     * scale because all three mean gameplay time is stopped.
      */
     public static function isPaused(): bool
     {
-        return self::isEnginePaused();
+        return self::isEnginePaused() || Time::isGameplayPaused() || Time::effectiveTimeScale() <= 0.0;
     }
 }

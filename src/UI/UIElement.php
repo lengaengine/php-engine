@@ -176,6 +176,44 @@ abstract class UIElement
         };
     }
 
+    public static function findBySceneId(string $sceneElementId): ?self
+    {
+        /** @var array{id?: int, name?: string, type?: string, canvasId?: int|null}|false $data */
+        $data = \lenga_internal_ui_element_find_by_scene_id($sceneElementId);
+        if (!\is_array($data)) {
+            return null;
+        }
+
+        return self::fromNativeLookupData($data);
+    }
+
+    public static function fromSerializedReference(array $data): ?self
+    {
+        $sceneElementId = isset($data['elementId']) && \is_string($data['elementId'])
+            ? $data['elementId']
+            : '';
+        if ($sceneElementId !== '') {
+            $element = self::findBySceneId($sceneElementId);
+            if ($element !== null) {
+                return $element;
+            }
+        }
+
+        $instanceId = isset($data['instanceId']) && \is_int($data['instanceId'])
+            ? $data['instanceId']
+            : null;
+        if ($instanceId !== null && $instanceId > 0 && isset($data['type']) && \is_string($data['type'])) {
+            return self::fromNativeLookupData([
+                'id' => $instanceId,
+                'name' => isset($data['name']) && \is_string($data['name']) ? $data['name'] : 'UIElement',
+                'type' => $data['type'],
+                'canvasId' => isset($data['canvasId']) && \is_int($data['canvasId']) ? $data['canvasId'] : null,
+            ]);
+        }
+
+        return null;
+    }
+
     /**
      * @return array{
      *     id?: int,

@@ -25,7 +25,26 @@ final class GameObject
         $this->activeSelfValue = $activeSelf;
         $this->activeInHierarchyValue = $activeSelf;
         $this->transformValue = $transform ?? new Transform(null, null, null, null, null, $instanceId);
-        $this->transformValue->__internalAttachGameObject($this, $instanceId);
+        $this->attachTransformToSelf($instanceId);
+    }
+
+    private function attachTransformToSelf(?int $gameObjectId = null): void
+    {
+        $gameObject = $this;
+        $bound = \Closure::bind(
+            function () use ($gameObject, $gameObjectId): void {
+                $this->gameObjectValue = $gameObject;
+                $this->gameObjectId = $gameObjectId ?? $gameObject->getInstanceId();
+            },
+            $this->transformValue,
+            Transform::class,
+        );
+
+        if ($bound === null) {
+            throw new \RuntimeException('Failed to bind Transform to GameObject.');
+        }
+
+        $bound();
     }
 
     private ?int $instanceId = null;
@@ -150,7 +169,7 @@ final class GameObject
             $this->layerValue = $resolved->layerValue;
             $this->activeSelfValue = $resolved->activeSelfValue;
             $this->activeInHierarchyValue = $resolved->activeInHierarchyValue;
-            $this->transformValue->__internalAttachGameObject($this, $this->instanceId);
+            $this->attachTransformToSelf($this->instanceId);
             return;
         }
 
@@ -164,7 +183,7 @@ final class GameObject
         $this->activeSelfValue = true;
         $this->activeInHierarchyValue = true;
         $this->transformValue = new Transform(null, null, null, null, null, $this->instanceId);
-        $this->transformValue->__internalAttachGameObject($this, $this->instanceId);
+        $this->attachTransformToSelf($this->instanceId);
     }
 
     public function setActive(bool $value): void
@@ -773,11 +792,28 @@ final class GameObject
         if (
             isset($nativeResult['sceneComponentId']) &&
             \is_string($nativeResult['sceneComponentId']) &&
-            \method_exists($component, '__internalAttachSceneComponentId')
+            $component instanceof Component
         ) {
-            $component->__internalAttachSceneComponentId($nativeResult['sceneComponentId']);
+            self::attachSceneComponentId($component, $nativeResult['sceneComponentId']);
         }
 
         return $component;
+    }
+
+    private static function attachSceneComponentId(Component $component, string $sceneComponentId): void
+    {
+        $bound = \Closure::bind(
+            function () use ($sceneComponentId): void {
+                $this->sceneComponentId = $sceneComponentId;
+            },
+            $component,
+            Component::class,
+        );
+
+        if ($bound === null) {
+            throw new \RuntimeException('Failed to bind scene component id.');
+        }
+
+        $bound();
     }
 }

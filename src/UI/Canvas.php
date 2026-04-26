@@ -232,6 +232,42 @@ final class Canvas
         );
     }
 
+    public static function findBySceneId(string $sceneCanvasId): ?self
+    {
+        /** @var array{id?: int, name?: string}|false $data */
+        $data = \lenga_internal_ui_canvas_find_by_scene_id($sceneCanvasId);
+        if (!\is_array($data)) {
+            return null;
+        }
+
+        return self::fromNativeLookupData($data);
+    }
+
+    public static function fromSerializedReference(array $data): ?self
+    {
+        $sceneCanvasId = isset($data['canvasId']) && \is_string($data['canvasId'])
+            ? $data['canvasId']
+            : '';
+        if ($sceneCanvasId !== '') {
+            $canvas = self::findBySceneId($sceneCanvasId);
+            if ($canvas !== null) {
+                return $canvas;
+            }
+        }
+
+        $instanceId = isset($data['instanceId']) && \is_int($data['instanceId'])
+            ? $data['instanceId']
+            : null;
+        if ($instanceId !== null && $instanceId > 0) {
+            return self::fromNativeLookupData([
+                'id' => $instanceId,
+                'name' => isset($data['name']) && \is_string($data['name']) ? $data['name'] : 'Canvas',
+            ]);
+        }
+
+        return null;
+    }
+
     /**
      * @return array{
      *     id?: int,
