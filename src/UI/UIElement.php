@@ -70,6 +70,11 @@ abstract class UIElement
         return $this->elementId;
     }
 
+    public function isFocused(): bool
+    {
+        return (bool) ($this->getState()['focused'] ?? false);
+    }
+
     public function getCanvas(): ?Canvas
     {
         $state = $this->getState();
@@ -138,6 +143,16 @@ abstract class UIElement
         return $canvas->createButton($name, $this);
     }
 
+    public function createSlider(string $name): Slider
+    {
+        $canvas = $this->getCanvas();
+        if ($canvas === null) {
+            throw new \RuntimeException("UI element '{$this->name}' is not attached to a canvas.");
+        }
+
+        return $canvas->createSlider($name, $this);
+    }
+
     public function findDescendantByName(string $name): ?self
     {
         foreach ($this->getChildren() as $child) {
@@ -172,6 +187,7 @@ abstract class UIElement
             'Text' => new Text($name, $id, $canvasId),
             'Image' => new Image($name, $id, $canvasId),
             'Button' => new Button($name, $id, $canvasId),
+            'Slider' => new Slider($name, $id, $canvasId),
             default => throw new \RuntimeException("Unsupported native UI element type '{$type}'."),
         };
     }
@@ -216,7 +232,21 @@ abstract class UIElement
      *     backgroundColor?: array{r?: int, g?: int, b?: int, a?: int},
      *     hoverColor?: array{r?: int, g?: int, b?: int, a?: int},
      *     pressedColor?: array{r?: int, g?: int, b?: int, a?: int},
-     *     disabledColor?: array{r?: int, g?: int, b?: int, a?: int}
+     *     disabledColor?: array{r?: int, g?: int, b?: int, a?: int},
+     *     focused?: bool,
+     *     minValue?: float,
+     *     maxValue?: float,
+     *     value?: float,
+     *     wholeNumbers?: bool,
+     *     showHandle?: bool,
+     *     backgroundImagePath?: string,
+     *     backgroundSize?: array{x?: float, y?: float},
+     *     fillColor?: array{r?: int, g?: int, b?: int, a?: int},
+     *     fillImagePath?: string,
+     *     fillSize?: array{x?: float, y?: float},
+     *     handleColor?: array{r?: int, g?: int, b?: int, a?: int},
+     *     handleImagePath?: string,
+     *     handleSize?: array{x?: float, y?: float}
      * }
      */
     protected function getState(): array
@@ -260,7 +290,21 @@ abstract class UIElement
          *     backgroundColor?: array{r?: int, g?: int, b?: int, a?: int},
          *     hoverColor?: array{r?: int, g?: int, b?: int, a?: int},
          *     pressedColor?: array{r?: int, g?: int, b?: int, a?: int},
-         *     disabledColor?: array{r?: int, g?: int, b?: int, a?: int}
+         *     disabledColor?: array{r?: int, g?: int, b?: int, a?: int},
+         *     focused?: bool,
+         *     minValue?: float,
+         *     maxValue?: float,
+         *     value?: float,
+         *     wholeNumbers?: bool,
+         *     showHandle?: bool,
+         *     backgroundImagePath?: string,
+         *     backgroundSize?: array{x?: float, y?: float},
+         *     fillColor?: array{r?: int, g?: int, b?: int, a?: int},
+         *     fillImagePath?: string,
+         *     fillSize?: array{x?: float, y?: float},
+         *     handleColor?: array{r?: int, g?: int, b?: int, a?: int},
+         *     handleImagePath?: string,
+         *     handleSize?: array{x?: float, y?: float}
          * }|false $state
          */
         $state = \lenga_internal_ui_element_get_state($this->elementId);

@@ -12,6 +12,11 @@ final class RectTransform
     {
     }
 
+    public function getElementId(): int
+    {
+        return $this->elementId;
+    }
+
     public Vector2 $anchorMin {
         get {
             $state = $this->getState();
