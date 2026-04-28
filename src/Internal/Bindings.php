@@ -156,4 +156,310 @@ final class Bindings
     {
         throw new \LogicException('Bindings::getTransformRight() must be provided by the native extension.');
     }
+
+    // ---------------------------------------------------------------------
+    // Tweening
+    // ---------------------------------------------------------------------
+
+    public static function tweenMoveTo(
+        int $transformId,
+        float $x,
+        float $y,
+        float $z,
+        float $duration,
+        float $delay,
+        string $ease,
+        bool $useUnscaledTime,
+        bool $relative,
+    ): int {
+        return \lenga_internal_tween_move_to_by_transform_id(
+            $transformId,
+            $x,
+            $y,
+            $z,
+            $duration,
+            $delay,
+            $ease,
+            $useUnscaledTime,
+            $relative,
+        );
+    }
+
+    public static function tweenMoveLocalTo(
+        int $transformId,
+        float $x,
+        float $y,
+        float $z,
+        float $duration,
+        float $delay,
+        string $ease,
+        bool $useUnscaledTime,
+        bool $relative,
+    ): int {
+        return \lenga_internal_tween_move_local_to_by_transform_id(
+            $transformId,
+            $x,
+            $y,
+            $z,
+            $duration,
+            $delay,
+            $ease,
+            $useUnscaledTime,
+            $relative,
+        );
+    }
+
+    public static function tweenScaleTo(
+        int $transformId,
+        float $x,
+        float $y,
+        float $z,
+        float $duration,
+        float $delay,
+        string $ease,
+        bool $useUnscaledTime,
+        bool $relative,
+    ): int {
+        return \lenga_internal_tween_scale_to_by_transform_id(
+            $transformId,
+            $x,
+            $y,
+            $z,
+            $duration,
+            $delay,
+            $ease,
+            $useUnscaledTime,
+            $relative,
+        );
+    }
+
+    public static function tweenRotateTo(
+        int $transformId,
+        float $x,
+        float $y,
+        float $z,
+        float $duration,
+        float $delay,
+        string $ease,
+        bool $useUnscaledTime,
+        bool $relative,
+    ): int {
+        return \lenga_internal_tween_rotate_to_by_transform_id(
+            $transformId,
+            $x,
+            $y,
+            $z,
+            $duration,
+            $delay,
+            $ease,
+            $useUnscaledTime,
+            $relative,
+        );
+    }
+
+    public static function tweenRotateLocalTo(
+        int $transformId,
+        float $x,
+        float $y,
+        float $z,
+        float $duration,
+        float $delay,
+        string $ease,
+        bool $useUnscaledTime,
+        bool $relative,
+    ): int {
+        return \lenga_internal_tween_rotate_local_to_by_transform_id(
+            $transformId,
+            $x,
+            $y,
+            $z,
+            $duration,
+            $delay,
+            $ease,
+            $useUnscaledTime,
+            $relative,
+        );
+    }
+
+    public static function tweenUiAnchorMinTo(
+        int $elementId,
+        float $x,
+        float $y,
+        float $duration,
+        float $delay,
+        string $ease,
+        bool $useUnscaledTime,
+        bool $relative,
+    ): int {
+        return \lenga_internal_tween_ui_anchor_min_to_by_element_id(
+            $elementId,
+            $x,
+            $y,
+            $duration,
+            $delay,
+            $ease,
+            $useUnscaledTime,
+            $relative,
+        );
+    }
+
+    public static function tweenUiAnchorMaxTo(
+        int $elementId,
+        float $x,
+        float $y,
+        float $duration,
+        float $delay,
+        string $ease,
+        bool $useUnscaledTime,
+        bool $relative,
+    ): int {
+        return \lenga_internal_tween_ui_anchor_max_to_by_element_id(
+            $elementId,
+            $x,
+            $y,
+            $duration,
+            $delay,
+            $ease,
+            $useUnscaledTime,
+            $relative,
+        );
+    }
+
+    public static function tweenUiPivotTo(
+        int $elementId,
+        float $x,
+        float $y,
+        float $duration,
+        float $delay,
+        string $ease,
+        bool $useUnscaledTime,
+        bool $relative,
+    ): int {
+        return \lenga_internal_tween_ui_pivot_to_by_element_id(
+            $elementId,
+            $x,
+            $y,
+            $duration,
+            $delay,
+            $ease,
+            $useUnscaledTime,
+            $relative,
+        );
+    }
+
+    public static function tweenUiAnchoredPositionTo(
+        int $elementId,
+        float $x,
+        float $y,
+        float $duration,
+        float $delay,
+        string $ease,
+        bool $useUnscaledTime,
+        bool $relative,
+    ): int {
+        return \lenga_internal_tween_ui_anchored_position_to_by_element_id(
+            $elementId,
+            $x,
+            $y,
+            $duration,
+            $delay,
+            $ease,
+            $useUnscaledTime,
+            $relative,
+        );
+    }
+
+    public static function tweenUiSizeDeltaTo(
+        int $elementId,
+        float $x,
+        float $y,
+        float $duration,
+        float $delay,
+        string $ease,
+        bool $useUnscaledTime,
+        bool $relative,
+    ): int {
+        return \lenga_internal_tween_ui_size_delta_to_by_element_id(
+            $elementId,
+            $x,
+            $y,
+            $duration,
+            $delay,
+            $ease,
+            $useUnscaledTime,
+            $relative,
+        );
+    }
+
+    public static function tweenUiScaleTo(
+        int $elementId,
+        float $x,
+        float $y,
+        float $duration,
+        float $delay,
+        string $ease,
+        bool $useUnscaledTime,
+        bool $relative,
+    ): int {
+        return \lenga_internal_tween_ui_scale_to_by_element_id(
+            $elementId,
+            $x,
+            $y,
+            $duration,
+            $delay,
+            $ease,
+            $useUnscaledTime,
+            $relative,
+        );
+    }
+
+    public static function tweenUiRotationTo(
+        int $elementId,
+        float $rotation,
+        float $duration,
+        float $delay,
+        string $ease,
+        bool $useUnscaledTime,
+        bool $relative,
+    ): int {
+        return \lenga_internal_tween_ui_rotation_to_by_element_id(
+            $elementId,
+            $rotation,
+            $duration,
+            $delay,
+            $ease,
+            $useUnscaledTime,
+            $relative,
+        );
+    }
+
+    public static function tweenPause(int $tweenId): bool
+    {
+        return \lenga_internal_tween_pause($tweenId);
+    }
+
+    public static function tweenResume(int $tweenId): bool
+    {
+        return \lenga_internal_tween_resume($tweenId);
+    }
+
+    public static function tweenCancel(int $tweenId): bool
+    {
+        return \lenga_internal_tween_cancel($tweenId);
+    }
+
+    public static function tweenIsComplete(int $tweenId): bool
+    {
+        return \lenga_internal_tween_is_complete($tweenId);
+    }
+
+    public static function tweenIsPlaying(int $tweenId): bool
+    {
+        return \lenga_internal_tween_is_playing($tweenId);
+    }
+
+    public static function tweenExists(int $tweenId): bool
+    {
+        return \lenga_internal_tween_exists($tweenId);
+    }
 }

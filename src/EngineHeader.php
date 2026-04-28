@@ -1561,6 +1561,14 @@ if (!function_exists("lenga_internal_ui_canvas_create_button")) {
     }
 }
 
+if (!function_exists("lenga_internal_ui_canvas_create_slider")) {
+    function lenga_internal_ui_canvas_create_slider(int $canvasId, string $name, ?int $parentElementId = null): array|false
+    {
+        Debug::error("[lenga_internal_ui_canvas_create_slider] Function not implemented. CanvasId: $canvasId, Name: $name");
+        return false;
+    }
+}
+
 if (!function_exists("lenga_internal_ui_canvas_get_root_elements")) {
     function lenga_internal_ui_canvas_get_root_elements(int $canvasId): array|false
     {
@@ -1809,6 +1817,22 @@ if (!function_exists("lenga_internal_ui_button_set_background_color")) {
     }
 }
 
+if (!function_exists("lenga_internal_ui_button_set_outline_color")) {
+    function lenga_internal_ui_button_set_outline_color(int $elementId, int $red, int $green, int $blue, int $alpha): bool
+    {
+        Debug::error("[lenga_internal_ui_button_set_outline_color] Function not implemented. ElementId: $elementId");
+        return false;
+    }
+}
+
+if (!function_exists("lenga_internal_ui_button_set_outline_width")) {
+    function lenga_internal_ui_button_set_outline_width(int $elementId, float $value): bool
+    {
+        Debug::error("[lenga_internal_ui_button_set_outline_width] Function not implemented. ElementId: $elementId");
+        return false;
+    }
+}
+
 if (!function_exists("lenga_internal_ui_button_set_background_image")) {
     function lenga_internal_ui_button_set_background_image(int $elementId, string $filename): bool
     {
@@ -1861,6 +1885,126 @@ if (!function_exists("lenga_internal_ui_button_set_disabled_color")) {
     function lenga_internal_ui_button_set_disabled_color(int $elementId, int $red, int $green, int $blue, int $alpha): bool
     {
         Debug::error("[lenga_internal_ui_button_set_disabled_color] Function not implemented. ElementId: $elementId");
+        return false;
+    }
+}
+
+if (!function_exists("lenga_internal_ui_slider_set_interactable")) {
+    function lenga_internal_ui_slider_set_interactable(int $elementId, bool $value): bool
+    {
+        Debug::error("[lenga_internal_ui_slider_set_interactable] Function not implemented. ElementId: $elementId");
+        return false;
+    }
+}
+
+if (!function_exists("lenga_internal_ui_slider_set_min_value")) {
+    function lenga_internal_ui_slider_set_min_value(int $elementId, float $value): bool
+    {
+        Debug::error("[lenga_internal_ui_slider_set_min_value] Function not implemented. ElementId: $elementId");
+        return false;
+    }
+}
+
+if (!function_exists("lenga_internal_ui_slider_set_max_value")) {
+    function lenga_internal_ui_slider_set_max_value(int $elementId, float $value): bool
+    {
+        Debug::error("[lenga_internal_ui_slider_set_max_value] Function not implemented. ElementId: $elementId");
+        return false;
+    }
+}
+
+if (!function_exists("lenga_internal_ui_slider_set_value")) {
+    function lenga_internal_ui_slider_set_value(int $elementId, float $value): bool
+    {
+        Debug::error("[lenga_internal_ui_slider_set_value] Function not implemented. ElementId: $elementId");
+        return false;
+    }
+}
+
+if (!function_exists("lenga_internal_ui_slider_set_whole_numbers")) {
+    function lenga_internal_ui_slider_set_whole_numbers(int $elementId, bool $value): bool
+    {
+        Debug::error("[lenga_internal_ui_slider_set_whole_numbers] Function not implemented. ElementId: $elementId");
+        return false;
+    }
+}
+
+if (!function_exists("lenga_internal_ui_slider_set_show_handle")) {
+    function lenga_internal_ui_slider_set_show_handle(int $elementId, bool $value): bool
+    {
+        Debug::error("[lenga_internal_ui_slider_set_show_handle] Function not implemented. ElementId: $elementId");
+        return false;
+    }
+}
+
+if (!function_exists("lenga_internal_ui_slider_set_background_color")) {
+    function lenga_internal_ui_slider_set_background_color(int $elementId, int $red, int $green, int $blue, int $alpha): bool
+    {
+        Debug::error("[lenga_internal_ui_slider_set_background_color] Function not implemented. ElementId: $elementId");
+        return false;
+    }
+}
+
+if (!function_exists("lenga_internal_ui_slider_set_background_image")) {
+    function lenga_internal_ui_slider_set_background_image(int $elementId, string $filename): bool
+    {
+        Debug::error("[lenga_internal_ui_slider_set_background_image] Function not implemented. ElementId: $elementId, Filename: $filename");
+        return false;
+    }
+}
+
+if (!function_exists("lenga_internal_ui_slider_set_background_size")) {
+    function lenga_internal_ui_slider_set_background_size(int $elementId, float $x, float $y): bool
+    {
+        Debug::error("[lenga_internal_ui_slider_set_background_size] Function not implemented. ElementId: $elementId");
+        return false;
+    }
+}
+
+if (!function_exists("lenga_internal_ui_slider_set_fill_color")) {
+    function lenga_internal_ui_slider_set_fill_color(int $elementId, int $red, int $green, int $blue, int $alpha): bool
+    {
+        Debug::error("[lenga_internal_ui_slider_set_fill_color] Function not implemented. ElementId: $elementId");
+        return false;
+    }
+}
+
+if (!function_exists("lenga_internal_ui_slider_set_fill_image")) {
+    function lenga_internal_ui_slider_set_fill_image(int $elementId, string $filename): bool
+    {
+        Debug::error("[lenga_internal_ui_slider_set_fill_image] Function not implemented. ElementId: $elementId, Filename: $filename");
+        return false;
+    }
+}
+
+if (!function_exists("lenga_internal_ui_slider_set_fill_size")) {
+    function lenga_internal_ui_slider_set_fill_size(int $elementId, float $x, float $y): bool
+    {
+        Debug::error("[lenga_internal_ui_slider_set_fill_size] Function not implemented. ElementId: $elementId");
+        return false;
+    }
+}
+
+if (!function_exists("lenga_internal_ui_slider_set_handle_color")) {
+    function lenga_internal_ui_slider_set_handle_color(int $elementId, int $red, int $green, int $blue, int $alpha): bool
+    {
+        Debug::error("[lenga_internal_ui_slider_set_handle_color] Function not implemented. ElementId: $elementId");
+        return false;
+    }
+}
+
+if (!function_exists("lenga_internal_ui_slider_set_handle_image")) {
+    function lenga_internal_ui_slider_set_handle_image(int $elementId, string $filename): bool
+    {
+        Debug::error("[lenga_internal_ui_slider_set_handle_image] Function not implemented. ElementId: $elementId, Filename: $filename");
+        return false;
+    }
+}
+
+if (!function_exists("lenga_internal_ui_slider_set_handle_size")) {
+    function lenga_internal_ui_slider_set_handle_size(int $elementId, float $x, float $y): bool
+    {
+        Debug::error("[lenga_internal_ui_slider_set_handle_size] Function not implemented. ElementId: $elementId");
         return false;
     }
 }
