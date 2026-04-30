@@ -141,6 +141,22 @@ final class Canvas
         return $element;
     }
 
+    public function createSlider(string $name, ?UIElement $parent = null): Slider
+    {
+        /** @var array{id?: int, name?: string, type?: string, canvasId?: int|null}|false $data */
+        $data = \lenga_internal_ui_canvas_create_slider($this->canvasId, $name, $parent?->getId());
+        if (!\is_array($data)) {
+            throw new \RuntimeException("Failed to create UI Slider element '{$name}'.");
+        }
+
+        $element = UIElement::fromNativeLookupData($data);
+        if (!$element instanceof Slider) {
+            throw new \RuntimeException("Native UI element '{$name}' was not returned as Slider.");
+        }
+
+        return $element;
+    }
+
     /**
      * @return list<UIElement>
      */
@@ -184,6 +200,12 @@ final class Canvas
     {
         $element = $this->findElementByName($name);
         return $element instanceof Button ? $element : null;
+    }
+
+    public function findSliderByName(string $name): ?Slider
+    {
+        $element = $this->findElementByName($name);
+        return $element instanceof Slider ? $element : null;
     }
 
     public function getSelectedElement(): ?UIElement
