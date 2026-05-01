@@ -7,6 +7,7 @@ namespace Lenga\Engine\Tests\Core;
 use Lenga\Engine\Core\Behaviour;
 use Lenga\Engine\Core\EventBus;
 use Lenga\Engine\Core\SignalSubscription;
+use Lenga\Engine\Internal\BehaviourBridge;
 use PHPUnit\Framework\TestCase;
 
 final class BehaviourEventBusTest extends TestCase
@@ -42,7 +43,7 @@ final class BehaviourEventBusTest extends TestCase
             }
         };
 
-        $listener->__lengaInternalOnEnable();
+        BehaviourBridge::invokeLifecycle($listener, 'onEnable');
         $dispatcher->fire(['speed' => 2.0]);
 
         self::assertSame([['speed' => 2.0]], $listener->received);
@@ -68,9 +69,9 @@ final class BehaviourEventBusTest extends TestCase
             }
         };
 
-        $listener->__lengaInternalOnEnable();
+        BehaviourBridge::invokeLifecycle($listener, 'onEnable');
         $dispatcher->fire();
-        $listener->__lengaInternalOnDisable();
+        BehaviourBridge::invokeLifecycle($listener, 'onDisable');
         $dispatcher->fire();
 
         self::assertSame(1, $listener->count);
@@ -99,10 +100,10 @@ final class BehaviourEventBusTest extends TestCase
             }
         };
 
-        $listener->__lengaInternalAwake();
-        $listener->__lengaInternalOnDisable();
+        BehaviourBridge::invokeLifecycle($listener, 'awake');
+        BehaviourBridge::invokeLifecycle($listener, 'onDisable');
         $dispatcher->fire();
-        $listener->__lengaInternalOnDestroy();
+        BehaviourBridge::invokeLifecycle($listener, 'onDestroy');
         $dispatcher->fire();
 
         self::assertSame(1, $listener->count);
@@ -124,13 +125,37 @@ final class BehaviourEventBusTest extends TestCase
             }
         };
 
-        $listener->__lengaInternalOnEnable();
+        BehaviourBridge::invokeLifecycle($listener, 'onEnable');
         EventBus::emit('game.custom');
-        $listener->__lengaInternalOnDisable();
+        BehaviourBridge::invokeLifecycle($listener, 'onDisable');
         EventBus::emit('game.custom');
 
         self::assertSame(1, $listener->count);
         self::assertNotNull($listener->subscription);
         self::assertTrue($listener->subscription->isDisposed());
+    }
+
+    public function testRepeatedEnableDoesNotDuplicateEventSubscriptions(): void
+    {
+        $listener = new class extends Behaviour {
+            public int $enableCalls = 0;
+            public int $count = 0;
+
+            public function onEnable(): void
+            {
+                ++$this->enableCalls;
+                $this->onEvent('game.ball.out_of_bounds', function (): void {
+                    ++$this->count;
+                });
+            }
+        };
+
+        BehaviourBridge::invokeLifecycle($listener, 'onEnable');
+        BehaviourBridge::invokeLifecycle($listener, 'onEnable');
+        EventBus::emit('game.ball.out_of_bounds');
+
+        self::assertSame(1, $listener->enableCalls);
+        self::assertSame(1, $listener->count);
+        self::assertSame(1, EventBus::listenerCount('game.ball.out_of_bounds'));
     }
 }

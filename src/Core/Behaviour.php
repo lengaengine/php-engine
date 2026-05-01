@@ -31,6 +31,7 @@ abstract class Behaviour implements ComponentInterface
      * @var array<int, SignalSubscription>
      */
     private array $ownedSubscriptionsUntilDestroy = [];
+    private bool $lifecycleEnabled = false;
 
     public function __construct() {}
 
@@ -123,6 +124,34 @@ abstract class Behaviour implements ComponentInterface
     public function getInstanceId(): ?int
     {
         return $this->componentId;
+    }
+
+    private function internalAttachGameObject(GameObject $gameObject): void
+    {
+        $this->gameObjectValue = $gameObject;
+        $this->ensureRequiredComponents($gameObject);
+    }
+
+    private function internalAttachComponentId(int $componentId): void
+    {
+        $this->componentId = $componentId;
+    }
+
+    private function internalAttachSceneComponentId(string $sceneComponentId): void
+    {
+        $this->sceneComponentId = $sceneComponentId;
+    }
+
+    /**
+     * @param array<string, mixed> $properties
+     */
+    private function internalApplyProperties(array $properties): void
+    {
+        if ($properties === []) {
+            return;
+        }
+
+        $this->applySerializedPropertiesToObject($this, $properties);
     }
 
     public function __serialize(): array
@@ -589,6 +618,64 @@ abstract class Behaviour implements ComponentInterface
         }
 
         return $subscription;
+    }
+
+    private function internalAwake(): void
+    {
+        $this->awake();
+    }
+
+    private function internalOnEnable(): void
+    {
+        if ($this->lifecycleEnabled) {
+            return;
+        }
+
+        $this->lifecycleEnabled = true;
+        $this->onEnable();
+    }
+
+    private function internalStart(): void
+    {
+        $this->start();
+    }
+
+    private function internalFixedUpdate(): void
+    {
+        $this->fixedUpdate();
+        $this->tickCoroutinesFixedUpdate();
+    }
+
+    private function internalUpdate(): void
+    {
+        $this->update();
+        $this->tickCoroutines();
+    }
+
+    private function internalLateUpdate(): void
+    {
+        $this->lateUpdate();
+    }
+
+    private function internalOnDisable(): void
+    {
+        if (!$this->lifecycleEnabled) {
+            $this->releaseOwnedSubscriptionsOnDisable();
+            return;
+        }
+
+        $this->lifecycleEnabled = false;
+        $this->releaseOwnedSubscriptionsOnDisable();
+        $this->onDisable();
+    }
+
+    private function internalOnDestroy(): void
+    {
+        $this->lifecycleEnabled = false;
+        $this->releaseOwnedSubscriptions();
+        $this->onDestroy();
+        $this->stopAllCoroutines();
+        $this->releaseOwnedSignals();
     }
 
     private function tickCoroutines(): void
