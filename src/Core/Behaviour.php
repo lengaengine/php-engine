@@ -113,7 +113,7 @@ abstract class Behaviour implements ComponentInterface
                 return true;
             }
 
-            return \Lenga\Engine\Core\NativeEngine::call('component_get_enabled', $this->componentId);
+            return NativeEngine::call('component_get_enabled', $this->componentId);
         }
 
         set(bool $value) {
@@ -121,7 +121,7 @@ abstract class Behaviour implements ComponentInterface
                 return;
             }
 
-            \Lenga\Engine\Core\NativeEngine::call('component_set_enabled', $this->componentId, $value);
+            NativeEngine::call('component_set_enabled', $this->componentId, $value);
         }
     }
 

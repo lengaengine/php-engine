@@ -54,7 +54,7 @@ final class Transform
 
             if ($this->nativeId !== null) {
                 /** @var array{name?: string, tag?: string, layer?: int, id?: int, activeSelf?: bool, activeInHierarchy?: bool, transformId?: int|null}|false $data */
-                $data = \Lenga\Engine\Core\NativeEngine::call('transform_get_game_object_by_id', $this->nativeId);
+                $data = NativeEngine::call('transform_get_game_object_by_id', $this->nativeId);
                 if (\is_array($data)) {
                     $this->gameObjectValue = GameObject::fromNativeLookupData($data, $this);
                     $this->gameObjectId = $this->gameObjectValue->getInstanceId();
@@ -101,7 +101,7 @@ final class Transform
             $this->localPositionValue = $value;
 
             if ($this->nativeId !== null) {
-                \Lenga\Engine\Core\NativeEngine::call('transform_set_local_position3d_by_id',
+                NativeEngine::call('transform_set_local_position3d_by_id',
                     $this->nativeId,
                     $value->x,
                     $value->y,
@@ -125,7 +125,7 @@ final class Transform
             $this->localRotationValue = Quaternion::fromEulerAngles($value);
 
             if ($this->nativeId !== null) {
-                \Lenga\Engine\Core\NativeEngine::call('transform_set_local_euler_angles3d_by_id',
+                NativeEngine::call('transform_set_local_euler_angles3d_by_id',
                     $this->nativeId,
                     $value->x,
                     $value->y,
@@ -150,7 +150,7 @@ final class Transform
             $this->localEulerAnglesValue = $rotation->toEulerAngles();
 
             if ($this->nativeId !== null) {
-                \Lenga\Engine\Core\NativeEngine::call('transform_set_local_rotation3d_by_id',
+                NativeEngine::call('transform_set_local_rotation3d_by_id',
                     $this->nativeId,
                     $rotation->x,
                     $rotation->y,
@@ -174,7 +174,7 @@ final class Transform
             $this->localScaleValue = $value;
 
             if ($this->nativeId !== null) {
-                \Lenga\Engine\Core\NativeEngine::call('transform_set_local_scale3d_by_id',
+                NativeEngine::call('transform_set_local_scale3d_by_id',
                     $this->nativeId,
                     $value->x,
                     $value->y,
@@ -193,7 +193,7 @@ final class Transform
 
         set(Vector3 $value) {
             if ($this->nativeId !== null) {
-                \Lenga\Engine\Core\NativeEngine::call('transform_set_position3d_by_id',
+                NativeEngine::call('transform_set_position3d_by_id',
                     $this->nativeId,
                     $value->x,
                     $value->y,
@@ -234,7 +234,7 @@ final class Transform
             $rotation = Quaternion::fromEulerAngles($value);
 
             if ($this->nativeId !== null) {
-                \Lenga\Engine\Core\NativeEngine::call('transform_set_euler_angles3d_by_id',
+                NativeEngine::call('transform_set_euler_angles3d_by_id',
                     $this->nativeId,
                     $value->x,
                     $value->y,
@@ -272,7 +272,7 @@ final class Transform
             $this->localEulerAnglesValue = $rotation->toEulerAngles();
 
             if ($this->nativeId !== null) {
-                \Lenga\Engine\Core\NativeEngine::call('transform_set_rotation3d_by_id',
+                NativeEngine::call('transform_set_rotation3d_by_id',
                     $this->nativeId,
                     $rotation->x,
                     $rotation->y,
@@ -332,7 +332,7 @@ final class Transform
     {
         if ($this->nativeId !== null) {
             /** @var int|null $parentId */
-            $parentId = \Lenga\Engine\Core\NativeEngine::call('transform_get_parent_by_id', $this->nativeId);
+            $parentId = NativeEngine::call('transform_get_parent_by_id', $this->nativeId);
 
             return \is_int($parentId) ? new self(null, null, null, null, $parentId) : null;
         }
@@ -343,7 +343,7 @@ final class Transform
     public function setParent(?Transform $newParent, bool $worldPositionStays = true): void
     {
         if ($this->nativeId !== null) {
-            \Lenga\Engine\Core\NativeEngine::call('transform_set_parent_by_id',
+            NativeEngine::call('transform_set_parent_by_id',
                 $this->nativeId,
                 $newParent?->nativeId,
                 $worldPositionStays,
@@ -421,7 +421,7 @@ final class Transform
     {
         if ($this->nativeId !== null) {
             /** @var list<int>|false $children */
-            $children = \Lenga\Engine\Core\NativeEngine::call('transform_get_children_by_id', $this->nativeId);
+            $children = NativeEngine::call('transform_get_children_by_id', $this->nativeId);
             if (!\is_array($children)) {
                 return [];
             }
@@ -497,7 +497,7 @@ final class Transform
     {
         if ($this->nativeId !== null) {
             if ($relativeToSelf) {
-                \Lenga\Engine\Core\NativeEngine::call('transform_translate3d_by_id',
+                NativeEngine::call('transform_translate3d_by_id',
                     $this->nativeId,
                     $offset->x,
                     $offset->y,
@@ -505,7 +505,7 @@ final class Transform
                 );
             } else {
                 $targetPosition = Vector3::sum($this->position, $offset);
-                \Lenga\Engine\Core\NativeEngine::call('transform_set_position3d_by_id',
+                NativeEngine::call('transform_set_position3d_by_id',
                     $this->nativeId,
                     $targetPosition->x,
                     $targetPosition->y,
@@ -535,7 +535,7 @@ final class Transform
             : new Vector3((float) $xOrEuler, (float) ($y ?? 0.0), (float) ($z ?? 0.0));
 
         if ($this->nativeId !== null) {
-            \Lenga\Engine\Core\NativeEngine::call('transform_rotate3d_by_id',
+            NativeEngine::call('transform_rotate3d_by_id',
                 $this->nativeId,
                 $delta->x,
                 $delta->y,
@@ -563,7 +563,7 @@ final class Transform
     public function lookAt(Vector3 $worldPosition): void
     {
         if ($this->nativeId !== null) {
-            \Lenga\Engine\Core\NativeEngine::call('transform_look_at_by_id',
+            NativeEngine::call('transform_look_at_by_id',
                 $this->nativeId,
                 $worldPosition->x,
                 $worldPosition->y,

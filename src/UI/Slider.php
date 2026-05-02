@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Lenga\Engine\UI;
 
+use Lenga\Engine\Core\NativeEngine;
 use Lenga\Engine\Core\Vector2;
 
 /**
@@ -17,7 +18,7 @@ final class Slider extends UIElement
         }
 
         set(bool $value) {
-            \Lenga\Engine\Core\NativeEngine::call('ui_slider_set_interactable', $this->getId(), $value);
+            NativeEngine::call('ui_slider_set_interactable', $this->getId(), $value);
         }
     }
 
@@ -45,7 +46,7 @@ final class Slider extends UIElement
         }
 
         set(float $value) {
-            \Lenga\Engine\Core\NativeEngine::call('ui_slider_set_min_value', $this->getId(), $value);
+            NativeEngine::call('ui_slider_set_min_value', $this->getId(), $value);
         }
     }
 
@@ -55,7 +56,7 @@ final class Slider extends UIElement
         }
 
         set(float $value) {
-            \Lenga\Engine\Core\NativeEngine::call('ui_slider_set_max_value', $this->getId(), $value);
+            NativeEngine::call('ui_slider_set_max_value', $this->getId(), $value);
         }
     }
 
@@ -65,7 +66,7 @@ final class Slider extends UIElement
         }
 
         set(float $value) {
-            \Lenga\Engine\Core\NativeEngine::call('ui_slider_set_value', $this->getId(), $value);
+            NativeEngine::call('ui_slider_set_value', $this->getId(), $value);
         }
     }
 
@@ -75,7 +76,7 @@ final class Slider extends UIElement
         }
 
         set(bool $value) {
-            \Lenga\Engine\Core\NativeEngine::call('ui_slider_set_whole_numbers', $this->getId(), $value);
+            NativeEngine::call('ui_slider_set_whole_numbers', $this->getId(), $value);
         }
     }
 
@@ -85,7 +86,7 @@ final class Slider extends UIElement
         }
 
         set(bool $value) {
-            \Lenga\Engine\Core\NativeEngine::call('ui_slider_set_show_handle', $this->getId(), $value);
+            NativeEngine::call('ui_slider_set_show_handle', $this->getId(), $value);
         }
     }
 
@@ -107,7 +108,7 @@ final class Slider extends UIElement
 
     public function setBackgroundColor(int $red, int $green, int $blue, int $alpha = 255): void
     {
-        \Lenga\Engine\Core\NativeEngine::call('ui_slider_set_background_color', $this->getId(), $red, $green, $blue, $alpha);
+        NativeEngine::call('ui_slider_set_background_color', $this->getId(), $red, $green, $blue, $alpha);
     }
 
     public string $backgroundImage {
@@ -116,7 +117,7 @@ final class Slider extends UIElement
         }
 
         set(string $value) {
-            \Lenga\Engine\Core\NativeEngine::call('ui_slider_set_background_image', $this->getId(), $value);
+            NativeEngine::call('ui_slider_set_background_image', $this->getId(), $value);
         }
     }
 
@@ -132,7 +133,7 @@ final class Slider extends UIElement
         }
 
         set(Vector2 $value) {
-            \Lenga\Engine\Core\NativeEngine::call('ui_slider_set_background_size', $this->getId(), $value->x, $value->y);
+            NativeEngine::call('ui_slider_set_background_size', $this->getId(), $value->x, $value->y);
         }
     }
 
@@ -154,7 +155,7 @@ final class Slider extends UIElement
 
     public function setFillColor(int $red, int $green, int $blue, int $alpha = 255): void
     {
-        \Lenga\Engine\Core\NativeEngine::call('ui_slider_set_fill_color', $this->getId(), $red, $green, $blue, $alpha);
+        NativeEngine::call('ui_slider_set_fill_color', $this->getId(), $red, $green, $blue, $alpha);
     }
 
     public string $fillImage {
@@ -163,7 +164,7 @@ final class Slider extends UIElement
         }
 
         set(string $value) {
-            \Lenga\Engine\Core\NativeEngine::call('ui_slider_set_fill_image', $this->getId(), $value);
+            NativeEngine::call('ui_slider_set_fill_image', $this->getId(), $value);
         }
     }
 
@@ -179,7 +180,7 @@ final class Slider extends UIElement
         }
 
         set(Vector2 $value) {
-            \Lenga\Engine\Core\NativeEngine::call('ui_slider_set_fill_size', $this->getId(), $value->x, $value->y);
+            NativeEngine::call('ui_slider_set_fill_size', $this->getId(), $value->x, $value->y);
         }
     }
 
@@ -201,7 +202,7 @@ final class Slider extends UIElement
 
     public function setHandleColor(int $red, int $green, int $blue, int $alpha = 255): void
     {
-        \Lenga\Engine\Core\NativeEngine::call('ui_slider_set_handle_color', $this->getId(), $red, $green, $blue, $alpha);
+        NativeEngine::call('ui_slider_set_handle_color', $this->getId(), $red, $green, $blue, $alpha);
     }
 
     public string $handleImage {
@@ -210,7 +211,7 @@ final class Slider extends UIElement
         }
 
         set(string $value) {
-            \Lenga\Engine\Core\NativeEngine::call('ui_slider_set_handle_image', $this->getId(), $value);
+            NativeEngine::call('ui_slider_set_handle_image', $this->getId(), $value);
         }
     }
 
@@ -226,7 +227,7 @@ final class Slider extends UIElement
         }
 
         set(Vector2 $value) {
-            \Lenga\Engine\Core\NativeEngine::call('ui_slider_set_handle_size', $this->getId(), $value->x, $value->y);
+            NativeEngine::call('ui_slider_set_handle_size', $this->getId(), $value->x, $value->y);
         }
     }
 }

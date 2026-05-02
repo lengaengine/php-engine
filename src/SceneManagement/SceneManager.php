@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Lenga\Engine\SceneManagement;
 
 use Lenga\Engine\Core\GameObject;
+use Lenga\Engine\Core\NativeEngine;
 
 final class SceneManager
 {
@@ -24,7 +25,7 @@ final class SceneManager
 
     public static function tryLoadScene(string $sceneNameOrPath): bool
     {
-        return \Lenga\Engine\Core\NativeEngine::call('scene_load', $sceneNameOrPath);
+        return NativeEngine::call('scene_load', $sceneNameOrPath);
     }
 
     public static function loadSceneByPath(string $scenePath): void

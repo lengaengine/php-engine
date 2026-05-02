@@ -17,7 +17,7 @@ final class PointEffector2D extends Component
         }
 
         set(float $value) {
-            \Lenga\Engine\Core\NativeEngine::call('point_effector2d_set_force_magnitude', $this->componentId, $value);
+            NativeEngine::call('point_effector2d_set_force_magnitude', $this->componentId, $value);
         }
     }
 
@@ -27,7 +27,7 @@ final class PointEffector2D extends Component
         }
 
         set(float $value) {
-            \Lenga\Engine\Core\NativeEngine::call('point_effector2d_set_distance_scale', $this->componentId, $value);
+            NativeEngine::call('point_effector2d_set_distance_scale', $this->componentId, $value);
         }
     }
 
@@ -37,7 +37,7 @@ final class PointEffector2D extends Component
         }
 
         set(bool $value) {
-            \Lenga\Engine\Core\NativeEngine::call('point_effector2d_set_inverse_squared', $this->componentId, $value);
+            NativeEngine::call('point_effector2d_set_inverse_squared', $this->componentId, $value);
         }
     }
 
@@ -58,7 +58,7 @@ final class PointEffector2D extends Component
          *     enabled?: bool
          * } $state
          */
-        $state = \Lenga\Engine\Core\NativeEngine::call('point_effector2d_get_state', $this->componentId);
+        $state = NativeEngine::call('point_effector2d_get_state', $this->componentId);
 
         return \is_array($state) ? $state : [];
     }

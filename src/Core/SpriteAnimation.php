@@ -17,7 +17,7 @@ final class SpriteAnimation extends Component
         }
 
         set(string $value) {
-            \Lenga\Engine\Core\NativeEngine::call('sprite_animation_set_clip_path', $this->componentId, $value);
+            NativeEngine::call('sprite_animation_set_clip_path', $this->componentId, $value);
         }
     }
 
@@ -27,7 +27,7 @@ final class SpriteAnimation extends Component
         }
 
         set(string $value) {
-            \Lenga\Engine\Core\NativeEngine::call('sprite_animation_set_controller_path', $this->componentId, $value);
+            NativeEngine::call('sprite_animation_set_controller_path', $this->componentId, $value);
         }
     }
 
@@ -37,7 +37,7 @@ final class SpriteAnimation extends Component
         }
 
         set(string $value) {
-            \Lenga\Engine\Core\NativeEngine::call('sprite_animation_set_state_name', $this->componentId, $value);
+            NativeEngine::call('sprite_animation_set_state_name', $this->componentId, $value);
         }
     }
 
@@ -47,7 +47,7 @@ final class SpriteAnimation extends Component
         }
 
         set(bool $value) {
-            \Lenga\Engine\Core\NativeEngine::call('sprite_animation_set_play_on_awake', $this->componentId, $value);
+            NativeEngine::call('sprite_animation_set_play_on_awake', $this->componentId, $value);
         }
     }
 
@@ -57,7 +57,7 @@ final class SpriteAnimation extends Component
         }
 
         set(float $value) {
-            \Lenga\Engine\Core\NativeEngine::call('sprite_animation_set_speed', $this->componentId, $value);
+            NativeEngine::call('sprite_animation_set_speed', $this->componentId, $value);
         }
     }
 
@@ -68,52 +68,52 @@ final class SpriteAnimation extends Component
 
     public function play(): bool
     {
-        return \Lenga\Engine\Core\NativeEngine::call('sprite_animation_play', $this->componentId);
+        return NativeEngine::call('sprite_animation_play', $this->componentId);
     }
 
     public function stop(): bool
     {
-        return \Lenga\Engine\Core\NativeEngine::call('sprite_animation_stop', $this->componentId);
+        return NativeEngine::call('sprite_animation_stop', $this->componentId);
     }
 
     public function getBool(string $parameterName): bool
     {
-        return \Lenga\Engine\Core\NativeEngine::call('sprite_animation_get_bool', $this->componentId, $parameterName);
+        return NativeEngine::call('sprite_animation_get_bool', $this->componentId, $parameterName);
     }
 
     public function setBool(string $parameterName, bool $value): bool
     {
-        return \Lenga\Engine\Core\NativeEngine::call('sprite_animation_set_bool', $this->componentId, $parameterName, $value);
+        return NativeEngine::call('sprite_animation_set_bool', $this->componentId, $parameterName, $value);
     }
 
     public function getInt(string $parameterName): int
     {
-        return \Lenga\Engine\Core\NativeEngine::call('sprite_animation_get_int', $this->componentId, $parameterName);
+        return NativeEngine::call('sprite_animation_get_int', $this->componentId, $parameterName);
     }
 
     public function setInt(string $parameterName, int $value): bool
     {
-        return \Lenga\Engine\Core\NativeEngine::call('sprite_animation_set_int', $this->componentId, $parameterName, $value);
+        return NativeEngine::call('sprite_animation_set_int', $this->componentId, $parameterName, $value);
     }
 
     public function getFloat(string $parameterName): float
     {
-        return \Lenga\Engine\Core\NativeEngine::call('sprite_animation_get_float', $this->componentId, $parameterName);
+        return NativeEngine::call('sprite_animation_get_float', $this->componentId, $parameterName);
     }
 
     public function setFloat(string $parameterName, float $value): bool
     {
-        return \Lenga\Engine\Core\NativeEngine::call('sprite_animation_set_float', $this->componentId, $parameterName, $value);
+        return NativeEngine::call('sprite_animation_set_float', $this->componentId, $parameterName, $value);
     }
 
     public function setTrigger(string $parameterName): bool
     {
-        return \Lenga\Engine\Core\NativeEngine::call('sprite_animation_set_trigger', $this->componentId, $parameterName);
+        return NativeEngine::call('sprite_animation_set_trigger', $this->componentId, $parameterName);
     }
 
     public function resetTrigger(string $parameterName): bool
     {
-        return \Lenga\Engine\Core\NativeEngine::call('sprite_animation_reset_trigger', $this->componentId, $parameterName);
+        return NativeEngine::call('sprite_animation_reset_trigger', $this->componentId, $parameterName);
     }
 
     /**
@@ -139,7 +139,7 @@ final class SpriteAnimation extends Component
          *     enabled?: bool
          * } $state
          */
-        $state = \Lenga\Engine\Core\NativeEngine::call('sprite_animation_get_state', $this->componentId);
+        $state = NativeEngine::call('sprite_animation_get_state', $this->componentId);
 
         return \is_array($state) ? $state : [];
     }

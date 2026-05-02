@@ -25,7 +25,7 @@ final class CylinderRenderer extends Component
         }
 
         set(Vector3 $value) {
-            \Lenga\Engine\Core\NativeEngine::call('cylinder_renderer_set_position', $this->componentId, $value->x, $value->y, $value->z);
+            NativeEngine::call('cylinder_renderer_set_position', $this->componentId, $value->x, $value->y, $value->z);
         }
     }
 
@@ -36,7 +36,7 @@ final class CylinderRenderer extends Component
         }
 
         set(float $value) {
-            \Lenga\Engine\Core\NativeEngine::call('cylinder_renderer_set_top_radius', $this->componentId, $value);
+            NativeEngine::call('cylinder_renderer_set_top_radius', $this->componentId, $value);
         }
     }
 
@@ -47,7 +47,7 @@ final class CylinderRenderer extends Component
         }
 
         set(float $value) {
-            \Lenga\Engine\Core\NativeEngine::call('cylinder_renderer_set_bottom_radius', $this->componentId, $value);
+            NativeEngine::call('cylinder_renderer_set_bottom_radius', $this->componentId, $value);
         }
     }
 
@@ -58,7 +58,7 @@ final class CylinderRenderer extends Component
         }
 
         set(float $value) {
-            \Lenga\Engine\Core\NativeEngine::call('cylinder_renderer_set_height', $this->componentId, $value);
+            NativeEngine::call('cylinder_renderer_set_height', $this->componentId, $value);
         }
     }
 
@@ -69,7 +69,7 @@ final class CylinderRenderer extends Component
         }
 
         set(int $value) {
-            \Lenga\Engine\Core\NativeEngine::call('cylinder_renderer_set_total_slices', $this->componentId, $value);
+            NativeEngine::call('cylinder_renderer_set_total_slices', $this->componentId, $value);
         }
     }
 
@@ -79,7 +79,7 @@ final class CylinderRenderer extends Component
         }
 
         set(string $value) {
-            \Lenga\Engine\Core\NativeEngine::call('cylinder_renderer_set_material_path', $this->componentId, $value);
+            NativeEngine::call('cylinder_renderer_set_material_path', $this->componentId, $value);
         }
     }
 
@@ -102,7 +102,7 @@ final class CylinderRenderer extends Component
 
     public function setColor(int $red, int $green, int $blue, int $alpha = 255): void
     {
-        \Lenga\Engine\Core\NativeEngine::call('cylinder_renderer_set_color', $this->componentId, $red, $green, $blue, $alpha);
+        NativeEngine::call('cylinder_renderer_set_color', $this->componentId, $red, $green, $blue, $alpha);
     }
 
     /**
@@ -130,7 +130,7 @@ final class CylinderRenderer extends Component
          *     enabled?: bool
          * } $state
          */
-        $state = \Lenga\Engine\Core\NativeEngine::call('cylinder_renderer_get_state', $this->componentId);
+        $state = NativeEngine::call('cylinder_renderer_get_state', $this->componentId);
 
         return \is_array($state) ? $state : [];
     }

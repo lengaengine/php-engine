@@ -26,7 +26,7 @@ final class Application
      */
     public static function quit(): void
     {
-        \Lenga\Engine\Core\NativeEngine::call('engine_quit');
+        NativeEngine::call('engine_quit');
     }
 
     /**
@@ -35,7 +35,7 @@ final class Application
      */
     public static function pauseEngine(): void
     {
-        \Lenga\Engine\Core\NativeEngine::call('engine_set_paused', true);
+        NativeEngine::call('engine_set_paused', true);
     }
 
     /**
@@ -43,7 +43,7 @@ final class Application
      */
     public static function resumeEngine(): void
     {
-        \Lenga\Engine\Core\NativeEngine::call('engine_set_paused', false);
+        NativeEngine::call('engine_set_paused', false);
     }
 
     /**
@@ -51,7 +51,7 @@ final class Application
      */
     public static function toggleEnginePause(): void
     {
-        \Lenga\Engine\Core\NativeEngine::call('engine_toggle_paused');
+        NativeEngine::call('engine_toggle_paused');
     }
 
     /**
@@ -59,7 +59,7 @@ final class Application
      */
     public static function isEnginePaused(): bool
     {
-        return (bool) \Lenga\Engine\Core\NativeEngine::call('engine_is_paused');
+        return (bool) NativeEngine::call('engine_is_paused');
     }
 
     /**

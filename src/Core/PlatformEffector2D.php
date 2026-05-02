@@ -17,7 +17,7 @@ final class PlatformEffector2D extends Component
         }
 
         set(bool $value) {
-            \Lenga\Engine\Core\NativeEngine::call('platform_effector2d_set_use_one_way', $this->componentId, $value);
+            NativeEngine::call('platform_effector2d_set_use_one_way', $this->componentId, $value);
         }
     }
 
@@ -27,7 +27,7 @@ final class PlatformEffector2D extends Component
         }
 
         set(float $value) {
-            \Lenga\Engine\Core\NativeEngine::call('platform_effector2d_set_surface_buffer', $this->componentId, $value);
+            NativeEngine::call('platform_effector2d_set_surface_buffer', $this->componentId, $value);
         }
     }
 
@@ -35,7 +35,7 @@ final class PlatformEffector2D extends Component
     private function getState(): array
     {
         /** @var array{useOneWay?: bool, surfaceBuffer?: float|int, enabled?: bool} $state */
-        $state = \Lenga\Engine\Core\NativeEngine::call('platform_effector2d_get_state', $this->componentId);
+        $state = NativeEngine::call('platform_effector2d_get_state', $this->componentId);
 
         return \is_array($state) ? $state : [];
     }

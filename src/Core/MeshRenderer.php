@@ -23,13 +23,13 @@ final class MeshRenderer extends Component
         }
 
         set(string $value) {
-            \Lenga\Engine\Core\NativeEngine::call('mesh_renderer_set_material_path', $this->componentId, $value);
+            NativeEngine::call('mesh_renderer_set_material_path', $this->componentId, $value);
         }
     }
 
     public function loadMesh(string $meshPath): bool
     {
-        return \Lenga\Engine\Core\NativeEngine::call('mesh_renderer_load_mesh', $this->componentId, $meshPath);
+        return NativeEngine::call('mesh_renderer_load_mesh', $this->componentId, $meshPath);
     }
 
     /**
@@ -51,7 +51,7 @@ final class MeshRenderer extends Component
 
     public function setColor(int $red, int $green, int $blue, int $alpha = 255): void
     {
-        \Lenga\Engine\Core\NativeEngine::call('mesh_renderer_set_color', $this->componentId, $red, $green, $blue, $alpha);
+        NativeEngine::call('mesh_renderer_set_color', $this->componentId, $red, $green, $blue, $alpha);
     }
 
     /**
@@ -71,7 +71,7 @@ final class MeshRenderer extends Component
          *     enabled?: bool
          * } $state
          */
-        $state = \Lenga\Engine\Core\NativeEngine::call('mesh_renderer_get_state', $this->componentId);
+        $state = NativeEngine::call('mesh_renderer_get_state', $this->componentId);
 
         return \is_array($state) ? $state : [];
     }

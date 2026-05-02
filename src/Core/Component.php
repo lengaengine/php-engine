@@ -30,11 +30,11 @@ abstract class Component implements ComponentInterface
 
     public bool $enabled {
         get {
-            return \Lenga\Engine\Core\NativeEngine::call('component_get_enabled', $this->componentId);
+            return NativeEngine::call('component_get_enabled', $this->componentId);
         }
 
         set(bool $value) {
-            \Lenga\Engine\Core\NativeEngine::call('component_set_enabled', $this->componentId, $value);
+            NativeEngine::call('component_set_enabled', $this->componentId, $value);
         }
     }
 

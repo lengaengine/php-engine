@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Lenga\Engine\SceneManagement;
 
+use Lenga\Engine\Core\NativeEngine;
 use Lenga\Engine\Core\Vector2;
 
 final class BackdropLayer
@@ -47,7 +48,7 @@ final class BackdropLayer
         }
 
         set(Vector2 $value) {
-            \Lenga\Engine\Core\NativeEngine::call('scene_backdrop_layer_set_offset', $this->indexValue, $value->x, $value->y);
+            NativeEngine::call('scene_backdrop_layer_set_offset', $this->indexValue, $value->x, $value->y);
         }
     }
 
@@ -62,7 +63,7 @@ final class BackdropLayer
         }
 
         set(Vector2 $value) {
-            \Lenga\Engine\Core\NativeEngine::call('scene_backdrop_layer_set_repeat', $this->indexValue, $value->x, $value->y);
+            NativeEngine::call('scene_backdrop_layer_set_repeat', $this->indexValue, $value->x, $value->y);
         }
     }
 
@@ -77,7 +78,7 @@ final class BackdropLayer
         }
 
         set(Vector2 $value) {
-            \Lenga\Engine\Core\NativeEngine::call('scene_backdrop_layer_set_parallax', $this->indexValue, $value->x, $value->y);
+            NativeEngine::call('scene_backdrop_layer_set_parallax', $this->indexValue, $value->x, $value->y);
         }
     }
 
@@ -88,7 +89,7 @@ final class BackdropLayer
 
     public function translateOffset(Vector2 $delta): bool
     {
-        return \Lenga\Engine\Core\NativeEngine::call('scene_backdrop_layer_translate_offset', $this->indexValue, $delta->x, $delta->y);
+        return NativeEngine::call('scene_backdrop_layer_translate_offset', $this->indexValue, $delta->x, $delta->y);
     }
 
     /**
@@ -114,7 +115,7 @@ final class BackdropLayer
          *     offset?: array{x?: float|int, y?: float|int}
          * } $state
          */
-        $state = \Lenga\Engine\Core\NativeEngine::call('scene_get_backdrop_layer_state', $this->indexValue);
+        $state = NativeEngine::call('scene_get_backdrop_layer_state', $this->indexValue);
 
         return \is_array($state) ? $state : [];
     }

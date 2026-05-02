@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Lenga\Engine\UI;
 
+use Lenga\Engine\Core\NativeEngine;
 use Lenga\Engine\Core\Vector2;
 
 final class RectTransform
@@ -29,7 +30,7 @@ final class RectTransform
         }
 
         set(Vector2 $value) {
-            \Lenga\Engine\Core\NativeEngine::call('ui_rect_transform_set_anchor_min', $this->elementId, $value->x, $value->y);
+            NativeEngine::call('ui_rect_transform_set_anchor_min', $this->elementId, $value->x, $value->y);
         }
     }
 
@@ -45,7 +46,7 @@ final class RectTransform
         }
 
         set(Vector2 $value) {
-            \Lenga\Engine\Core\NativeEngine::call('ui_rect_transform_set_anchor_max', $this->elementId, $value->x, $value->y);
+            NativeEngine::call('ui_rect_transform_set_anchor_max', $this->elementId, $value->x, $value->y);
         }
     }
 
@@ -61,7 +62,7 @@ final class RectTransform
         }
 
         set(Vector2 $value) {
-            \Lenga\Engine\Core\NativeEngine::call('ui_rect_transform_set_pivot', $this->elementId, $value->x, $value->y);
+            NativeEngine::call('ui_rect_transform_set_pivot', $this->elementId, $value->x, $value->y);
         }
     }
 
@@ -77,7 +78,7 @@ final class RectTransform
         }
 
         set(Vector2 $value) {
-            \Lenga\Engine\Core\NativeEngine::call('ui_rect_transform_set_anchored_position', $this->elementId, $value->x, $value->y);
+            NativeEngine::call('ui_rect_transform_set_anchored_position', $this->elementId, $value->x, $value->y);
         }
     }
 
@@ -93,7 +94,7 @@ final class RectTransform
         }
 
         set(Vector2 $value) {
-            \Lenga\Engine\Core\NativeEngine::call('ui_rect_transform_set_size_delta', $this->elementId, $value->x, $value->y);
+            NativeEngine::call('ui_rect_transform_set_size_delta', $this->elementId, $value->x, $value->y);
         }
     }
 
@@ -109,7 +110,7 @@ final class RectTransform
         }
 
         set(Vector2 $value) {
-            \Lenga\Engine\Core\NativeEngine::call('ui_rect_transform_set_scale', $this->elementId, $value->x, $value->y);
+            NativeEngine::call('ui_rect_transform_set_scale', $this->elementId, $value->x, $value->y);
         }
     }
 
@@ -120,7 +121,7 @@ final class RectTransform
         }
 
         set(float $value) {
-            \Lenga\Engine\Core\NativeEngine::call('ui_rect_transform_set_rotation', $this->elementId, $value);
+            NativeEngine::call('ui_rect_transform_set_rotation', $this->elementId, $value);
         }
     }
 
@@ -147,7 +148,7 @@ final class RectTransform
          *     rotation?: float
          * } $state
          */
-        $state = \Lenga\Engine\Core\NativeEngine::call('ui_rect_transform_get_state', $this->elementId);
+        $state = NativeEngine::call('ui_rect_transform_get_state', $this->elementId);
 
         return $state;
     }

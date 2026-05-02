@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Lenga\Engine\UI;
 
+use Lenga\Engine\Core\NativeEngine;
+
 /**
  * UI button element with configurable label, colors, interaction state, and typography.
  */
@@ -18,7 +20,7 @@ final class Button extends UIElement
         }
 
         set(string $value) {
-            \Lenga\Engine\Core\NativeEngine::call('ui_button_set_text', $this->getId(), $value);
+            NativeEngine::call('ui_button_set_text', $this->getId(), $value);
         }
     }
 
@@ -31,7 +33,7 @@ final class Button extends UIElement
         }
 
         set(float $value) {
-            \Lenga\Engine\Core\NativeEngine::call('ui_button_set_font_size', $this->getId(), $value);
+            NativeEngine::call('ui_button_set_font_size', $this->getId(), $value);
         }
     }
 
@@ -44,7 +46,7 @@ final class Button extends UIElement
         }
 
         set(string $value) {
-            \Lenga\Engine\Core\NativeEngine::call('ui_button_set_font_path', $this->getId(), $value);
+            NativeEngine::call('ui_button_set_font_path', $this->getId(), $value);
         }
     }
 
@@ -57,7 +59,7 @@ final class Button extends UIElement
         }
 
         set(bool $value) {
-            \Lenga\Engine\Core\NativeEngine::call('ui_button_set_interactable', $this->getId(), $value);
+            NativeEngine::call('ui_button_set_interactable', $this->getId(), $value);
         }
     }
 
@@ -138,7 +140,7 @@ final class Button extends UIElement
      */
     public function setTextColor(int $red, int $green, int $blue, int $alpha = 255): void
     {
-        \Lenga\Engine\Core\NativeEngine::call('ui_button_set_text_color', $this->getId(), $red, $green, $blue, $alpha);
+        NativeEngine::call('ui_button_set_text_color', $this->getId(), $red, $green, $blue, $alpha);
     }
 
     /**
@@ -164,7 +166,7 @@ final class Button extends UIElement
      */
     public function setBackgroundColor(int $red, int $green, int $blue, int $alpha = 255): void
     {
-        \Lenga\Engine\Core\NativeEngine::call('ui_button_set_background_color', $this->getId(), $red, $green, $blue, $alpha);
+        NativeEngine::call('ui_button_set_background_color', $this->getId(), $red, $green, $blue, $alpha);
     }
 
     /**
@@ -190,7 +192,7 @@ final class Button extends UIElement
      */
     public function setOutlineColor(int $red, int $green, int $blue, int $alpha = 255): void
     {
-        \Lenga\Engine\Core\NativeEngine::call('ui_button_set_outline_color', $this->getId(), $red, $green, $blue, $alpha);
+        NativeEngine::call('ui_button_set_outline_color', $this->getId(), $red, $green, $blue, $alpha);
     }
 
     /**
@@ -202,7 +204,7 @@ final class Button extends UIElement
         }
 
         set(float $value) {
-            \Lenga\Engine\Core\NativeEngine::call('ui_button_set_outline_width', $this->getId(), \max(0.0, $value));
+            NativeEngine::call('ui_button_set_outline_width', $this->getId(), \max(0.0, $value));
         }
     }
 
@@ -214,7 +216,7 @@ final class Button extends UIElement
      */
     public function setBackgroundImage(string $filename): void
     {
-        \Lenga\Engine\Core\NativeEngine::call('ui_button_set_background_image', $this->getId(), $filename);
+        NativeEngine::call('ui_button_set_background_image', $this->getId(), $filename);
     }
 
     /**
@@ -230,7 +232,7 @@ final class Button extends UIElement
      */
     public function setHoverImage(string $filename): void
     {
-        \Lenga\Engine\Core\NativeEngine::call('ui_button_set_hover_image', $this->getId(), $filename);
+        NativeEngine::call('ui_button_set_hover_image', $this->getId(), $filename);
     }
 
     public function getHoverImage(): string
@@ -243,7 +245,7 @@ final class Button extends UIElement
      */
     public function setPressedImage(string $filename): void
     {
-        \Lenga\Engine\Core\NativeEngine::call('ui_button_set_pressed_image', $this->getId(), $filename);
+        NativeEngine::call('ui_button_set_pressed_image', $this->getId(), $filename);
     }
 
     public function getPressedImage(): string
@@ -256,7 +258,7 @@ final class Button extends UIElement
      */
     public function setDisabledImage(string $filename): void
     {
-        \Lenga\Engine\Core\NativeEngine::call('ui_button_set_disabled_image', $this->getId(), $filename);
+        NativeEngine::call('ui_button_set_disabled_image', $this->getId(), $filename);
     }
 
     public function getDisabledImage(): string
@@ -292,7 +294,7 @@ final class Button extends UIElement
      */
     public function setHoverColor(int $red, int $green, int $blue, int $alpha = 255): void
     {
-        \Lenga\Engine\Core\NativeEngine::call('ui_button_set_hover_color', $this->getId(), $red, $green, $blue, $alpha);
+        NativeEngine::call('ui_button_set_hover_color', $this->getId(), $red, $green, $blue, $alpha);
     }
 
     /**
@@ -323,7 +325,7 @@ final class Button extends UIElement
      */
     public function setPressedColor(int $red, int $green, int $blue, int $alpha = 255): void
     {
-        \Lenga\Engine\Core\NativeEngine::call('ui_button_set_pressed_color', $this->getId(), $red, $green, $blue, $alpha);
+        NativeEngine::call('ui_button_set_pressed_color', $this->getId(), $red, $green, $blue, $alpha);
     }
 
     /**
@@ -349,6 +351,6 @@ final class Button extends UIElement
      */
     public function setDisabledColor(int $red, int $green, int $blue, int $alpha = 255): void
     {
-        \Lenga\Engine\Core\NativeEngine::call('ui_button_set_disabled_color', $this->getId(), $red, $green, $blue, $alpha);
+        NativeEngine::call('ui_button_set_disabled_color', $this->getId(), $red, $green, $blue, $alpha);
     }
 }

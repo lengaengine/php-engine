@@ -31,7 +31,7 @@ final class Rigidbody2D extends Component
         }
 
         set(string $value) {
-            \Lenga\Engine\Core\NativeEngine::call('rigidbody2d_set_body_type', $this->componentId, $value);
+            NativeEngine::call('rigidbody2d_set_body_type', $this->componentId, $value);
         }
     }
 
@@ -42,7 +42,7 @@ final class Rigidbody2D extends Component
         }
 
         set(bool $value) {
-            \Lenga\Engine\Core\NativeEngine::call('rigidbody2d_set_use_gravity', $this->componentId, $value);
+            NativeEngine::call('rigidbody2d_set_use_gravity', $this->componentId, $value);
         }
     }
 
@@ -53,7 +53,7 @@ final class Rigidbody2D extends Component
         }
 
         set(float $value) {
-            \Lenga\Engine\Core\NativeEngine::call('rigidbody2d_set_gravity_scale', $this->componentId, $value);
+            NativeEngine::call('rigidbody2d_set_gravity_scale', $this->componentId, $value);
         }
     }
 
@@ -64,7 +64,7 @@ final class Rigidbody2D extends Component
         }
 
         set(float $value) {
-            \Lenga\Engine\Core\NativeEngine::call('rigidbody2d_set_linear_drag', $this->componentId, $value);
+            NativeEngine::call('rigidbody2d_set_linear_drag', $this->componentId, $value);
         }
     }
 
@@ -75,7 +75,7 @@ final class Rigidbody2D extends Component
         }
 
         set(bool $value) {
-            \Lenga\Engine\Core\NativeEngine::call('rigidbody2d_set_freeze_rotation', $this->componentId, $value);
+            NativeEngine::call('rigidbody2d_set_freeze_rotation', $this->componentId, $value);
         }
     }
 
@@ -86,7 +86,7 @@ final class Rigidbody2D extends Component
         }
 
         set(string $value) {
-            \Lenga\Engine\Core\NativeEngine::call('rigidbody2d_set_collision_detection', $this->componentId, $value);
+            NativeEngine::call('rigidbody2d_set_collision_detection', $this->componentId, $value);
         }
     }
 
@@ -94,7 +94,7 @@ final class Rigidbody2D extends Component
     public Vector3 $velocity {
         get {
             /** @var array{x?: float|int, y?: float|int, z?: float|int}|false $state */
-            $state = \Lenga\Engine\Core\NativeEngine::call('rigidbody2d_get_velocity', $this->componentId);
+            $state = NativeEngine::call('rigidbody2d_get_velocity', $this->componentId);
             if (!\is_array($state)) {
                 return new Vector3(0.0, 0.0, 0.0);
             }
@@ -107,7 +107,7 @@ final class Rigidbody2D extends Component
         }
 
         set(Vector3 $value) {
-            \Lenga\Engine\Core\NativeEngine::call('rigidbody2d_set_velocity', $this->componentId, $value->x, $value->y, $value->z);
+            NativeEngine::call('rigidbody2d_set_velocity', $this->componentId, $value->x, $value->y, $value->z);
         }
     }
 
@@ -120,7 +120,7 @@ final class Rigidbody2D extends Component
      */
     public function isTouching(bool $includeTriggers = true, ?int $layerMask = null): bool
     {
-        return \Lenga\Engine\Core\NativeEngine::call('rigidbody2d_is_touching',
+        return NativeEngine::call('rigidbody2d_is_touching',
             $this->componentId,
             $includeTriggers,
             $layerMask ?? Physics2D::ALL_LAYERS,
@@ -142,7 +142,7 @@ final class Rigidbody2D extends Component
         bool $includeTriggers = false,
         ?int $layerMask = null,
     ): bool {
-        return \Lenga\Engine\Core\NativeEngine::call('rigidbody2d_is_grounded',
+        return NativeEngine::call('rigidbody2d_is_grounded',
             $this->componentId,
             $minSupportDot,
             $includeTriggers,
@@ -159,7 +159,7 @@ final class Rigidbody2D extends Component
      */
     public function getContacts(bool $includeTriggers = true, ?int $layerMask = null): array
     {
-        $results = \Lenga\Engine\Core\NativeEngine::call('rigidbody2d_get_contacts',
+        $results = NativeEngine::call('rigidbody2d_get_contacts',
             $this->componentId,
             $includeTriggers,
             $layerMask ?? Physics2D::ALL_LAYERS,
@@ -209,7 +209,7 @@ final class Rigidbody2D extends Component
          *     enabled?: bool
          * } $state
          */
-        $state = \Lenga\Engine\Core\NativeEngine::call('rigidbody2d_get_state', $this->componentId);
+        $state = NativeEngine::call('rigidbody2d_get_state', $this->componentId);
 
         return \is_array($state) ? $state : [];
     }
@@ -222,7 +222,7 @@ final class Rigidbody2D extends Component
      */
     public function addForce(Vector2 $force, ForceMode2D $mode = ForceMode2D::Force): void
     {
-        \Lenga\Engine\Core\NativeEngine::call('rigidbody2d_add_force',
+        NativeEngine::call('rigidbody2d_add_force',
             $this->componentId,
             $force->x,
             $force->y,

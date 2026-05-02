@@ -29,7 +29,7 @@ final class ParticleSystem extends Component
         }
 
         set(string $value) {
-            \Lenga\Engine\Core\NativeEngine::call('particle_system_set_sorting_layer', $this->componentId, $value);
+            NativeEngine::call('particle_system_set_sorting_layer', $this->componentId, $value);
         }
     }
 
@@ -39,7 +39,7 @@ final class ParticleSystem extends Component
         }
 
         set(int $value) {
-            \Lenga\Engine\Core\NativeEngine::call('particle_system_set_order_in_layer', $this->componentId, $value);
+            NativeEngine::call('particle_system_set_order_in_layer', $this->componentId, $value);
         }
     }
 
@@ -51,27 +51,27 @@ final class ParticleSystem extends Component
 
     public function play(): void
     {
-        \Lenga\Engine\Core\NativeEngine::call('particle_system_play', $this->componentId);
+        NativeEngine::call('particle_system_play', $this->componentId);
     }
 
     public function stop(bool $clear = false): void
     {
-        \Lenga\Engine\Core\NativeEngine::call('particle_system_stop', $this->componentId, $clear);
+        NativeEngine::call('particle_system_stop', $this->componentId, $clear);
     }
 
     public function clear(): void
     {
-        \Lenga\Engine\Core\NativeEngine::call('particle_system_clear', $this->componentId);
+        NativeEngine::call('particle_system_clear', $this->componentId);
     }
 
     public function emit(int $count): void
     {
-        \Lenga\Engine\Core\NativeEngine::call('particle_system_emit', $this->componentId, $count);
+        NativeEngine::call('particle_system_emit', $this->componentId, $count);
     }
 
     public function loadTexture(string $texturePath): bool
     {
-        return \Lenga\Engine\Core\NativeEngine::call('particle_system_load_texture', $this->componentId, $texturePath);
+        return NativeEngine::call('particle_system_load_texture', $this->componentId, $texturePath);
     }
 
     /**
@@ -119,7 +119,7 @@ final class ParticleSystem extends Component
          *     texturePath?: string
          * } $state
          */
-        $state = \Lenga\Engine\Core\NativeEngine::call('particle_system_get_state', $this->componentId);
+        $state = NativeEngine::call('particle_system_get_state', $this->componentId);
 
         return \is_array($state) ? $state : [];
     }

@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Lenga\Engine\UI;
 
+use Lenga\Engine\Core\NativeEngine;
+
 final class Image extends UIElement
 {
     public string $spritePath {
@@ -12,7 +14,7 @@ final class Image extends UIElement
         }
 
         set(string $value) {
-            \Lenga\Engine\Core\NativeEngine::call('ui_image_set_sprite_path', $this->getId(), $value);
+            NativeEngine::call('ui_image_set_sprite_path', $this->getId(), $value);
         }
     }
 
@@ -34,6 +36,6 @@ final class Image extends UIElement
 
     public function setColor(int $red, int $green, int $blue, int $alpha = 255): void
     {
-        \Lenga\Engine\Core\NativeEngine::call('ui_image_set_color', $this->getId(), $red, $green, $blue, $alpha);
+        NativeEngine::call('ui_image_set_color', $this->getId(), $red, $green, $blue, $alpha);
     }
 }
