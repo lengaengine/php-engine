@@ -8,8 +8,8 @@ use Lenga\Engine\Exceptions\LengaRuntimeUnavailableException;
 
 final class NativeEngine
 {
-    private const NATIVE_PREFIX = 'lenga_internal_';
-    private const AVAILABILITY_PROBE = 'scene_get_active';
+    private const string NATIVE_PREFIX = 'lenga_internal_';
+    private const string AVAILABILITY_PROBE = 'scene_get_active';
 
     private function __construct()
     {
