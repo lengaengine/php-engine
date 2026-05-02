@@ -9,14 +9,8 @@ use Lenga\Engine\UI\Canvas;
 
 final class Scene
 {
-    public function __construct(private readonly string $nameValue)
+    public function __construct(private(set) readonly string $name)
     {
-    }
-
-    public string $name {
-        get {
-            return $this->nameValue;
-        }
     }
 
     /**

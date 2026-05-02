@@ -31,6 +31,10 @@ abstract class Behaviour implements ComponentInterface
      * @var array<int, SignalSubscription>
      */
     private array $ownedSubscriptionsUntilDestroy = [];
+    /**
+     * @var array<string, SignalSubscription>
+     */
+    private static array $eventSubscriptionsByOwnerCallsite = [];
     private bool $lifecycleEnabled = false;
 
     public function __construct() {}
@@ -591,7 +595,10 @@ abstract class Behaviour implements ComponentInterface
         bool $disposeOnDisable = true
     ): SignalSubscription
     {
-        return $this->trackSubscription(EventBus::on($eventName, $listener), $disposeOnDisable);
+        return $this->trackSubscription(
+            $this->replaceOwnerCallsiteEventSubscription($eventName, $listener, false),
+            $disposeOnDisable
+        );
     }
 
     protected function onceEvent(
@@ -600,7 +607,10 @@ abstract class Behaviour implements ComponentInterface
         bool $disposeOnDisable = true
     ): SignalSubscription
     {
-        return $this->trackSubscription(EventBus::once($eventName, $listener), $disposeOnDisable);
+        return $this->trackSubscription(
+            $this->replaceOwnerCallsiteEventSubscription($eventName, $listener, true),
+            $disposeOnDisable
+        );
     }
 
     protected function trackSubscription(
@@ -722,6 +732,65 @@ abstract class Behaviour implements ComponentInterface
             $subscription->dispose();
             unset($subscriptions[$subscriptionId]);
         }
+    }
+
+    private function replaceOwnerCallsiteEventSubscription(
+        string $eventName,
+        callable $listener,
+        bool $once
+    ): SignalSubscription
+    {
+        $registryKey = $this->eventSubscriptionRegistryKey($eventName, $once);
+        if (isset(self::$eventSubscriptionsByOwnerCallsite[$registryKey])) {
+            self::$eventSubscriptionsByOwnerCallsite[$registryKey]->dispose();
+        }
+
+        $subscription = null;
+        if ($once) {
+            $rawSubscription = EventBus::on(
+                $eventName,
+                static function (mixed ...$arguments) use (&$subscription, $listener): void {
+                    $subscription?->dispose();
+                    $listener(...$arguments);
+                }
+            );
+        } else {
+            $rawSubscription = EventBus::on($eventName, $listener);
+        }
+
+        $subscription = new SignalSubscription(
+            static function () use ($rawSubscription, $registryKey, &$subscription): void {
+                $rawSubscription->dispose();
+                if ((self::$eventSubscriptionsByOwnerCallsite[$registryKey] ?? null) === $subscription) {
+                    unset(self::$eventSubscriptionsByOwnerCallsite[$registryKey]);
+                }
+            }
+        );
+
+        self::$eventSubscriptionsByOwnerCallsite[$registryKey] = $subscription;
+        return $subscription;
+    }
+
+    private function eventSubscriptionRegistryKey(string $eventName, bool $once): string
+    {
+        $ownerKey = $this->componentId !== null
+            ? 'component:' . $this->componentId
+            : 'object:' . \spl_object_id($this);
+
+        return $ownerKey . '|' . ($once ? 'once' : 'on') . '|' . $eventName . '|' . $this->eventSubscriptionCallsite();
+    }
+
+    private function eventSubscriptionCallsite(): string
+    {
+        foreach (\debug_backtrace(\DEBUG_BACKTRACE_IGNORE_ARGS, 10) as $frame) {
+            if (!isset($frame['file'], $frame['line']) || $frame['file'] === __FILE__) {
+                continue;
+            }
+
+            return $frame['file'] . ':' . $frame['line'];
+        }
+
+        return 'unknown:0';
     }
 
     private function releaseOwnedSubscriptionsOnDisable(): void

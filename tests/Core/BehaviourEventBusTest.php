@@ -158,4 +158,61 @@ final class BehaviourEventBusTest extends TestCase
         self::assertSame(1, $listener->count);
         self::assertSame(1, EventBus::listenerCount('game.ball.out_of_bounds'));
     }
+
+    public function testDuplicateNativeBehaviourProxyReplacesSameCallsiteSubscription(): void
+    {
+        $factory = static fn (): Behaviour => new class extends Behaviour {
+            public int $count = 0;
+
+            public function onEnable(): void
+            {
+                $this->subscribeToOutOfBounds();
+            }
+
+            public function subscribeToOutOfBounds(): void
+            {
+                $this->onEvent('game.ball.out_of_bounds', function (): void {
+                    ++$this->count;
+                });
+            }
+        };
+
+        $first = $factory();
+        $second = $factory();
+
+        BehaviourBridge::attachComponentId($first, 42);
+        BehaviourBridge::attachComponentId($second, 42);
+        BehaviourBridge::invokeLifecycle($first, 'onEnable');
+        BehaviourBridge::invokeLifecycle($second, 'onEnable');
+        EventBus::emit('game.ball.out_of_bounds');
+
+        self::assertSame(0, $first->count);
+        self::assertSame(1, $second->count);
+        self::assertSame(1, EventBus::listenerCount('game.ball.out_of_bounds'));
+    }
+
+    public function testDistinctOnEventCallsitesOnSameBehaviourAreBothAllowed(): void
+    {
+        $listener = new class extends Behaviour {
+            public int $count = 0;
+
+            public function onEnable(): void
+            {
+                $this->onEvent('game.dual', function (): void {
+                    $this->count += 1;
+                });
+                $this->onEvent('game.dual', function (): void {
+                    $this->count += 10;
+                });
+            }
+        };
+
+        BehaviourBridge::attachComponentId($listener, 77);
+        BehaviourBridge::invokeLifecycle($listener, 'onEnable');
+        EventBus::emit('game.dual');
+
+        self::assertSame(11, $listener->count);
+        self::assertSame(2, EventBus::listenerCount('game.dual'));
+    }
+
 }
