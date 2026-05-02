@@ -17,7 +17,7 @@ final class CircleCollider2D extends Component
         }
 
         set(float $value) {
-            \lenga_internal_circle_collider2d_set_radius($this->componentId, $value);
+            \Lenga\Engine\Core\NativeEngine::call('circle_collider2d_set_radius', $this->componentId, $value);
         }
     }
 
@@ -33,7 +33,7 @@ final class CircleCollider2D extends Component
         }
 
         set(Vector3 $value) {
-            \lenga_internal_circle_collider2d_set_offset($this->componentId, $value->x, $value->y, $value->z);
+            \Lenga\Engine\Core\NativeEngine::call('circle_collider2d_set_offset', $this->componentId, $value->x, $value->y, $value->z);
         }
     }
 
@@ -43,7 +43,7 @@ final class CircleCollider2D extends Component
         }
 
         set(bool $value) {
-            \lenga_internal_circle_collider2d_set_is_trigger($this->componentId, $value);
+            \Lenga\Engine\Core\NativeEngine::call('circle_collider2d_set_is_trigger', $this->componentId, $value);
         }
     }
 
@@ -53,7 +53,7 @@ final class CircleCollider2D extends Component
         }
 
         set(string $value) {
-            \lenga_internal_circle_collider2d_set_material_path($this->componentId, $value);
+            \Lenga\Engine\Core\NativeEngine::call('circle_collider2d_set_material_path', $this->componentId, $value);
         }
     }
 
@@ -77,11 +77,11 @@ final class CircleCollider2D extends Component
 
         set(PhysicsMaterial2D $value) {
             if ($value->assetPath !== '') {
-                \lenga_internal_circle_collider2d_set_material_path($this->componentId, $value->assetPath);
+                \Lenga\Engine\Core\NativeEngine::call('circle_collider2d_set_material_path', $this->componentId, $value->assetPath);
                 return;
             }
 
-            \lenga_internal_circle_collider2d_set_material(
+            \Lenga\Engine\Core\NativeEngine::call('circle_collider2d_set_material',
                 $this->componentId,
                 $value->friction,
                 $value->bounciness,
@@ -93,7 +93,7 @@ final class CircleCollider2D extends Component
 
     public function isTouching(bool $includeTriggers = true, ?int $layerMask = null): bool
     {
-        return \lenga_internal_circle_collider2d_is_touching(
+        return \Lenga\Engine\Core\NativeEngine::call('circle_collider2d_is_touching',
             $this->componentId,
             $includeTriggers,
             $layerMask ?? Physics2D::ALL_LAYERS,
@@ -105,7 +105,7 @@ final class CircleCollider2D extends Component
      */
     public function getContacts(bool $includeTriggers = true, ?int $layerMask = null): array
     {
-        $results = \lenga_internal_circle_collider2d_get_contacts(
+        $results = \Lenga\Engine\Core\NativeEngine::call('circle_collider2d_get_contacts',
             $this->componentId,
             $includeTriggers,
             $layerMask ?? Physics2D::ALL_LAYERS,
@@ -161,7 +161,7 @@ final class CircleCollider2D extends Component
          *     }
          * } $state
          */
-        $state = \lenga_internal_circle_collider2d_get_state($this->componentId);
+        $state = \Lenga\Engine\Core\NativeEngine::call('circle_collider2d_get_state', $this->componentId);
 
         return \is_array($state) ? $state : [];
     }

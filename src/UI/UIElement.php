@@ -29,7 +29,7 @@ abstract class UIElement
         }
 
         set(bool $value) {
-            \lenga_internal_ui_element_set_enabled($this->elementId, $value);
+            \Lenga\Engine\Core\NativeEngine::call('ui_element_set_enabled', $this->elementId, $value);
         }
     }
 
@@ -39,7 +39,7 @@ abstract class UIElement
         }
 
         set(bool $value) {
-            \lenga_internal_ui_element_set_visible($this->elementId, $value);
+            \Lenga\Engine\Core\NativeEngine::call('ui_element_set_visible', $this->elementId, $value);
         }
     }
 
@@ -55,7 +55,7 @@ abstract class UIElement
         }
 
         set(int $value) {
-            \lenga_internal_ui_element_set_sort_order($this->elementId, $value);
+            \Lenga\Engine\Core\NativeEngine::call('ui_element_set_sort_order', $this->elementId, $value);
         }
     }
 
@@ -86,14 +86,14 @@ abstract class UIElement
     public function getParent(): ?self
     {
         /** @var array{id?: int, name?: string, type?: string, canvasId?: int|null}|null|false $data */
-        $data = \lenga_internal_ui_element_get_parent($this->elementId);
+        $data = \Lenga\Engine\Core\NativeEngine::call('ui_element_get_parent', $this->elementId);
 
         return \is_array($data) ? self::fromNativeLookupData($data) : null;
     }
 
     public function setParent(?self $parent): bool
     {
-        return \lenga_internal_ui_element_set_parent($this->elementId, $parent?->getId());
+        return \Lenga\Engine\Core\NativeEngine::call('ui_element_set_parent', $this->elementId, $parent?->getId());
     }
 
     /**
@@ -102,7 +102,7 @@ abstract class UIElement
     public function getChildren(): array
     {
         /** @var list<array{id?: int, name?: string, type?: string, canvasId?: int|null}>|false $data */
-        $data = \lenga_internal_ui_element_get_children($this->elementId);
+        $data = \Lenga\Engine\Core\NativeEngine::call('ui_element_get_children', $this->elementId);
         if (!\is_array($data)) {
             return [];
         }
@@ -195,7 +195,7 @@ abstract class UIElement
     public static function findBySceneId(string $sceneElementId): ?self
     {
         /** @var array{id?: int, name?: string, type?: string, canvasId?: int|null}|false $data */
-        $data = \lenga_internal_ui_element_find_by_scene_id($sceneElementId);
+        $data = \Lenga\Engine\Core\NativeEngine::call('ui_element_find_by_scene_id', $sceneElementId);
         if (!\is_array($data)) {
             return null;
         }
@@ -345,7 +345,7 @@ abstract class UIElement
          *     handleSize?: array{x?: float, y?: float}
          * }|false $state
          */
-        $state = \lenga_internal_ui_element_get_state($this->elementId);
+        $state = \Lenga\Engine\Core\NativeEngine::call('ui_element_get_state', $this->elementId);
         if (!\is_array($state)) {
             throw new \RuntimeException("Failed to resolve native UI element '{$this->nameValue}'.");
         }

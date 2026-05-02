@@ -343,7 +343,7 @@ final class Physics3D
         bool $includeTriggers = true,
         ?int $layerMask = null,
     ): ?RaycastHit3D {
-        $result = \lenga_internal_physics3d_raycast(
+        $result = \Lenga\Engine\Core\NativeEngine::call('physics3d_raycast',
             $origin->x,
             $origin->y,
             $origin->z,
@@ -368,7 +368,7 @@ final class Physics3D
         bool $includeTriggers = true,
         ?int $layerMask = null,
     ): array {
-        $result = \lenga_internal_physics3d_raycast_all(
+        $result = \Lenga\Engine\Core\NativeEngine::call('physics3d_raycast_all',
             $origin->x,
             $origin->y,
             $origin->z,
@@ -392,7 +392,7 @@ final class Physics3D
         bool $includeTriggers = true,
         ?int $layerMask = null,
     ): array {
-        $results = \lenga_internal_physics3d_overlap_sphere_all(
+        $results = \Lenga\Engine\Core\NativeEngine::call('physics3d_overlap_sphere_all',
             $center->x,
             $center->y,
             $center->z,
@@ -425,7 +425,7 @@ final class Physics3D
         bool $includeTriggers = true,
         ?int $layerMask = null,
     ): array {
-        $results = \lenga_internal_physics3d_overlap_box_all(
+        $results = \Lenga\Engine\Core\NativeEngine::call('physics3d_overlap_box_all',
             $center->x,
             $center->y,
             $center->z,
@@ -461,7 +461,7 @@ final class Physics3D
         bool $includeTriggers = true,
         ?int $layerMask = null,
     ): array {
-        $results = \lenga_internal_physics3d_overlap_capsule_all(
+        $results = \Lenga\Engine\Core\NativeEngine::call('physics3d_overlap_capsule_all',
             $center->x,
             $center->y,
             $center->z,

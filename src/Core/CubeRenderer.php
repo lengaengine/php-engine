@@ -48,7 +48,7 @@ final class CubeRenderer extends Component
 
     public function setSize(float $width, float $height, float $length): void
     {
-        \lenga_internal_cube_renderer_set_size($this->componentId, $width, $height, $length);
+        \Lenga\Engine\Core\NativeEngine::call('cube_renderer_set_size', $this->componentId, $width, $height, $length);
     }
 
     public string $materialPath {
@@ -57,7 +57,7 @@ final class CubeRenderer extends Component
         }
 
         set(string $value) {
-            \lenga_internal_cube_renderer_set_material_path($this->componentId, $value);
+            \Lenga\Engine\Core\NativeEngine::call('cube_renderer_set_material_path', $this->componentId, $value);
         }
     }
 
@@ -80,7 +80,7 @@ final class CubeRenderer extends Component
 
     public function setColor(int $red, int $green, int $blue, int $alpha = 255): void
     {
-        \lenga_internal_cube_renderer_set_color($this->componentId, $red, $green, $blue, $alpha);
+        \Lenga\Engine\Core\NativeEngine::call('cube_renderer_set_color', $this->componentId, $red, $green, $blue, $alpha);
     }
 
     /**
@@ -104,7 +104,7 @@ final class CubeRenderer extends Component
          *     enabled?: bool
          * } $state
          */
-        $state = \lenga_internal_cube_renderer_get_state($this->componentId);
+        $state = \Lenga\Engine\Core\NativeEngine::call('cube_renderer_get_state', $this->componentId);
 
         return \is_array($state) ? $state : [];
     }

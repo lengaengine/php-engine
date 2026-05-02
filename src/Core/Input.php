@@ -27,7 +27,7 @@ final class Input
      */
     public static function getAxis(string $axis): float
     {
-        $value = lenga_internal_input_get_axis($axis);
+        $value = \Lenga\Engine\Core\NativeEngine::call('input_get_axis', $axis);
 
         if (!is_numeric($value)) {
             return 0.0;
@@ -44,7 +44,7 @@ final class Input
      */
     public static function getAxisRaw(string $axis): float
     {
-        $value = lenga_internal_input_get_axis_raw($axis);
+        $value = \Lenga\Engine\Core\NativeEngine::call('input_get_axis_raw', $axis);
 
         if (!is_numeric($value)) {
             return 0.0;
@@ -89,19 +89,19 @@ final class Input
     /** Mirrors Unity-style virtual buttons such as `Jump`. */
     public static function getButton(string $axis): bool
     {
-        return (bool) \lenga_internal_input_get_button($axis);
+        return (bool) \Lenga\Engine\Core\NativeEngine::call('input_get_button', $axis);
     }
 
     /** Mirrors Unity-style virtual buttons such as `Jump`. */
     public static function getButtonDown(string $axis): bool
     {
-        return (bool) \lenga_internal_input_get_button_down($axis);
+        return (bool) \Lenga\Engine\Core\NativeEngine::call('input_get_button_down', $axis);
     }
 
     /** Mirrors Unity-style virtual buttons such as `Jump`. */
     public static function getButtonUp(string $axis): bool
     {
-        return (bool) \lenga_internal_input_get_button_up($axis);
+        return (bool) \Lenga\Engine\Core\NativeEngine::call('input_get_button_up', $axis);
     }
 
     /** Raylib-style alias for `IsKeyPressed()`. */
@@ -112,7 +112,7 @@ final class Input
             return false;
         }
 
-        return (bool) \lenga_internal_input_get_key_down($resolvedKey);
+        return (bool) \Lenga\Engine\Core\NativeEngine::call('input_get_key_down', $resolvedKey);
     }
 
     /** Raylib-style alias for `IsKeyDown()`. */
@@ -123,7 +123,7 @@ final class Input
             return false;
         }
 
-        return (bool) \lenga_internal_input_get_key($resolvedKey);
+        return (bool) \Lenga\Engine\Core\NativeEngine::call('input_get_key', $resolvedKey);
     }
 
     /** Raylib-style alias for `IsKeyReleased()`. */
@@ -134,7 +134,7 @@ final class Input
             return false;
         }
 
-        return (bool) \lenga_internal_input_get_key_up($resolvedKey);
+        return (bool) \Lenga\Engine\Core\NativeEngine::call('input_get_key_up', $resolvedKey);
     }
 
     /** Raylib-style alias for `IsKeyUp()`. */
@@ -145,19 +145,19 @@ final class Input
             return false;
         }
 
-        return (bool) \lenga_internal_input_is_key_up($resolvedKey);
+        return (bool) \Lenga\Engine\Core\NativeEngine::call('input_is_key_up', $resolvedKey);
     }
 
     /** Mirrors raylib's `IsGamepadAvailable()`. */
     public static function isGamepadAvailable(int $gamepad): bool
     {
-        return (bool) \lenga_internal_input_is_gamepad_available($gamepad);
+        return (bool) \Lenga\Engine\Core\NativeEngine::call('input_is_gamepad_available', $gamepad);
     }
 
     /** Mirrors raylib's `GetGamepadName()`. */
     public static function getGamepadName(int $gamepad): string
     {
-        $name = \lenga_internal_input_get_gamepad_name($gamepad);
+        $name = \Lenga\Engine\Core\NativeEngine::call('input_get_gamepad_name', $gamepad);
 
         return is_string($name) ? $name : '';
     }
@@ -165,7 +165,7 @@ final class Input
     /** Mirrors raylib's `IsGamepadButtonPressed()`. */
     public static function isGamepadButtonPressed(int $gamepad, int|GamepadButton $button): bool
     {
-        return (bool) \lenga_internal_input_is_gamepad_button_pressed(
+        return (bool) \Lenga\Engine\Core\NativeEngine::call('input_is_gamepad_button_pressed',
             $gamepad,
             self::resolveGamepadButton($button),
         );
@@ -174,7 +174,7 @@ final class Input
     /** Mirrors raylib's `IsGamepadButtonDown()`. */
     public static function isGamepadButtonDown(int $gamepad, int|GamepadButton $button): bool
     {
-        return (bool) \lenga_internal_input_is_gamepad_button_down(
+        return (bool) \Lenga\Engine\Core\NativeEngine::call('input_is_gamepad_button_down',
             $gamepad,
             self::resolveGamepadButton($button),
         );
@@ -183,7 +183,7 @@ final class Input
     /** Mirrors raylib's `IsGamepadButtonReleased()`. */
     public static function isGamepadButtonReleased(int $gamepad, int|GamepadButton $button): bool
     {
-        return (bool) \lenga_internal_input_is_gamepad_button_released(
+        return (bool) \Lenga\Engine\Core\NativeEngine::call('input_is_gamepad_button_released',
             $gamepad,
             self::resolveGamepadButton($button),
         );
@@ -192,7 +192,7 @@ final class Input
     /** Mirrors raylib's `IsGamepadButtonUp()`. */
     public static function isGamepadButtonUp(int $gamepad, int|GamepadButton $button): bool
     {
-        return (bool) \lenga_internal_input_is_gamepad_button_up(
+        return (bool) \Lenga\Engine\Core\NativeEngine::call('input_is_gamepad_button_up',
             $gamepad,
             self::resolveGamepadButton($button),
         );
@@ -201,7 +201,7 @@ final class Input
     /** Mirrors raylib's `GetGamepadButtonPressed()`. */
     public static function getGamepadButtonPressed(): int
     {
-        $button = \lenga_internal_input_get_gamepad_button_pressed();
+        $button = \Lenga\Engine\Core\NativeEngine::call('input_get_gamepad_button_pressed');
 
         return is_numeric($button) ? (int) $button : GamepadButton::UNKNOWN->value;
     }
@@ -209,13 +209,13 @@ final class Input
     /** Mirrors raylib's `GetGamepadAxisCount()`. */
     public static function getGamepadAxisCount(int $gamepad): int
     {
-        return (int) \lenga_internal_input_get_gamepad_axis_count($gamepad);
+        return (int) \Lenga\Engine\Core\NativeEngine::call('input_get_gamepad_axis_count', $gamepad);
     }
 
     /** Mirrors raylib's `GetGamepadAxisMovement()`. */
     public static function getGamepadAxisMovement(int $gamepad, int|GamepadAxis $axis): float
     {
-        $movement = \lenga_internal_input_get_gamepad_axis_movement(
+        $movement = \Lenga\Engine\Core\NativeEngine::call('input_get_gamepad_axis_movement',
             $gamepad,
             self::resolveGamepadAxis($axis),
         );
@@ -226,7 +226,7 @@ final class Input
     /** Mirrors raylib's `SetGamepadMappings()`. */
     public static function setGamepadMappings(string $mappings): int
     {
-        return (int) \lenga_internal_input_set_gamepad_mappings($mappings);
+        return (int) \Lenga\Engine\Core\NativeEngine::call('input_set_gamepad_mappings', $mappings);
     }
 
     private static function resolveKeyCode(int|string|KeyCode $key): ?int

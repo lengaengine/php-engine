@@ -25,7 +25,7 @@ final class SphereRenderer extends Component
         }
 
         set(Vector3 $value) {
-            \lenga_internal_sphere_renderer_set_center($this->componentId, $value->x, $value->y, $value->z);
+            \Lenga\Engine\Core\NativeEngine::call('sphere_renderer_set_center', $this->componentId, $value->x, $value->y, $value->z);
         }
     }
 
@@ -36,7 +36,7 @@ final class SphereRenderer extends Component
         }
 
         set(float $value) {
-            \lenga_internal_sphere_renderer_set_radius($this->componentId, $value);
+            \Lenga\Engine\Core\NativeEngine::call('sphere_renderer_set_radius', $this->componentId, $value);
         }
     }
 
@@ -46,7 +46,7 @@ final class SphereRenderer extends Component
         }
 
         set(string $value) {
-            \lenga_internal_sphere_renderer_set_material_path($this->componentId, $value);
+            \Lenga\Engine\Core\NativeEngine::call('sphere_renderer_set_material_path', $this->componentId, $value);
         }
     }
 
@@ -69,7 +69,7 @@ final class SphereRenderer extends Component
 
     public function setColor(int $red, int $green, int $blue, int $alpha = 255): void
     {
-        \lenga_internal_sphere_renderer_set_color($this->componentId, $red, $green, $blue, $alpha);
+        \Lenga\Engine\Core\NativeEngine::call('sphere_renderer_set_color', $this->componentId, $red, $green, $blue, $alpha);
     }
 
     /**
@@ -91,7 +91,7 @@ final class SphereRenderer extends Component
          *     enabled?: bool
          * } $state
          */
-        $state = \lenga_internal_sphere_renderer_get_state($this->componentId);
+        $state = \Lenga\Engine\Core\NativeEngine::call('sphere_renderer_get_state', $this->componentId);
 
         return \is_array($state) ? $state : [];
     }

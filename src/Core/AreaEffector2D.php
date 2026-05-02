@@ -17,7 +17,7 @@ final class AreaEffector2D extends Component
         }
 
         set(bool $value) {
-            \lenga_internal_area_effector2d_set_use_global_angle($this->componentId, $value);
+            \Lenga\Engine\Core\NativeEngine::call('area_effector2d_set_use_global_angle', $this->componentId, $value);
         }
     }
 
@@ -27,7 +27,7 @@ final class AreaEffector2D extends Component
         }
 
         set(float $value) {
-            \lenga_internal_area_effector2d_set_force_angle($this->componentId, $value);
+            \Lenga\Engine\Core\NativeEngine::call('area_effector2d_set_force_angle', $this->componentId, $value);
         }
     }
 
@@ -37,7 +37,7 @@ final class AreaEffector2D extends Component
         }
 
         set(float $value) {
-            \lenga_internal_area_effector2d_set_force_magnitude($this->componentId, $value);
+            \Lenga\Engine\Core\NativeEngine::call('area_effector2d_set_force_magnitude', $this->componentId, $value);
         }
     }
 
@@ -47,7 +47,7 @@ final class AreaEffector2D extends Component
         }
 
         set(float $value) {
-            \lenga_internal_area_effector2d_set_drag($this->componentId, $value);
+            \Lenga\Engine\Core\NativeEngine::call('area_effector2d_set_drag', $this->componentId, $value);
         }
     }
 
@@ -70,7 +70,7 @@ final class AreaEffector2D extends Component
          *     enabled?: bool
          * } $state
          */
-        $state = \lenga_internal_area_effector2d_get_state($this->componentId);
+        $state = \Lenga\Engine\Core\NativeEngine::call('area_effector2d_get_state', $this->componentId);
 
         return \is_array($state) ? $state : [];
     }

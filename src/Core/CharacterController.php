@@ -20,7 +20,7 @@ final class CharacterController extends Component
         }
 
         set(float $value) {
-            \lenga_internal_character_controller_set_radius($this->componentId, $value);
+            \Lenga\Engine\Core\NativeEngine::call('character_controller_set_radius', $this->componentId, $value);
         }
     }
 
@@ -31,7 +31,7 @@ final class CharacterController extends Component
         }
 
         set(float $value) {
-            \lenga_internal_character_controller_set_height($this->componentId, $value);
+            \Lenga\Engine\Core\NativeEngine::call('character_controller_set_height', $this->componentId, $value);
         }
     }
 
@@ -47,7 +47,7 @@ final class CharacterController extends Component
         }
 
         set(Vector3 $value) {
-            \lenga_internal_character_controller_set_center($this->componentId, $value->x, $value->y, $value->z);
+            \Lenga\Engine\Core\NativeEngine::call('character_controller_set_center', $this->componentId, $value->x, $value->y, $value->z);
         }
     }
 
@@ -58,7 +58,7 @@ final class CharacterController extends Component
         }
 
         set(float $value) {
-            \lenga_internal_character_controller_set_skin_width($this->componentId, $value);
+            \Lenga\Engine\Core\NativeEngine::call('character_controller_set_skin_width', $this->componentId, $value);
         }
     }
 
@@ -69,7 +69,7 @@ final class CharacterController extends Component
         }
 
         set(float $value) {
-            \lenga_internal_character_controller_set_min_move_distance($this->componentId, $value);
+            \Lenga\Engine\Core\NativeEngine::call('character_controller_set_min_move_distance', $this->componentId, $value);
         }
     }
 
@@ -79,7 +79,7 @@ final class CharacterController extends Component
         }
 
         set(bool $value) {
-            \lenga_internal_character_controller_set_detect_collisions($this->componentId, $value);
+            \Lenga\Engine\Core\NativeEngine::call('character_controller_set_detect_collisions', $this->componentId, $value);
         }
     }
 
@@ -112,7 +112,7 @@ final class CharacterController extends Component
 
     public function move(Vector3 $motion): int
     {
-        return (int) \lenga_internal_character_controller_move(
+        return (int) \Lenga\Engine\Core\NativeEngine::call('character_controller_move',
             $this->componentId,
             $motion->x,
             $motion->y,
@@ -122,7 +122,7 @@ final class CharacterController extends Component
 
     public function simpleMove(Vector3 $speed): bool
     {
-        return (bool) \lenga_internal_character_controller_simple_move(
+        return (bool) \Lenga\Engine\Core\NativeEngine::call('character_controller_simple_move',
             $this->componentId,
             $speed->x,
             $speed->y,
@@ -159,7 +159,7 @@ final class CharacterController extends Component
          *     velocity?: array{x?: float|int, y?: float|int, z?: float|int}
          * } $state
          */
-        $state = \lenga_internal_character_controller_get_state($this->componentId);
+        $state = \Lenga\Engine\Core\NativeEngine::call('character_controller_get_state', $this->componentId);
 
         return \is_array($state) ? $state : [];
     }

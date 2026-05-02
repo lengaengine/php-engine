@@ -24,7 +24,7 @@ final class SceneManager
 
     public static function tryLoadScene(string $sceneNameOrPath): bool
     {
-        return \lenga_internal_scene_load($sceneNameOrPath);
+        return \Lenga\Engine\Core\NativeEngine::call('scene_load', $sceneNameOrPath);
     }
 
     public static function loadSceneByPath(string $scenePath): void

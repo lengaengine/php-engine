@@ -22,7 +22,7 @@ final class AudioSource extends Component
         }
 
         set(string $value) {
-            \lenga_internal_audio_source_set_clip_path($this->componentId, $value);
+            \Lenga\Engine\Core\NativeEngine::call('audio_source_set_clip_path', $this->componentId, $value);
         }
     }
 
@@ -36,7 +36,7 @@ final class AudioSource extends Component
         }
 
         set(bool $value) {
-            \lenga_internal_audio_source_set_play_on_awake($this->componentId, $value);
+            \Lenga\Engine\Core\NativeEngine::call('audio_source_set_play_on_awake', $this->componentId, $value);
         }
     }
 
@@ -46,7 +46,7 @@ final class AudioSource extends Component
         }
 
         set(bool $value) {
-            \lenga_internal_audio_source_set_loop($this->componentId, $value);
+            \Lenga\Engine\Core\NativeEngine::call('audio_source_set_loop', $this->componentId, $value);
         }
     }
 
@@ -57,7 +57,7 @@ final class AudioSource extends Component
         }
 
         set(float $value) {
-            \lenga_internal_audio_source_set_volume($this->componentId, $value);
+            \Lenga\Engine\Core\NativeEngine::call('audio_source_set_volume', $this->componentId, $value);
         }
     }
 
@@ -68,7 +68,7 @@ final class AudioSource extends Component
         }
 
         set(float $value) {
-            \lenga_internal_audio_source_set_pitch($this->componentId, $value);
+            \Lenga\Engine\Core\NativeEngine::call('audio_source_set_pitch', $this->componentId, $value);
         }
     }
 
@@ -79,12 +79,12 @@ final class AudioSource extends Component
 
     public function play(): bool
     {
-        return \lenga_internal_audio_source_play($this->componentId);
+        return \Lenga\Engine\Core\NativeEngine::call('audio_source_play', $this->componentId);
     }
 
     public function stop(): bool
     {
-        return \lenga_internal_audio_source_stop($this->componentId);
+        return \Lenga\Engine\Core\NativeEngine::call('audio_source_stop', $this->componentId);
     }
 
     /**
@@ -110,7 +110,7 @@ final class AudioSource extends Component
          *     enabled?: bool
          * } $state
          */
-        $state = \lenga_internal_audio_source_get_state($this->componentId);
+        $state = \Lenga\Engine\Core\NativeEngine::call('audio_source_get_state', $this->componentId);
 
         return \is_array($state) ? $state : [];
     }

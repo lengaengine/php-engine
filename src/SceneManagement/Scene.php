@@ -24,7 +24,7 @@ final class Scene
     public static function getActive(): ?self
     {
         /** @var array{name?: string}|false $data */
-        $data = \lenga_internal_scene_get_active();
+        $data = \Lenga\Engine\Core\NativeEngine::call('scene_get_active');
 
         return \is_array($data) ? self::fromNativeData($data) : null;
     }
@@ -37,7 +37,7 @@ final class Scene
     public function createCanvas(string $name): Canvas
     {
         /** @var array{id?: int, name?: string}|false $data */
-        $data = \lenga_internal_scene_create_canvas($name);
+        $data = \Lenga\Engine\Core\NativeEngine::call('scene_create_canvas', $name);
         if (!\is_array($data)) {
             throw new \RuntimeException("Failed to create Canvas '{$name}' in the active scene.");
         }
@@ -51,7 +51,7 @@ final class Scene
     public function getCanvases(): array
     {
         /** @var list<array{id?: int, name?: string}>|false $data */
-        $data = \lenga_internal_scene_get_canvases();
+        $data = \Lenga\Engine\Core\NativeEngine::call('scene_get_canvases');
         if (!\is_array($data)) {
             return [];
         }
@@ -79,7 +79,7 @@ final class Scene
     public function getBackdropLayers(): array
     {
         /** @var list<array{index?: int}>|false $data */
-        $data = \lenga_internal_scene_get_backdrop_layers();
+        $data = \Lenga\Engine\Core\NativeEngine::call('scene_get_backdrop_layers');
         if (!\is_array($data)) {
             return [];
         }
@@ -93,7 +93,7 @@ final class Scene
     public function getBackdropLayer(int $index): ?BackdropLayer
     {
         /** @var array{index?: int}|false $data */
-        $data = \lenga_internal_scene_get_backdrop_layer_state($index);
+        $data = \Lenga\Engine\Core\NativeEngine::call('scene_get_backdrop_layer_state', $index);
 
         return \is_array($data) ? BackdropLayer::fromNativeData($data) : null;
     }
@@ -111,7 +111,7 @@ final class Scene
     public function instantiatePrefab(string $assetPath, ?string $name = null): GameObject
     {
         /** @var array{name?: string, tag?: string, layer?: int, id?: int, activeSelf?: bool, activeInHierarchy?: bool, transformId?: int|null}|false $data */
-        $data = \lenga_internal_scene_instantiate_prefab($assetPath, $name);
+        $data = \Lenga\Engine\Core\NativeEngine::call('scene_instantiate_prefab', $assetPath, $name);
         if (!\is_array($data)) {
             throw new \RuntimeException("Failed to instantiate prefab '{$assetPath}'.");
         }

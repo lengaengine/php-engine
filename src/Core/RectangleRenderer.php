@@ -37,7 +37,7 @@ final class RectangleRenderer extends Component
         }
 
         set(string $value) {
-            \lenga_internal_rectangle_renderer_set_sorting_layer($this->componentId, $value);
+            \Lenga\Engine\Core\NativeEngine::call('rectangle_renderer_set_sorting_layer', $this->componentId, $value);
         }
     }
 
@@ -47,13 +47,13 @@ final class RectangleRenderer extends Component
         }
 
         set(int $value) {
-            \lenga_internal_rectangle_renderer_set_order_in_layer($this->componentId, $value);
+            \Lenga\Engine\Core\NativeEngine::call('rectangle_renderer_set_order_in_layer', $this->componentId, $value);
         }
     }
 
     public function setSize(float $width, float $height): void
     {
-        \lenga_internal_rectangle_renderer_set_size($this->componentId, $width, $height);
+        \Lenga\Engine\Core\NativeEngine::call('rectangle_renderer_set_size', $this->componentId, $width, $height);
     }
 
     /**
@@ -75,7 +75,7 @@ final class RectangleRenderer extends Component
 
     public function setColor(int $red, int $green, int $blue, int $alpha = 255): void
     {
-        \lenga_internal_rectangle_renderer_set_color(
+        \Lenga\Engine\Core\NativeEngine::call('rectangle_renderer_set_color',
             $this->componentId,
             $red,
             $green,
@@ -105,7 +105,7 @@ final class RectangleRenderer extends Component
          *     color?: array{r?: int, g?: int, b?: int, a?: int}
          * } $state
          */
-        $state = \lenga_internal_rectangle_renderer_get_state($this->componentId);
+        $state = \Lenga\Engine\Core\NativeEngine::call('rectangle_renderer_get_state', $this->componentId);
 
         return $state;
     }

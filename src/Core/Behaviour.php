@@ -113,7 +113,7 @@ abstract class Behaviour implements ComponentInterface
                 return true;
             }
 
-            return \lenga_internal_component_get_enabled($this->componentId);
+            return \Lenga\Engine\Core\NativeEngine::call('component_get_enabled', $this->componentId);
         }
 
         set(bool $value) {
@@ -121,7 +121,7 @@ abstract class Behaviour implements ComponentInterface
                 return;
             }
 
-            \lenga_internal_component_set_enabled($this->componentId, $value);
+            \Lenga\Engine\Core\NativeEngine::call('component_set_enabled', $this->componentId, $value);
         }
     }
 
@@ -815,56 +815,56 @@ abstract class Behaviour implements ComponentInterface
 
     /**
      * Called when the script instance is being loaded.
-     * 
+     *
      * @return void
      */
     public function awake(): void {}
 
     /**
      * Called when the object becomes enabled and active.
-     * 
+     *
      * @return void
      */
     public function onEnable(): void {}
 
     /**
      * Called before the first frame update, after all Awake calls.
-     * 
+     *
      * @return void
      */
     public function start(): void {}
 
     /**
      * Called on a fixed timestep, used for physics-like updates.
-     * 
+     *
      * @return void
      */
     public function fixedUpdate(): void {}
 
     /**
      * Called once per frame.
-     * 
+     *
      * @return void
      */
     public function update(): void {}
 
     /**
      * Called once per frame, after all Update calls.
-     * 
+     *
      * @return void
      */
     public function lateUpdate(): void {}
 
     /**
      * Called when the object becomes disabled or inactive.
-     * 
+     *
      * @return void
      */
     public function onDisable(): void {}
 
     /**
      * Called when the behaviour is destroyed.
-     * 
+     *
      * @return void
      */
     public function onDestroy(): void {}

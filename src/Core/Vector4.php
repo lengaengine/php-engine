@@ -278,9 +278,9 @@ final class Vector4 implements ArrayAccess
 
     public static function lerp(self $a, self $b, float $t): self
     {
-        if (\function_exists('lenga_internal_vector4_lerp')) {
+        if (\Lenga\Engine\Core\NativeEngine::hasFunction('vector4_lerp')) {
             /** @var array{x: float, y: float, z: float, w: float}|false $result */
-            $result = \lenga_internal_vector4_lerp(
+            $result = \Lenga\Engine\Core\NativeEngine::call('vector4_lerp',
                 $a->x,
                 $a->y,
                 $a->z,
@@ -330,9 +330,9 @@ final class Vector4 implements ArrayAccess
 
     public static function clampMagnitude(self $vector, float $maxLength): self
     {
-        if (\function_exists('lenga_internal_vector4_clamp_magnitude')) {
+        if (\Lenga\Engine\Core\NativeEngine::hasFunction('vector4_clamp_magnitude')) {
             /** @var array{x: float, y: float, z: float, w: float}|false $result */
-            $result = \lenga_internal_vector4_clamp_magnitude(
+            $result = \Lenga\Engine\Core\NativeEngine::call('vector4_clamp_magnitude',
                 $vector->x,
                 $vector->y,
                 $vector->z,
@@ -358,9 +358,9 @@ final class Vector4 implements ArrayAccess
 
     public static function moveTowards(self $current, self $target, float $maxDelta): self
     {
-        if (\function_exists('lenga_internal_vector4_move_towards')) {
+        if (\Lenga\Engine\Core\NativeEngine::hasFunction('vector4_move_towards')) {
             /** @var array{x: float, y: float, z: float, w: float}|false $result */
-            $result = \lenga_internal_vector4_move_towards(
+            $result = \Lenga\Engine\Core\NativeEngine::call('vector4_move_towards',
                 $current->x,
                 $current->y,
                 $current->z,
@@ -400,9 +400,9 @@ final class Vector4 implements ArrayAccess
 
     public static function project(self $vector, self $onNormal): self
     {
-        if (\function_exists('lenga_internal_vector4_project')) {
+        if (\Lenga\Engine\Core\NativeEngine::hasFunction('vector4_project')) {
             /** @var array{x: float, y: float, z: float, w: float}|false $result */
-            $result = \lenga_internal_vector4_project(
+            $result = \Lenga\Engine\Core\NativeEngine::call('vector4_project',
                 $vector->x,
                 $vector->y,
                 $vector->z,

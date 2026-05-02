@@ -20,7 +20,7 @@ final class Camera extends Component
         }
 
         set(bool $value) {
-            \lenga_internal_camera_set_primary($this->componentId, $value);
+            \Lenga\Engine\Core\NativeEngine::call('camera_set_primary', $this->componentId, $value);
         }
     }
 
@@ -30,7 +30,7 @@ final class Camera extends Component
         }
 
         set(string $value) {
-            \lenga_internal_camera_set_projection($this->componentId, $value);
+            \Lenga\Engine\Core\NativeEngine::call('camera_set_projection', $this->componentId, $value);
         }
     }
 
@@ -41,7 +41,7 @@ final class Camera extends Component
         }
 
         set(float $value) {
-            \lenga_internal_camera_set_field_of_view($this->componentId, $value);
+            \Lenga\Engine\Core\NativeEngine::call('camera_set_field_of_view', $this->componentId, $value);
         }
     }
 
@@ -52,7 +52,7 @@ final class Camera extends Component
         }
 
         set(float $value) {
-            \lenga_internal_camera_set_orthographic_size($this->componentId, $value);
+            \Lenga\Engine\Core\NativeEngine::call('camera_set_orthographic_size', $this->componentId, $value);
         }
     }
 
@@ -75,7 +75,7 @@ final class Camera extends Component
          *     enabled?: bool
          * } $state
          */
-        $state = \lenga_internal_camera_get_state($this->componentId);
+        $state = \Lenga\Engine\Core\NativeEngine::call('camera_get_state', $this->componentId);
 
         return \is_array($state) ? $state : [];
     }

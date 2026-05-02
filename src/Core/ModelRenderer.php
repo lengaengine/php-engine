@@ -20,7 +20,7 @@ final class ModelRenderer extends Component
         }
 
         set(string $value) {
-            \lenga_internal_model_renderer_load_model($this->componentId, $value);
+            \Lenga\Engine\Core\NativeEngine::call('model_renderer_load_model', $this->componentId, $value);
         }
     }
 
@@ -30,7 +30,7 @@ final class ModelRenderer extends Component
         }
 
         set(string $value) {
-            \lenga_internal_model_renderer_set_animation_path($this->componentId, $value);
+            \Lenga\Engine\Core\NativeEngine::call('model_renderer_set_animation_path', $this->componentId, $value);
         }
     }
 
@@ -40,7 +40,7 @@ final class ModelRenderer extends Component
         }
 
         set(string $value) {
-            \lenga_internal_model_renderer_set_material_path($this->componentId, $value);
+            \Lenga\Engine\Core\NativeEngine::call('model_renderer_set_material_path', $this->componentId, $value);
         }
     }
 
@@ -51,7 +51,7 @@ final class ModelRenderer extends Component
         }
 
         set(int $value) {
-            \lenga_internal_model_renderer_set_animation_index($this->componentId, $value);
+            \Lenga\Engine\Core\NativeEngine::call('model_renderer_set_animation_index', $this->componentId, $value);
         }
     }
 
@@ -61,7 +61,7 @@ final class ModelRenderer extends Component
         }
 
         set(bool $value) {
-            \lenga_internal_model_renderer_set_play_on_awake($this->componentId, $value);
+            \Lenga\Engine\Core\NativeEngine::call('model_renderer_set_play_on_awake', $this->componentId, $value);
         }
     }
 
@@ -71,7 +71,7 @@ final class ModelRenderer extends Component
         }
 
         set(bool $value) {
-            \lenga_internal_model_renderer_set_loop($this->componentId, $value);
+            \Lenga\Engine\Core\NativeEngine::call('model_renderer_set_loop', $this->componentId, $value);
         }
     }
 
@@ -82,7 +82,7 @@ final class ModelRenderer extends Component
         }
 
         set(float $value) {
-            \lenga_internal_model_renderer_set_speed($this->componentId, $value);
+            \Lenga\Engine\Core\NativeEngine::call('model_renderer_set_speed', $this->componentId, $value);
         }
     }
 
@@ -93,18 +93,18 @@ final class ModelRenderer extends Component
         }
 
         set(float $value) {
-            \lenga_internal_model_renderer_set_playback_fps($this->componentId, $value);
+            \Lenga\Engine\Core\NativeEngine::call('model_renderer_set_playback_fps', $this->componentId, $value);
         }
     }
 
     public function loadModel(string $modelPath): bool
     {
-        return \lenga_internal_model_renderer_load_model($this->componentId, $modelPath);
+        return \Lenga\Engine\Core\NativeEngine::call('model_renderer_load_model', $this->componentId, $modelPath);
     }
 
     public function loadAnimations(string $animationPath): bool
     {
-        return \lenga_internal_model_renderer_set_animation_path($this->componentId, $animationPath);
+        return \Lenga\Engine\Core\NativeEngine::call('model_renderer_set_animation_path', $this->componentId, $animationPath);
     }
 
     public function getAnimationCount(): int
@@ -129,12 +129,12 @@ final class ModelRenderer extends Component
 
     public function play(): bool
     {
-        return \lenga_internal_model_renderer_play($this->componentId);
+        return \Lenga\Engine\Core\NativeEngine::call('model_renderer_play', $this->componentId);
     }
 
     public function stop(): bool
     {
-        return \lenga_internal_model_renderer_stop($this->componentId);
+        return \Lenga\Engine\Core\NativeEngine::call('model_renderer_stop', $this->componentId);
     }
 
     /**
@@ -156,7 +156,7 @@ final class ModelRenderer extends Component
 
     public function setColor(int $red, int $green, int $blue, int $alpha = 255): void
     {
-        \lenga_internal_model_renderer_set_color($this->componentId, $red, $green, $blue, $alpha);
+        \Lenga\Engine\Core\NativeEngine::call('model_renderer_set_color', $this->componentId, $red, $green, $blue, $alpha);
     }
 
     /**
@@ -194,7 +194,7 @@ final class ModelRenderer extends Component
          *     enabled?: bool
          * } $state
          */
-        $state = \lenga_internal_model_renderer_get_state($this->componentId);
+        $state = \Lenga\Engine\Core\NativeEngine::call('model_renderer_get_state', $this->componentId);
 
         return \is_array($state) ? $state : [];
     }

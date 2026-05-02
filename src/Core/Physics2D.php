@@ -53,7 +53,7 @@ final class Physics2D
         bool $includeTriggers = true,
         ?int $layerMask = null,
     ): ?RaycastHit2D {
-        $result = \lenga_internal_physics2d_raycast(
+        $result = \Lenga\Engine\Core\NativeEngine::call('physics2d_raycast',
             $origin->x,
             $origin->y,
             $origin->z,
@@ -78,7 +78,7 @@ final class Physics2D
         bool $includeTriggers = true,
         ?int $layerMask = null,
     ): array {
-        $result = \lenga_internal_physics2d_raycast_all(
+        $result = \Lenga\Engine\Core\NativeEngine::call('physics2d_raycast_all',
             $origin->x,
             $origin->y,
             $origin->z,
@@ -101,7 +101,7 @@ final class Physics2D
         bool $includeTriggers = true,
         ?int $layerMask = null,
     ): ?RaycastHit2D {
-        $result = \lenga_internal_physics2d_circle_cast(
+        $result = \Lenga\Engine\Core\NativeEngine::call('physics2d_circle_cast',
             $origin->x,
             $origin->y,
             $origin->z,
@@ -128,7 +128,7 @@ final class Physics2D
         bool $includeTriggers = true,
         ?int $layerMask = null,
     ): array {
-        $result = \lenga_internal_physics2d_circle_cast_all(
+        $result = \Lenga\Engine\Core\NativeEngine::call('physics2d_circle_cast_all',
             $origin->x,
             $origin->y,
             $origin->z,
@@ -152,7 +152,7 @@ final class Physics2D
         bool $includeTriggers = true,
         ?int $layerMask = null,
     ): ?RaycastHit2D {
-        $result = \lenga_internal_physics2d_box_cast(
+        $result = \Lenga\Engine\Core\NativeEngine::call('physics2d_box_cast',
             $origin->x,
             $origin->y,
             $origin->z,
@@ -181,7 +181,7 @@ final class Physics2D
         bool $includeTriggers = true,
         ?int $layerMask = null,
     ): array {
-        $result = \lenga_internal_physics2d_box_cast_all(
+        $result = \Lenga\Engine\Core\NativeEngine::call('physics2d_box_cast_all',
             $origin->x,
             $origin->y,
             $origin->z,
@@ -205,7 +205,7 @@ final class Physics2D
         ?int $layerMask = null,
     ): ?Component
     {
-        $result = \lenga_internal_physics2d_overlap_point(
+        $result = \Lenga\Engine\Core\NativeEngine::call('physics2d_overlap_point',
             $point->x,
             $point->y,
             $point->z,
@@ -227,7 +227,7 @@ final class Physics2D
         bool $includeTriggers = true,
         ?int $layerMask = null,
     ): array {
-        $result = \lenga_internal_physics2d_overlap_circle_all(
+        $result = \Lenga\Engine\Core\NativeEngine::call('physics2d_overlap_circle_all',
             $center->x,
             $center->y,
             $center->z,
@@ -253,7 +253,7 @@ final class Physics2D
         bool $includeTriggers = true,
         ?int $layerMask = null,
     ): array {
-        $result = \lenga_internal_physics2d_overlap_box_all(
+        $result = \Lenga\Engine\Core\NativeEngine::call('physics2d_overlap_box_all',
             $center->x,
             $center->y,
             $center->z,
