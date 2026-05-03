@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Lenga\Engine\Core;
 
 use Lenga\Engine\SceneManagement\Scene;
+use RuntimeException;
 
 final class Prefab
 {
@@ -16,7 +17,7 @@ final class Prefab
     {
         $scene = Scene::getActive();
         if ($scene === null) {
-            throw new \RuntimeException('Cannot instantiate a prefab without an active scene.');
+            throw new RuntimeException('Cannot instantiate a prefab without an active scene.');
         }
 
         return $scene->instantiatePrefab($assetPath, $name);

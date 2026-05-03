@@ -6,6 +6,7 @@ namespace Lenga\Engine\SceneManagement;
 
 use Lenga\Engine\Core\GameObject;
 use Lenga\Engine\Core\NativeEngine;
+use LogicException;
 use RuntimeException;
 
 final class SceneManager
@@ -46,14 +47,14 @@ final class SceneManager
 
     public static function createScene(string $name): Scene
     {
-        throw new \LogicException(
+        throw new LogicException(
             "SceneManager::createScene('{$name}') is not supported by the embedded runtime yet.",
         );
     }
 
     public static function setActiveScene(Scene $scene): void
     {
-        throw new \LogicException(
+        throw new LogicException(
             "SceneManager::setActiveScene() is not supported by the embedded runtime yet.",
         );
     }

@@ -4,7 +4,11 @@ declare(strict_types=1);
 
 namespace Lenga\Engine\Tests\Core;
 
+use FilesystemIterator;
 use PHPUnit\Framework\TestCase;
+use RecursiveDirectoryIterator;
+use RecursiveIteratorIterator;
+use SplFileInfo;
 
 final class InternalApiBoundaryTest extends TestCase
 {
@@ -89,16 +93,16 @@ final class InternalApiBoundaryTest extends TestCase
     }
 
     /**
-     * @return iterable<\SplFileInfo>
+     * @return iterable<SplFileInfo>
      */
     private function sourceFiles(string $sourceRoot): iterable
     {
-        $iterator = new \RecursiveIteratorIterator(
-            new \RecursiveDirectoryIterator($sourceRoot, \FilesystemIterator::SKIP_DOTS)
+        $iterator = new RecursiveIteratorIterator(
+            new RecursiveDirectoryIterator($sourceRoot, FilesystemIterator::SKIP_DOTS)
         );
 
         foreach ($iterator as $file) {
-            if (!$file instanceof \SplFileInfo || $file->getExtension() !== 'php') {
+            if (!$file instanceof SplFileInfo || $file->getExtension() !== 'php') {
                 continue;
             }
 

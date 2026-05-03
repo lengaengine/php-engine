@@ -4,14 +4,28 @@ declare(strict_types=1);
 
 namespace Lenga\Engine\Core;
 
+use BackedEnum;
+use Generator;
 use Lenga\Engine\Attributes\RequireComponent;
 use Lenga\Engine\Attributes\SerializeReference;
 use Lenga\Engine\Interfaces\ComponentInterface;
 use Lenga\Engine\UI\Canvas;
 use Lenga\Engine\UI\UIElement;
+use ReflectionClass;
+use ReflectionNamedType;
 use ReflectionObject;
+use ReflectionProperty;
+use ReflectionType;
+use ReflectionUnionType;
 use Throwable;
+use function class_exists;
+use function enum_exists;
+use function is_a;
+use function is_array;
+use function is_int;
 use function is_string;
+use function is_subclass_of;
+use function property_exists;
 use function spl_object_id;
 
 abstract class Behaviour implements ComponentInterface
@@ -181,7 +195,7 @@ abstract class Behaviour implements ComponentInterface
         $componentSceneId = isset($data['componentSceneId']) && is_string($data['componentSceneId'])
             ? $data['componentSceneId']
             : null;
-        $gameObjectData = \is_array($data['gameObject'] ?? null) ? $data['gameObject'] : [];
+        $gameObjectData = is_array($data['gameObject'] ?? null) ? $data['gameObject'] : [];
         $gameObject = GameObject::fromSerializedReference($gameObjectData);
         if ($gameObject !== null) {
             $resolved = null;
@@ -189,7 +203,7 @@ abstract class Behaviour implements ComponentInterface
                 foreach ($gameObject->getComponents($className) as $candidate) {
                     if (
                         $candidate instanceof self &&
-                        \property_exists($candidate, 'sceneComponentId') &&
+                        property_exists($candidate, 'sceneComponentId') &&
                         $candidate->sceneComponentId === $componentSceneId
                     ) {
                         $resolved = $candidate;
@@ -224,25 +238,25 @@ abstract class Behaviour implements ComponentInterface
             }
         }
 
-        $this->componentId = isset($data['instanceId']) && \is_int($data['instanceId']) ? $data['instanceId'] : null;
+        $this->componentId = isset($data['instanceId']) && is_int($data['instanceId']) ? $data['instanceId'] : null;
         $this->sceneComponentId = $componentSceneId;
         if ($gameObject !== null) {
             $this->gameObjectValue = $gameObject;
         }
     }
 
-    private function resolveSerializedPropertyValue(\ReflectionProperty $property, mixed $value): mixed
+    private function resolveSerializedPropertyValue(ReflectionProperty $property, mixed $value): mixed
     {
         if ($value instanceof Vector2 || $value instanceof Vector3) {
             return $value;
         }
 
-        if (!\is_array($value) || !isset($value['__lengaRefKind']) || !is_string($value['__lengaRefKind'])) {
+        if (!is_array($value) || !isset($value['__lengaRefKind']) || !is_string($value['__lengaRefKind'])) {
             return $this->resolveStructuredValueType($property, $value);
         }
 
         $type = $property->getType();
-        if (!$type instanceof \ReflectionType) {
+        if (!$type instanceof ReflectionType) {
             return $value;
         }
 
@@ -281,7 +295,7 @@ abstract class Behaviour implements ComponentInterface
             return $gameObject->transform;
         }
 
-        if ($resolvedTypeName === Behaviour::class || \is_subclass_of($resolvedTypeName, Behaviour::class)) {
+        if ($resolvedTypeName === Behaviour::class || is_subclass_of($resolvedTypeName, Behaviour::class)) {
             $componentClass = isset($value['className']) && is_string($value['className']) && $resolvedTypeName === Behaviour::class
                 ? $value['className']
                 : $resolvedTypeName;
@@ -292,7 +306,7 @@ abstract class Behaviour implements ComponentInterface
                 foreach ($gameObject->getComponents($componentClass) as $candidate) {
                     if (
                         $candidate instanceof Behaviour &&
-                        \property_exists($candidate, 'sceneComponentId') &&
+                        property_exists($candidate, 'sceneComponentId') &&
                         $candidate->sceneComponentId === $componentSceneId
                     ) {
                         return $candidate;
@@ -302,7 +316,7 @@ abstract class Behaviour implements ComponentInterface
             return $gameObject->getComponent($componentClass);
         }
 
-        if ($resolvedTypeName === Component::class || \is_subclass_of($resolvedTypeName, Component::class)) {
+        if ($resolvedTypeName === Component::class || is_subclass_of($resolvedTypeName, Component::class)) {
             $componentType = isset($value['componentType']) && is_string($value['componentType']) && $resolvedTypeName === Component::class
                 ? $value['componentType']
                 : $resolvedTypeName;
@@ -331,10 +345,10 @@ abstract class Behaviour implements ComponentInterface
         return $value;
     }
 
-    private function resolveStructuredValueType(\ReflectionProperty $property, mixed $value): mixed
+    private function resolveStructuredValueType(ReflectionProperty $property, mixed $value): mixed
     {
         $type = $property->getType();
-        if (!$type instanceof \ReflectionType) {
+        if (!$type instanceof ReflectionType) {
             return $value;
         }
 
@@ -343,11 +357,11 @@ abstract class Behaviour implements ComponentInterface
             return $value;
         }
 
-        if (\enum_exists($resolvedTypeName)) {
+        if (enum_exists($resolvedTypeName)) {
             return $this->resolveEnumValue($resolvedTypeName, $value);
         }
 
-        if (!\is_array($value)) {
+        if (!is_array($value)) {
             return $value;
         }
 
@@ -390,10 +404,6 @@ abstract class Behaviour implements ComponentInterface
                 continue;
             }
 
-            if (!$property->isPublic() && \method_exists($property, 'setAccessible')) {
-                $property->setAccessible(true);
-            }
-
             $resolvedValue = $this->resolveSerializedPropertyValue($property, $value);
 
             try {
@@ -409,19 +419,15 @@ abstract class Behaviour implements ComponentInterface
             }
 
             $type = $property->getType();
-            $resolvedTypeName = $type instanceof \ReflectionType
+            $resolvedTypeName = $type instanceof ReflectionType
                 ? $this->resolvePropertyTypeName($type)
                 : null;
             if ($resolvedTypeName === null) {
                 continue;
             }
 
-            if ($type instanceof \ReflectionNamedType && $type->allowsNull()) {
+            if ($type instanceof ReflectionNamedType && $type->allowsNull()) {
                 continue;
-            }
-
-            if (!$property->isPublic() && \method_exists($property, 'setAccessible')) {
-                $property->setAccessible(true);
             }
 
             try {
@@ -444,7 +450,7 @@ abstract class Behaviour implements ComponentInterface
         }
     }
 
-    private function propertyHasAttribute(\ReflectionProperty $property, string $attributeClassName): bool
+    private function propertyHasAttribute(ReflectionProperty $property, string $attributeClassName): bool
     {
         foreach ($property->getAttributes() as $attribute) {
             $resolvedName = ltrim($attribute->getName(), '\\');
@@ -458,7 +464,7 @@ abstract class Behaviour implements ComponentInterface
 
     private function resolveManagedReferenceValue(string $declaredTypeName, mixed $value): mixed
     {
-        if (!\is_array($value)) {
+        if (!is_array($value)) {
             return $value;
         }
 
@@ -467,18 +473,18 @@ abstract class Behaviour implements ComponentInterface
             $concreteTypeName = ltrim($value['__className'], '\\');
         }
 
-        if ($concreteTypeName === '' || !\class_exists($concreteTypeName)) {
+        if ($concreteTypeName === '' || !class_exists($concreteTypeName)) {
             return $value;
         }
 
         if ($declaredTypeName !== '' &&
             $concreteTypeName !== $declaredTypeName &&
-            !\is_a($concreteTypeName, $declaredTypeName, true)) {
+            !is_a($concreteTypeName, $declaredTypeName, true)) {
             return $value;
         }
 
         try {
-            $reflection = new \ReflectionClass($concreteTypeName);
+            $reflection = new ReflectionClass($concreteTypeName);
             if (!$reflection->isInstantiable()) {
                 return $value;
             }
@@ -506,8 +512,8 @@ abstract class Behaviour implements ComponentInterface
             return $value;
         }
 
-        if (\is_subclass_of($resolvedTypeName, \BackedEnum::class) &&
-            (is_string($value) || \is_int($value))) {
+        if (is_subclass_of($resolvedTypeName, BackedEnum::class) &&
+            (is_string($value) || is_int($value))) {
             $resolvedCase = $resolvedTypeName::tryFrom($value);
             if ($resolvedCase !== null) {
                 return $resolvedCase;
@@ -525,15 +531,15 @@ abstract class Behaviour implements ComponentInterface
         return $value;
     }
 
-    private function resolvePropertyTypeName(\ReflectionType $type): ?string
+    private function resolvePropertyTypeName(ReflectionType $type): ?string
     {
-        if ($type instanceof \ReflectionNamedType) {
+        if ($type instanceof ReflectionNamedType) {
             return $type->getName();
         }
 
-        if ($type instanceof \ReflectionUnionType) {
+        if ($type instanceof ReflectionUnionType) {
             foreach ($type->getTypes() as $unionType) {
-                if ($unionType instanceof \ReflectionNamedType && $unionType->getName() !== 'null') {
+                if ($unionType instanceof ReflectionNamedType && $unionType->getName() !== 'null') {
                     return $unionType->getName();
                 }
             }
@@ -542,7 +548,7 @@ abstract class Behaviour implements ComponentInterface
         return null;
     }
 
-    public function startCoroutine(\Generator $routine): Coroutine
+    public function startCoroutine(Generator $routine): Coroutine
     {
         $coroutine = new Coroutine($routine);
         $this->coroutines[$coroutine->getId()] = $coroutine;
@@ -555,7 +561,7 @@ abstract class Behaviour implements ComponentInterface
         return $coroutine;
     }
 
-    public function stopCoroutine(Coroutine|\Generator $routine): void
+    public function stopCoroutine(Coroutine|Generator $routine): void
     {
         foreach ($this->coroutines as $id => $coroutine) {
             if ($routine instanceof Coroutine) {

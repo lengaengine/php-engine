@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Lenga\Engine\Core;
 
+use Generator;
+
 final class Coroutine
 {
     private static int $nextId = 1;
@@ -14,7 +16,7 @@ final class Coroutine
     private mixed $currentYield = null;
 
     public function __construct(
-        private readonly \Generator $generator,
+        private readonly Generator $generator,
     ) {
         $this->id = self::$nextId++;
     }
@@ -35,7 +37,7 @@ final class Coroutine
         $this->currentYield = null;
     }
 
-    public function matchesGenerator(\Generator $generator): bool
+    public function matchesGenerator(Generator $generator): bool
     {
         return $this->generator === $generator;
     }

@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace Lenga\Engine\Attributes;
 
-#[\Attribute(\Attribute::TARGET_CLASS | \Attribute::IS_REPEATABLE)]
+use Attribute;
+
+#[Attribute(Attribute::TARGET_CLASS | Attribute::IS_REPEATABLE)]
 class RequireComponent
 {
     /**

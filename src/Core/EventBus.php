@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Lenga\Engine\Core;
 
+use InvalidArgumentException;
+
 /**
  * Process-wide PHP event bus for cross-system gameplay and engine events.
  *
@@ -13,7 +15,7 @@ namespace Lenga\Engine\Core;
  */
 final class EventBus
 {
-    public const UI_SELECTION_CHANGED = 'ui.selection_changed';
+    public const string UI_SELECTION_CHANGED = 'ui.selection_changed';
 
     /**
      * @var array<string, array<int, array{listener: callable, once: bool}>>
@@ -135,7 +137,7 @@ final class EventBus
     private static function register(string $eventName, callable $listener, bool $once): SignalSubscription
     {
         if ($eventName === '') {
-            throw new \InvalidArgumentException('EventBus event name cannot be empty.');
+            throw new InvalidArgumentException('EventBus event name cannot be empty.');
         }
 
         $listenerId = self::$nextListenerId++;

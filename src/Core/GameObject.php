@@ -4,7 +4,10 @@ declare(strict_types=1);
 
 namespace Lenga\Engine\Core;
 
+use Closure;
+use InvalidArgumentException;
 use Lenga\Engine\SceneManagement\Scene;
+use RuntimeException;
 
 final class GameObject
 {
@@ -31,7 +34,7 @@ final class GameObject
     private function attachTransformToSelf(?int $gameObjectId = null): void
     {
         $gameObject = $this;
-        $bound = \Closure::bind(
+        $bound = Closure::bind(
             function () use ($gameObject, $gameObjectId): void {
                 $this->gameObjectValue = $gameObject;
                 $this->gameObjectId = $gameObjectId ?? $gameObject->getInstanceId();
@@ -41,7 +44,7 @@ final class GameObject
         );
 
         if ($bound === null) {
-            throw new \RuntimeException('Failed to bind Transform to GameObject.');
+            throw new RuntimeException('Failed to bind Transform to GameObject.');
         }
 
         $bound();
@@ -415,12 +418,12 @@ final class GameObject
     public function addComponent(string $type): object
     {
         if ($this->instanceId === null) {
-            throw new \RuntimeException('Cannot add components to a detached GameObject proxy.');
+            throw new RuntimeException('Cannot add components to a detached GameObject proxy.');
         }
 
         $descriptor = self::normalizeComponentSpecifier($type);
         if ($descriptor['nativeType'] === 'Behaviour' && $descriptor['scriptClass'] === null) {
-            throw new \InvalidArgumentException(
+            throw new InvalidArgumentException(
                 'Adding a Behaviour requires a concrete script class, for example PlayerController::class.',
             );
         }
@@ -433,7 +436,7 @@ final class GameObject
 
         $wrapped = $this->wrapNativeComponentResult($nativeResult);
         if ($wrapped === null) {
-            throw new \RuntimeException("Failed to add component '{$type}' to '{$this->name}'.");
+            throw new RuntimeException("Failed to add component '{$type}' to '{$this->name}'.");
         }
 
         return $wrapped;
@@ -510,7 +513,7 @@ final class GameObject
         /** @var array{name?: string, tag?: string, layer?: int, id?: int, activeSelf?: bool, activeInHierarchy?: bool, transformId?: int|null}|false $data */
         $data = NativeEngine::call('scene_create_game_object', $name);
         if (!\is_array($data)) {
-            throw new \RuntimeException("Failed to create GameObject '{$name}' in the active scene.");
+            throw new RuntimeException("Failed to create GameObject '{$name}' in the active scene.");
         }
 
         return self::fromNativeLookupData($data);
@@ -520,13 +523,13 @@ final class GameObject
     {
         $instanceId = $original->instanceId;
         if ($instanceId === null) {
-            throw new \RuntimeException('Cannot instantiate a detached GameObject proxy.');
+            throw new RuntimeException('Cannot instantiate a detached GameObject proxy.');
         }
 
         /** @var array{name?: string, tag?: string, layer?: int, id?: int, activeSelf?: bool, activeInHierarchy?: bool, transformId?: int|null}|false $data */
         $data = NativeEngine::call('game_object_instantiate_by_id', $instanceId, $name);
         if (!\is_array($data)) {
-            throw new \RuntimeException("Failed to instantiate GameObject '{$original->name}'.");
+            throw new RuntimeException("Failed to instantiate GameObject '{$original->name}'.");
         }
 
         return self::fromNativeLookupData($data);
@@ -802,7 +805,7 @@ final class GameObject
 
     private static function attachSceneComponentId(Component $component, string $sceneComponentId): void
     {
-        $bound = \Closure::bind(
+        $bound = Closure::bind(
             function () use ($sceneComponentId): void {
                 $this->sceneComponentId = $sceneComponentId;
             },
@@ -811,7 +814,7 @@ final class GameObject
         );
 
         if ($bound === null) {
-            throw new \RuntimeException('Failed to bind scene component id.');
+            throw new RuntimeException('Failed to bind scene component id.');
         }
 
         $bound();

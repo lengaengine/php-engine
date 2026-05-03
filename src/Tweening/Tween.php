@@ -10,6 +10,7 @@ use Lenga\Engine\Core\Vector3;
 use Lenga\Engine\Internal\Bindings;
 use Lenga\Engine\UI\RectTransform;
 use Lenga\Engine\UI\UIElement;
+use LogicException;
 
 final class Tween
 {
@@ -494,7 +495,7 @@ final class Tween
     {
         $transformId = $transform->getNativeId();
         if ($transformId === null) {
-            throw new \LogicException('Tweening requires a native Transform instance.');
+            throw new LogicException('Tweening requires a native Transform instance.');
         }
 
         return $transformId;

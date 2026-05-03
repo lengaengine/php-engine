@@ -7,6 +7,7 @@ namespace Lenga\Engine\SceneManagement;
 use Lenga\Engine\Core\GameObject;
 use Lenga\Engine\Core\NativeEngine;
 use Lenga\Engine\UI\Canvas;
+use RuntimeException;
 
 final class Scene
 {
@@ -40,7 +41,7 @@ final class Scene
         /** @var array{id?: int, name?: string}|false $data */
         $data = NativeEngine::call('scene_create_canvas', $name);
         if (!\is_array($data)) {
-            throw new \RuntimeException("Failed to create Canvas '{$name}' in the active scene.");
+            throw new RuntimeException("Failed to create Canvas '{$name}' in the active scene.");
         }
 
         return Canvas::fromNativeLookupData($data);
@@ -114,7 +115,7 @@ final class Scene
         /** @var array{name?: string, tag?: string, layer?: int, id?: int, activeSelf?: bool, activeInHierarchy?: bool, transformId?: int|null}|false $data */
         $data = NativeEngine::call('scene_instantiate_prefab', $assetPath, $name);
         if (!\is_array($data)) {
-            throw new \RuntimeException("Failed to instantiate prefab '{$assetPath}'.");
+            throw new RuntimeException("Failed to instantiate prefab '{$assetPath}'.");
         }
 
         return GameObject::fromNativeLookupData($data);

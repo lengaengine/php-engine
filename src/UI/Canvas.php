@@ -7,6 +7,7 @@ namespace Lenga\Engine\UI;
 use Lenga\Engine\Core\NativeEngine;
 use Lenga\Engine\Core\Vector2;
 use Lenga\Engine\Enumerations\CanvasRenderMode;
+use RuntimeException;
 
 final class Canvas
 {
@@ -99,12 +100,12 @@ final class Canvas
         /** @var array{id?: int, name?: string, type?: string, canvasId?: int|null}|false $data */
         $data = NativeEngine::call('ui_canvas_create_text', $this->canvasId, $name, $parent?->getId());
         if (!\is_array($data)) {
-            throw new \RuntimeException("Failed to create UI Text element '{$name}'.");
+            throw new RuntimeException("Failed to create UI Text element '{$name}'.");
         }
 
         $element = UIElement::fromNativeLookupData($data);
         if (!$element instanceof Text) {
-            throw new \RuntimeException("Native UI element '{$name}' was not returned as Text.");
+            throw new RuntimeException("Native UI element '{$name}' was not returned as Text.");
         }
 
         return $element;
@@ -115,12 +116,12 @@ final class Canvas
         /** @var array{id?: int, name?: string, type?: string, canvasId?: int|null}|false $data */
         $data = NativeEngine::call('ui_canvas_create_image', $this->canvasId, $name, $parent?->getId());
         if (!\is_array($data)) {
-            throw new \RuntimeException("Failed to create UI Image element '{$name}'.");
+            throw new RuntimeException("Failed to create UI Image element '{$name}'.");
         }
 
         $element = UIElement::fromNativeLookupData($data);
         if (!$element instanceof Image) {
-            throw new \RuntimeException("Native UI element '{$name}' was not returned as Image.");
+            throw new RuntimeException("Native UI element '{$name}' was not returned as Image.");
         }
 
         return $element;
@@ -131,12 +132,12 @@ final class Canvas
         /** @var array{id?: int, name?: string, type?: string, canvasId?: int|null}|false $data */
         $data = NativeEngine::call('ui_canvas_create_button', $this->canvasId, $name, $parent?->getId());
         if (!\is_array($data)) {
-            throw new \RuntimeException("Failed to create UI Button element '{$name}'.");
+            throw new RuntimeException("Failed to create UI Button element '{$name}'.");
         }
 
         $element = UIElement::fromNativeLookupData($data);
         if (!$element instanceof Button) {
-            throw new \RuntimeException("Native UI element '{$name}' was not returned as Button.");
+            throw new RuntimeException("Native UI element '{$name}' was not returned as Button.");
         }
 
         return $element;
@@ -147,12 +148,12 @@ final class Canvas
         /** @var array{id?: int, name?: string, type?: string, canvasId?: int|null}|false $data */
         $data = NativeEngine::call('ui_canvas_create_slider', $this->canvasId, $name, $parent?->getId());
         if (!\is_array($data)) {
-            throw new \RuntimeException("Failed to create UI Slider element '{$name}'.");
+            throw new RuntimeException("Failed to create UI Slider element '{$name}'.");
         }
 
         $element = UIElement::fromNativeLookupData($data);
         if (!$element instanceof Slider) {
-            throw new \RuntimeException("Native UI element '{$name}' was not returned as Slider.");
+            throw new RuntimeException("Native UI element '{$name}' was not returned as Slider.");
         }
 
         return $element;
@@ -246,7 +247,7 @@ final class Canvas
     {
         $id = (int) ($data['id'] ?? 0);
         if ($id <= 0) {
-            throw new \RuntimeException('Invalid native Canvas lookup data received.');
+            throw new RuntimeException('Invalid native Canvas lookup data received.');
         }
 
         return new self(
@@ -318,7 +319,7 @@ final class Canvas
          */
         $state = NativeEngine::call('ui_canvas_get_state', $this->canvasId);
         if (!\is_array($state)) {
-            throw new \RuntimeException("Failed to resolve native Canvas '{$this->nameValue}'.");
+            throw new RuntimeException("Failed to resolve native Canvas '{$this->nameValue}'.");
         }
 
         return $state;

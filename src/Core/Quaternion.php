@@ -6,9 +6,9 @@ namespace Lenga\Engine\Core;
 
 final class Quaternion
 {
-    private const EPSILON = 0.000001;
-    private const RAD2DEG = 57.29577951308232;
-    private const DEG2RAD = 0.017453292519943295;
+    private const float EPSILON = 0.000001;
+    private const float RAD2DEG = 57.29577951308232;
+    private const float DEG2RAD = 0.017453292519943295;
 
     public float $x {
         get { return $this->x; }

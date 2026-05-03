@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Lenga\Engine\UI;
 
 use Lenga\Engine\Core\NativeEngine;
+use RuntimeException;
 
 abstract class UIElement
 {
@@ -119,7 +120,7 @@ abstract class UIElement
     {
         $canvas = $this->getCanvas();
         if ($canvas === null) {
-            throw new \RuntimeException("UI element '{$this->name}' is not attached to a canvas.");
+            throw new RuntimeException("UI element '{$this->name}' is not attached to a canvas.");
         }
 
         return $canvas->createText($name, $this);
@@ -129,7 +130,7 @@ abstract class UIElement
     {
         $canvas = $this->getCanvas();
         if ($canvas === null) {
-            throw new \RuntimeException("UI element '{$this->name}' is not attached to a canvas.");
+            throw new RuntimeException("UI element '{$this->name}' is not attached to a canvas.");
         }
 
         return $canvas->createImage($name, $this);
@@ -139,7 +140,7 @@ abstract class UIElement
     {
         $canvas = $this->getCanvas();
         if ($canvas === null) {
-            throw new \RuntimeException("UI element '{$this->name}' is not attached to a canvas.");
+            throw new RuntimeException("UI element '{$this->name}' is not attached to a canvas.");
         }
 
         return $canvas->createButton($name, $this);
@@ -149,7 +150,7 @@ abstract class UIElement
     {
         $canvas = $this->getCanvas();
         if ($canvas === null) {
-            throw new \RuntimeException("UI element '{$this->name}' is not attached to a canvas.");
+            throw new RuntimeException("UI element '{$this->name}' is not attached to a canvas.");
         }
 
         return $canvas->createSlider($name, $this);
@@ -178,7 +179,7 @@ abstract class UIElement
     {
         $id = (int) ($data['id'] ?? 0);
         if ($id <= 0) {
-            throw new \RuntimeException('Invalid native UI element lookup data received.');
+            throw new RuntimeException('Invalid native UI element lookup data received.');
         }
 
         $name = (string) ($data['name'] ?? 'UIElement');
@@ -190,7 +191,7 @@ abstract class UIElement
             'Image' => new Image($name, $id, $canvasId),
             'Button' => new Button($name, $id, $canvasId),
             'Slider' => new Slider($name, $id, $canvasId),
-            default => throw new \RuntimeException("Unsupported native UI element type '{$type}'."),
+            default => throw new RuntimeException("Unsupported native UI element type '{$type}'."),
         };
     }
 
@@ -349,7 +350,7 @@ abstract class UIElement
          */
         $state = NativeEngine::call('ui_element_get_state', $this->elementId);
         if (!\is_array($state)) {
-            throw new \RuntimeException("Failed to resolve native UI element '{$this->nameValue}'.");
+            throw new RuntimeException("Failed to resolve native UI element '{$this->nameValue}'.");
         }
 
         return $state;

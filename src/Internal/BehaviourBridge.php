@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Lenga\Engine\Internal;
 
+use Closure;
 use Lenga\Engine\Core\Behaviour;
 use Lenga\Engine\Core\GameObject;
 
@@ -15,7 +16,7 @@ use Lenga\Engine\Core\GameObject;
 final class BehaviourBridge
 {
     /**
-     * @var array<string, \Closure>
+     * @var array<string, Closure>
      */
     private static array $internalCalls = [];
 
@@ -63,7 +64,7 @@ final class BehaviourBridge
 
     private static function callInternal(Behaviour $behaviour, string $methodName, mixed ...$arguments): mixed
     {
-        $call = self::$internalCalls[$methodName] ??= \Closure::bind(
+        $call = self::$internalCalls[$methodName] ??= Closure::bind(
             static function (Behaviour $target, mixed ...$arguments) use ($methodName): mixed {
                 return $target->{$methodName}(...$arguments);
             },

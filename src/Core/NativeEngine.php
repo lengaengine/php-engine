@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Lenga\Engine\Core;
 
 use Lenga\Engine\Exceptions\LengaRuntimeUnavailableException;
+use LogicException;
 
 final class NativeEngine
 {
@@ -59,7 +60,7 @@ final class NativeEngine
             || str_contains($bindingName, '\\')
             || str_contains($bindingName, '::')
         ) {
-            throw new \LogicException('Native bridge calls must use logical binding names.');
+            throw new LogicException('Native bridge calls must use logical binding names.');
         }
     }
 

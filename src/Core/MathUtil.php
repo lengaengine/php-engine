@@ -21,13 +21,13 @@ final class MathUtil
     // ──────────────────────────────────────────────
 
     /** Degrees-to-radians conversion factor. */
-    public const DEG_2_RAD = M_PI / 180.0;
+    public const float DEG_2_RAD = M_PI / 180.0;
 
     /** Radians-to-degrees conversion factor. */
-    public const RAD_2_DEG = 180.0 / M_PI;
+    public const float RAD_2_DEG = 180.0 / M_PI;
 
     /** The well-known 3.14159265358979… */
-    public const PI = M_PI;
+    public const float PI = M_PI;
 
     /**
      * The smallest positive non-zero float that is meaningful for equality
@@ -38,13 +38,13 @@ final class MathUtil
      * numbers, use {@see approximately()} which applies a tolerance that
      * scales with the operand magnitudes.
      */
-    public const EPSILON = PHP_FLOAT_EPSILON;
+    public const float EPSILON = PHP_FLOAT_EPSILON;
 
     /** Positive infinity. */
-    public const INFINITY = INF;
+    public const float INFINITY = INF;
 
     /** Negative infinity. */
-    public const NEGATIVE_INFINITY = -INF;
+    public const float NEGATIVE_INFINITY = -INF;
 
     /** Prevent instantiation. */
     private function __construct() {}

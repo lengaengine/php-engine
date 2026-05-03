@@ -6,8 +6,8 @@ namespace Lenga\Engine\Core;
 
 abstract class YieldInstruction
 {
-    public const PHASE_UPDATE = 'update';
-    public const PHASE_FIXED_UPDATE = 'fixedUpdate';
+    public const string PHASE_UPDATE = 'update';
+    public const string PHASE_FIXED_UPDATE = 'fixedUpdate';
 
     public function resumePhase(): string
     {
