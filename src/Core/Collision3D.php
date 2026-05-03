@@ -44,12 +44,18 @@ final class Collision3D
         }
     }
 
+    /**
+     * @deprecated Use $gameObject instead. This property is retained for backward compatibility and will be removed in 0.9.0.
+     */
     public ?GameObject $otherGameObject {
         get {
             return $this->otherGameObjectValue;
         }
     }
 
+    /**
+     * @deprecated Use $collider instead. This property is retained for backward compatibility and will be removed in 0.9.0.
+     */
     public ?Component $otherCollider {
         get {
             return $this->otherColliderValue;
