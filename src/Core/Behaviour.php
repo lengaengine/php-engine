@@ -9,6 +9,10 @@ use Lenga\Engine\Attributes\SerializeReference;
 use Lenga\Engine\Interfaces\ComponentInterface;
 use Lenga\Engine\UI\Canvas;
 use Lenga\Engine\UI\UIElement;
+use ReflectionObject;
+use Throwable;
+use function is_string;
+use function spl_object_id;
 
 abstract class Behaviour implements ComponentInterface
 {
@@ -70,11 +74,11 @@ abstract class Behaviour implements ComponentInterface
         static $resolving = [];
 
         try {
-            $reflection = new \ReflectionObject($this);
+            $reflection = new ReflectionObject($this);
             foreach ($reflection->getAttributes(RequireComponent::class) as $attribute) {
                 $required = $attribute->newInstance();
                 foreach ($required->componentTypes as $componentType) {
-                    if (!\is_string($componentType) || $componentType === '') {
+                    if (!is_string($componentType) || $componentType === '') {
                         continue;
                     }
 
@@ -86,7 +90,7 @@ abstract class Behaviour implements ComponentInterface
                         continue;
                     }
 
-                    $gameObjectId = $gameObject->getInstanceId() ?? \spl_object_id($gameObject);
+                    $gameObjectId = $gameObject->getInstanceId() ?? spl_object_id($gameObject);
                     $resolutionKey = $gameObjectId . '|' . $componentType;
                     if (isset($resolving[$resolutionKey])) {
                         continue;
@@ -100,7 +104,7 @@ abstract class Behaviour implements ComponentInterface
                     }
                 }
             }
-        } catch (\Throwable $exception) {
+        } catch (Throwable $exception) {
             Debug::warn(
                 "Failed to apply RequireComponent for '" . static::class . "': " . $exception->getMessage()
             );
@@ -171,10 +175,10 @@ abstract class Behaviour implements ComponentInterface
 
     public function __unserialize(array $data): void
     {
-        $className = isset($data['className']) && \is_string($data['className'])
+        $className = isset($data['className']) && is_string($data['className'])
             ? $data['className']
             : static::class;
-        $componentSceneId = isset($data['componentSceneId']) && \is_string($data['componentSceneId'])
+        $componentSceneId = isset($data['componentSceneId']) && is_string($data['componentSceneId'])
             ? $data['componentSceneId']
             : null;
         $gameObjectData = \is_array($data['gameObject'] ?? null) ? $data['gameObject'] : [];
@@ -201,7 +205,7 @@ abstract class Behaviour implements ComponentInterface
                 $this->componentId = $resolved->getInstanceId();
                 $this->sceneComponentId = $resolved->sceneComponentId ?? $componentSceneId;
 
-                $resolvedReflection = new \ReflectionObject($resolved);
+                $resolvedReflection = new ReflectionObject($resolved);
                 foreach ($resolvedReflection->getProperties() as $property) {
                     if ($property->isStatic()) {
                         continue;
@@ -213,7 +217,7 @@ abstract class Behaviour implements ComponentInterface
 
                     try {
                         $this->{$property->getName()} = $property->getValue($resolved);
-                    } catch (\Throwable) {
+                    } catch (Throwable) {
                     }
                 }
                 return;
@@ -233,7 +237,7 @@ abstract class Behaviour implements ComponentInterface
             return $value;
         }
 
-        if (!\is_array($value) || !isset($value['__lengaRefKind']) || !\is_string($value['__lengaRefKind'])) {
+        if (!\is_array($value) || !isset($value['__lengaRefKind']) || !is_string($value['__lengaRefKind'])) {
             return $this->resolveStructuredValueType($property, $value);
         }
 
@@ -278,10 +282,10 @@ abstract class Behaviour implements ComponentInterface
         }
 
         if ($resolvedTypeName === Behaviour::class || \is_subclass_of($resolvedTypeName, Behaviour::class)) {
-            $componentClass = isset($value['className']) && \is_string($value['className']) && $resolvedTypeName === Behaviour::class
+            $componentClass = isset($value['className']) && is_string($value['className']) && $resolvedTypeName === Behaviour::class
                 ? $value['className']
                 : $resolvedTypeName;
-            $componentSceneId = isset($value['componentSceneId']) && \is_string($value['componentSceneId'])
+            $componentSceneId = isset($value['componentSceneId']) && is_string($value['componentSceneId'])
                 ? $value['componentSceneId']
                 : null;
             if ($componentSceneId !== null && $componentSceneId !== '') {
@@ -299,7 +303,7 @@ abstract class Behaviour implements ComponentInterface
         }
 
         if ($resolvedTypeName === Component::class || \is_subclass_of($resolvedTypeName, Component::class)) {
-            $componentType = isset($value['componentType']) && \is_string($value['componentType']) && $resolvedTypeName === Component::class
+            $componentType = isset($value['componentType']) && is_string($value['componentType']) && $resolvedTypeName === Component::class
                 ? $value['componentType']
                 : $resolvedTypeName;
 
@@ -307,7 +311,7 @@ abstract class Behaviour implements ComponentInterface
                 return $gameObject->transform;
             }
 
-            $componentSceneId = isset($value['componentSceneId']) && \is_string($value['componentSceneId'])
+            $componentSceneId = isset($value['componentSceneId']) && is_string($value['componentSceneId'])
                 ? $value['componentSceneId']
                 : null;
             if ($componentSceneId !== null && $componentSceneId !== '') {
@@ -374,10 +378,10 @@ abstract class Behaviour implements ComponentInterface
      */
     private function applySerializedPropertiesToObject(object $target, array $properties): void
     {
-        $reflection = new \ReflectionObject($target);
+        $reflection = new ReflectionObject($target);
 
         foreach ($properties as $name => $value) {
-            if (!\is_string($name) || $name === '' || $name[0] === '_' || !$reflection->hasProperty($name)) {
+            if (!is_string($name) || $name === '' || $name[0] === '_' || !$reflection->hasProperty($name)) {
                 continue;
             }
 
@@ -394,7 +398,7 @@ abstract class Behaviour implements ComponentInterface
 
             try {
                 $property->setValue($target, $resolvedValue);
-            } catch (\Throwable) {
+            } catch (Throwable) {
                 // Ignore incompatible assignments for MVP; script authors can fix the scene value.
             }
         }
@@ -424,7 +428,7 @@ abstract class Behaviour implements ComponentInterface
                 if ($property->isInitialized($target) && $property->getValue($target) !== null) {
                     continue;
                 }
-            } catch (\Throwable) {
+            } catch (Throwable) {
                 // Fall through and try to initialize a default object.
             }
 
@@ -434,7 +438,7 @@ abstract class Behaviour implements ComponentInterface
 
             try {
                 $property->setValue($target, $defaultReference);
-            } catch (\Throwable) {
+            } catch (Throwable) {
                 // Leave the property untouched if the reference cannot be initialized.
             }
         }
@@ -459,7 +463,7 @@ abstract class Behaviour implements ComponentInterface
         }
 
         $concreteTypeName = $declaredTypeName;
-        if (isset($value['__className']) && \is_string($value['__className']) && $value['__className'] !== '') {
+        if (isset($value['__className']) && is_string($value['__className']) && $value['__className'] !== '') {
             $concreteTypeName = ltrim($value['__className'], '\\');
         }
 
@@ -480,7 +484,7 @@ abstract class Behaviour implements ComponentInterface
             }
 
             $instance = $reflection->newInstanceWithoutConstructor();
-        } catch (\Throwable) {
+        } catch (Throwable) {
             return $value;
         }
 
@@ -491,6 +495,11 @@ abstract class Behaviour implements ComponentInterface
         return $instance;
     }
 
+    /**
+     * @param string $resolvedTypeName
+     * @param mixed $value
+     * @return mixed
+     */
     private function resolveEnumValue(string $resolvedTypeName, mixed $value): mixed
     {
         if ($value === null || $value instanceof $resolvedTypeName) {
@@ -498,14 +507,14 @@ abstract class Behaviour implements ComponentInterface
         }
 
         if (\is_subclass_of($resolvedTypeName, \BackedEnum::class) &&
-            (\is_string($value) || \is_int($value))) {
+            (is_string($value) || \is_int($value))) {
             $resolvedCase = $resolvedTypeName::tryFrom($value);
             if ($resolvedCase !== null) {
                 return $resolvedCase;
             }
         }
 
-        if (\is_string($value)) {
+        if (is_string($value)) {
             foreach ($resolvedTypeName::cases() as $enumCase) {
                 if ($enumCase->name === $value) {
                     return $enumCase;
@@ -575,7 +584,7 @@ abstract class Behaviour implements ComponentInterface
     protected function createSignal(): Signal
     {
         $signal = new Signal();
-        $this->ownedSignals[\spl_object_id($signal)] = $signal;
+        $this->ownedSignals[spl_object_id($signal)] = $signal;
         return $signal;
     }
 
@@ -618,7 +627,7 @@ abstract class Behaviour implements ComponentInterface
         bool $disposeOnDisable = true
     ): SignalSubscription
     {
-        $subscriptionId = \spl_object_id($subscription);
+        $subscriptionId = spl_object_id($subscription);
         if ($disposeOnDisable) {
             $this->ownedSubscriptionsOnDisable[$subscriptionId] = $subscription;
             unset($this->ownedSubscriptionsUntilDestroy[$subscriptionId]);
@@ -775,7 +784,7 @@ abstract class Behaviour implements ComponentInterface
     {
         $ownerKey = $this->componentId !== null
             ? 'component:' . $this->componentId
-            : 'object:' . \spl_object_id($this);
+            : 'object:' . spl_object_id($this);
 
         return $ownerKey . '|' . ($once ? 'once' : 'on') . '|' . $eventName . '|' . $this->eventSubscriptionCallsite();
     }

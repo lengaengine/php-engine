@@ -6,6 +6,7 @@ namespace Lenga\Engine\SceneManagement;
 
 use Lenga\Engine\Core\GameObject;
 use Lenga\Engine\Core\NativeEngine;
+use RuntimeException;
 
 final class SceneManager
 {
@@ -17,8 +18,8 @@ final class SceneManager
     public static function loadScene(string $sceneNameOrPath): void
     {
         if (!self::tryLoadScene($sceneNameOrPath)) {
-            throw new \RuntimeException(
-                "Failed to load scene '{$sceneNameOrPath}'. Make sure it exists and is enabled in Build Settings.",
+            throw new RuntimeException(
+                "Failed to load scene '$sceneNameOrPath'. Make sure it exists and is enabled in Build Settings.",
             );
         }
     }
@@ -37,7 +38,7 @@ final class SceneManager
     {
         $scene = self::getActiveScene();
         if ($scene === null) {
-            throw new \RuntimeException('Cannot instantiate a prefab without an active scene.');
+            throw new RuntimeException('Cannot instantiate a prefab without an active scene.');
         }
 
         return $scene->instantiatePrefab($assetPath, $name);
