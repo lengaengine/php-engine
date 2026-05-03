@@ -19,6 +19,7 @@ use ReflectionType;
 use ReflectionUnionType;
 use Throwable;
 use function class_exists;
+use function debug_backtrace;
 use function enum_exists;
 use function is_a;
 use function is_array;
@@ -27,6 +28,7 @@ use function is_string;
 use function is_subclass_of;
 use function property_exists;
 use function spl_object_id;
+use const DEBUG_BACKTRACE_IGNORE_ARGS;
 
 abstract class Behaviour implements ComponentInterface
 {
@@ -797,7 +799,7 @@ abstract class Behaviour implements ComponentInterface
 
     private function eventSubscriptionCallsite(): string
     {
-        foreach (\debug_backtrace(\DEBUG_BACKTRACE_IGNORE_ARGS, 10) as $frame) {
+        foreach (debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, 10) as $frame) {
             if (!isset($frame['file'], $frame['line']) || $frame['file'] === __FILE__) {
                 continue;
             }
