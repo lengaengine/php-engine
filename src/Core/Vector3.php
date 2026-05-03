@@ -405,7 +405,7 @@ final class Vector3 implements ArrayAccess
     public static function lerp(Vector3 $a, Vector3 $b, float $t): self
     {
         /** @var array{x: float, y: float, z: float}|false $result */
-        $result = \lenga_internal_vector3_lerp($a->x, $a->y, $a->z, $b->x, $b->y, $b->z, $t);
+        $result = NativeEngine::call('vector3_lerp', $a->x, $a->y, $a->z, $b->x, $b->y, $b->z, $t);
         if (!\is_array($result)) {
             return new self();
         }
@@ -431,7 +431,7 @@ final class Vector3 implements ArrayAccess
     public static function slerp(Vector3 $a, Vector3 $b, float $t): self
     {
         /** @var array{x: float, y: float, z: float}|false $result */
-        $result = \lenga_internal_vector3_slerp($a->x, $a->y, $a->z, $b->x, $b->y, $b->z, $t);
+        $result = NativeEngine::call('vector3_slerp', $a->x, $a->y, $a->z, $b->x, $b->y, $b->z, $t);
         if (!\is_array($result)) {
             return new self();
         }
@@ -644,7 +644,7 @@ final class Vector3 implements ArrayAccess
          *     currentVelocity?: array{x?: float, y?: float, z?: float}
          * }|false $result
          */
-        $result = \lenga_internal_vector3_smooth_damp(
+        $result = NativeEngine::call('vector3_smooth_damp',
             $current->x,
             $current->y,
             $current->z,

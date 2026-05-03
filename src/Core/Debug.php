@@ -73,8 +73,8 @@ final class Debug
             $logMessage .= " (at {$footer['file']}:{$footer['line']})";
         }
 
-        if (function_exists('lenga_internal_debug_log')) {
-            lenga_internal_debug_log($logMessage, $level);
+        if (NativeEngine::hasFunction('debug_log')) {
+            NativeEngine::call('debug_log', $logMessage, $level);
             return;
         }
 

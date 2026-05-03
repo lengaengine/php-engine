@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Lenga\Engine\UI;
 
+use Lenga\Engine\Core\NativeEngine;
+
 final class Text extends UIElement
 {
     public string $text {
@@ -12,7 +14,7 @@ final class Text extends UIElement
         }
 
         set(string $value) {
-            \lenga_internal_ui_text_set_text($this->getId(), $value);
+            NativeEngine::call('ui_text_set_text', $this->getId(), $value);
         }
     }
 
@@ -22,7 +24,7 @@ final class Text extends UIElement
         }
 
         set(float $value) {
-            \lenga_internal_ui_text_set_font_size($this->getId(), $value);
+            NativeEngine::call('ui_text_set_font_size', $this->getId(), $value);
         }
     }
 
@@ -32,7 +34,7 @@ final class Text extends UIElement
         }
 
         set(string $value) {
-            \lenga_internal_ui_text_set_font_path($this->getId(), $value);
+            NativeEngine::call('ui_text_set_font_path', $this->getId(), $value);
         }
     }
 
@@ -42,7 +44,7 @@ final class Text extends UIElement
         }
 
         set(bool $value) {
-            \lenga_internal_ui_text_set_use_sdf($this->getId(), $value);
+            NativeEngine::call('ui_text_set_use_sdf', $this->getId(), $value);
         }
     }
 
@@ -52,7 +54,7 @@ final class Text extends UIElement
         }
 
         set(float $value) {
-            \lenga_internal_ui_text_set_sdf_outline_width($this->getId(), $value);
+            NativeEngine::call('ui_text_set_sdf_outline_width', $this->getId(), $value);
         }
     }
 
@@ -62,7 +64,7 @@ final class Text extends UIElement
         }
 
         set(float $value) {
-            \lenga_internal_ui_text_set_sdf_softness($this->getId(), $value);
+            NativeEngine::call('ui_text_set_sdf_softness', $this->getId(), $value);
         }
     }
 
@@ -84,7 +86,7 @@ final class Text extends UIElement
 
     public function setColor(int $red, int $green, int $blue, int $alpha = 255): void
     {
-        \lenga_internal_ui_text_set_color($this->getId(), $red, $green, $blue, $alpha);
+        NativeEngine::call('ui_text_set_color', $this->getId(), $red, $green, $blue, $alpha);
     }
 
     /**

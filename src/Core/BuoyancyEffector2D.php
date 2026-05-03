@@ -17,7 +17,7 @@ final class BuoyancyEffector2D extends Component
         }
 
         set(float $value) {
-            \lenga_internal_buoyancy_effector2d_set_density($this->componentId, $value);
+            NativeEngine::call('buoyancy_effector2d_set_density', $this->componentId, $value);
         }
     }
 
@@ -27,7 +27,7 @@ final class BuoyancyEffector2D extends Component
         }
 
         set(float $value) {
-            \lenga_internal_buoyancy_effector2d_set_linear_drag($this->componentId, $value);
+            NativeEngine::call('buoyancy_effector2d_set_linear_drag', $this->componentId, $value);
         }
     }
 
@@ -37,7 +37,7 @@ final class BuoyancyEffector2D extends Component
         }
 
         set(float $value) {
-            \lenga_internal_buoyancy_effector2d_set_flow_angle($this->componentId, $value);
+            NativeEngine::call('buoyancy_effector2d_set_flow_angle', $this->componentId, $value);
         }
     }
 
@@ -47,7 +47,7 @@ final class BuoyancyEffector2D extends Component
         }
 
         set(float $value) {
-            \lenga_internal_buoyancy_effector2d_set_flow_magnitude($this->componentId, $value);
+            NativeEngine::call('buoyancy_effector2d_set_flow_magnitude', $this->componentId, $value);
         }
     }
 
@@ -57,7 +57,7 @@ final class BuoyancyEffector2D extends Component
         }
 
         set(float $value) {
-            \lenga_internal_buoyancy_effector2d_set_surface_level($this->componentId, $value);
+            NativeEngine::call('buoyancy_effector2d_set_surface_level', $this->componentId, $value);
         }
     }
 
@@ -82,7 +82,7 @@ final class BuoyancyEffector2D extends Component
          *     enabled?: bool
          * } $state
          */
-        $state = \lenga_internal_buoyancy_effector2d_get_state($this->componentId);
+        $state = NativeEngine::call('buoyancy_effector2d_get_state', $this->componentId);
 
         return \is_array($state) ? $state : [];
     }

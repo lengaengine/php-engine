@@ -6,6 +6,7 @@ namespace Lenga\Engine\Internal;
 
 use Lenga\Engine\Core\Behaviour;
 use Lenga\Engine\Core\GameObject;
+use Lenga\Engine\Core\NativeEngine;
 use Lenga\Engine\Core\Transform;
 
 /**
@@ -172,7 +173,7 @@ final class Bindings
         bool $useUnscaledTime,
         bool $relative,
     ): int {
-        return \lenga_internal_tween_move_to_by_transform_id(
+        return NativeEngine::call('tween_move_to_by_transform_id',
             $transformId,
             $x,
             $y,
@@ -196,7 +197,7 @@ final class Bindings
         bool $useUnscaledTime,
         bool $relative,
     ): int {
-        return \lenga_internal_tween_move_local_to_by_transform_id(
+        return NativeEngine::call('tween_move_local_to_by_transform_id',
             $transformId,
             $x,
             $y,
@@ -220,7 +221,7 @@ final class Bindings
         bool $useUnscaledTime,
         bool $relative,
     ): int {
-        return \lenga_internal_tween_scale_to_by_transform_id(
+        return NativeEngine::call('tween_scale_to_by_transform_id',
             $transformId,
             $x,
             $y,
@@ -244,7 +245,7 @@ final class Bindings
         bool $useUnscaledTime,
         bool $relative,
     ): int {
-        return \lenga_internal_tween_rotate_to_by_transform_id(
+        return NativeEngine::call('tween_rotate_to_by_transform_id',
             $transformId,
             $x,
             $y,
@@ -268,7 +269,7 @@ final class Bindings
         bool $useUnscaledTime,
         bool $relative,
     ): int {
-        return \lenga_internal_tween_rotate_local_to_by_transform_id(
+        return NativeEngine::call('tween_rotate_local_to_by_transform_id',
             $transformId,
             $x,
             $y,
@@ -291,7 +292,7 @@ final class Bindings
         bool $useUnscaledTime,
         bool $relative,
     ): int {
-        return \lenga_internal_tween_ui_anchor_min_to_by_element_id(
+        return NativeEngine::call('tween_ui_anchor_min_to_by_element_id',
             $elementId,
             $x,
             $y,
@@ -313,7 +314,7 @@ final class Bindings
         bool $useUnscaledTime,
         bool $relative,
     ): int {
-        return \lenga_internal_tween_ui_anchor_max_to_by_element_id(
+        return NativeEngine::call('tween_ui_anchor_max_to_by_element_id',
             $elementId,
             $x,
             $y,
@@ -335,7 +336,7 @@ final class Bindings
         bool $useUnscaledTime,
         bool $relative,
     ): int {
-        return \lenga_internal_tween_ui_pivot_to_by_element_id(
+        return NativeEngine::call('tween_ui_pivot_to_by_element_id',
             $elementId,
             $x,
             $y,
@@ -357,7 +358,7 @@ final class Bindings
         bool $useUnscaledTime,
         bool $relative,
     ): int {
-        return \lenga_internal_tween_ui_anchored_position_to_by_element_id(
+        return NativeEngine::call('tween_ui_anchored_position_to_by_element_id',
             $elementId,
             $x,
             $y,
@@ -379,7 +380,7 @@ final class Bindings
         bool $useUnscaledTime,
         bool $relative,
     ): int {
-        return \lenga_internal_tween_ui_size_delta_to_by_element_id(
+        return NativeEngine::call('tween_ui_size_delta_to_by_element_id',
             $elementId,
             $x,
             $y,
@@ -401,7 +402,7 @@ final class Bindings
         bool $useUnscaledTime,
         bool $relative,
     ): int {
-        return \lenga_internal_tween_ui_scale_to_by_element_id(
+        return NativeEngine::call('tween_ui_scale_to_by_element_id',
             $elementId,
             $x,
             $y,
@@ -422,7 +423,7 @@ final class Bindings
         bool $useUnscaledTime,
         bool $relative,
     ): int {
-        return \lenga_internal_tween_ui_rotation_to_by_element_id(
+        return NativeEngine::call('tween_ui_rotation_to_by_element_id',
             $elementId,
             $rotation,
             $duration,
@@ -433,33 +434,109 @@ final class Bindings
         );
     }
 
+    public static function tweenUiTextNumberTo(
+        int $elementId,
+        float $value,
+        float $duration,
+        float $delay,
+        string $ease,
+        bool $useUnscaledTime,
+        bool $relative,
+        int $decimals,
+        string $prefix,
+        string $suffix,
+    ): int {
+        return NativeEngine::call('tween_ui_text_number_to_by_element_id',
+            $elementId,
+            $value,
+            $duration,
+            $delay,
+            $ease,
+            $useUnscaledTime,
+            $relative,
+            $decimals,
+            $prefix,
+            $suffix,
+        );
+    }
+
+    public static function tweenUiScalarTo(
+        int $elementId,
+        string $property,
+        float $value,
+        float $duration,
+        float $delay,
+        string $ease,
+        bool $useUnscaledTime,
+        bool $relative,
+    ): int {
+        return NativeEngine::call('tween_ui_scalar_to_by_element_id',
+            $elementId,
+            $property,
+            $value,
+            $duration,
+            $delay,
+            $ease,
+            $useUnscaledTime,
+            $relative,
+        );
+    }
+
+    public static function tweenUiColorTo(
+        int $elementId,
+        string $property,
+        float $red,
+        float $green,
+        float $blue,
+        float $alpha,
+        float $duration,
+        float $delay,
+        string $ease,
+        bool $useUnscaledTime,
+        bool $relative,
+    ): int {
+        return NativeEngine::call('tween_ui_color_to_by_element_id',
+            $elementId,
+            $property,
+            $red,
+            $green,
+            $blue,
+            $alpha,
+            $duration,
+            $delay,
+            $ease,
+            $useUnscaledTime,
+            $relative,
+        );
+    }
+
     public static function tweenPause(int $tweenId): bool
     {
-        return \lenga_internal_tween_pause($tweenId);
+        return NativeEngine::call('tween_pause', $tweenId);
     }
 
     public static function tweenResume(int $tweenId): bool
     {
-        return \lenga_internal_tween_resume($tweenId);
+        return NativeEngine::call('tween_resume', $tweenId);
     }
 
     public static function tweenCancel(int $tweenId): bool
     {
-        return \lenga_internal_tween_cancel($tweenId);
+        return NativeEngine::call('tween_cancel', $tweenId);
     }
 
     public static function tweenIsComplete(int $tweenId): bool
     {
-        return \lenga_internal_tween_is_complete($tweenId);
+        return NativeEngine::call('tween_is_complete', $tweenId);
     }
 
     public static function tweenIsPlaying(int $tweenId): bool
     {
-        return \lenga_internal_tween_is_playing($tweenId);
+        return NativeEngine::call('tween_is_playing', $tweenId);
     }
 
     public static function tweenExists(int $tweenId): bool
     {
-        return \lenga_internal_tween_exists($tweenId);
+        return NativeEngine::call('tween_exists', $tweenId);
     }
 }

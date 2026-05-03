@@ -13,12 +13,12 @@ final class Time
 
     /**
      * Returns the current time since the start of the application.
-     * 
+     *
      * @return float The current time in seconds.
      */
     public static function time(): float
     {
-        return (float) lenga_internal_time_get_time();
+        return (float) NativeEngine::call('time_get_time');
     }
 
     /**
@@ -26,17 +26,17 @@ final class Time
      */
     public static function unscaledTime(): float
     {
-        return (float) lenga_internal_time_get_unscaled_time();
+        return (float) NativeEngine::call('time_get_unscaled_time');
     }
 
     /**
      * Returns the time elapsed since the last frame.
-     * 
+     *
      * @return float The delta time in seconds.
      */
     public static function deltaTime(): float
     {
-        return (float) lenga_internal_time_get_delta_time();
+        return (float) NativeEngine::call('time_get_delta_time');
     }
 
     /**
@@ -44,17 +44,17 @@ final class Time
      */
     public static function unscaledDeltaTime(): float
     {
-        return (float) lenga_internal_time_get_unscaled_delta_time();
+        return (float) NativeEngine::call('time_get_unscaled_delta_time');
     }
 
     /**
      * Returns the fixed delta time value.
-     * 
+     *
      * @return float The fixed delta time in seconds.
      */
     public static function fixedDeltaTime(): float
     {
-        return (float) lenga_internal_time_get_fixed_delta_time();
+        return (float) NativeEngine::call('time_get_fixed_delta_time');
     }
 
     /**
@@ -62,7 +62,7 @@ final class Time
      */
     public static function timeScale(): float
     {
-        return (float) lenga_internal_time_get_time_scale();
+        return (float) NativeEngine::call('time_get_time_scale');
     }
 
     /**
@@ -70,17 +70,17 @@ final class Time
      */
     public static function effectiveTimeScale(): float
     {
-        return (float) lenga_internal_time_get_effective_time_scale();
+        return (float) NativeEngine::call('time_get_effective_time_scale');
     }
 
     public static function fixedStepCount(): int
     {
-        return (int) lenga_internal_time_get_fixed_step_count();
+        return (int) NativeEngine::call('time_get_fixed_step_count');
     }
 
     public static function isPaused(): bool
     {
-        return (bool) lenga_internal_time_is_paused();
+        return (bool) NativeEngine::call('time_is_paused');
     }
 
     /**
@@ -88,7 +88,7 @@ final class Time
      */
     public static function setTimeScale(float $scale): void
     {
-        lenga_internal_time_set_time_scale($scale);
+        NativeEngine::call('time_set_time_scale', $scale);
     }
 
     /**
@@ -96,7 +96,7 @@ final class Time
      */
     public static function pauseGameplay(): void
     {
-        lenga_internal_time_set_gameplay_paused(true);
+        NativeEngine::call('time_set_gameplay_paused', true);
     }
 
     /**
@@ -104,7 +104,7 @@ final class Time
      */
     public static function resumeGameplay(): void
     {
-        lenga_internal_time_set_gameplay_paused(false);
+        NativeEngine::call('time_set_gameplay_paused', false);
     }
 
     /**
@@ -112,7 +112,7 @@ final class Time
      */
     public static function toggleGameplayPause(): void
     {
-        lenga_internal_time_toggle_gameplay_paused();
+        NativeEngine::call('time_toggle_gameplay_paused');
     }
 
     /**
@@ -125,6 +125,6 @@ final class Time
 
     public static function isGameplayPaused(): bool
     {
-        return (bool) lenga_internal_time_is_gameplay_paused();
+        return (bool) NativeEngine::call('time_is_gameplay_paused');
     }
 }

@@ -17,7 +17,7 @@ final class SurfaceEffector2D extends Component
         }
 
         set(bool $value) {
-            \lenga_internal_surface_effector2d_set_use_global_direction($this->componentId, $value);
+            NativeEngine::call('surface_effector2d_set_use_global_direction', $this->componentId, $value);
         }
     }
 
@@ -27,7 +27,7 @@ final class SurfaceEffector2D extends Component
         }
 
         set(float $value) {
-            \lenga_internal_surface_effector2d_set_speed($this->componentId, $value);
+            NativeEngine::call('surface_effector2d_set_speed', $this->componentId, $value);
         }
     }
 
@@ -37,7 +37,7 @@ final class SurfaceEffector2D extends Component
         }
 
         set(float $value) {
-            \lenga_internal_surface_effector2d_set_force_scale($this->componentId, $value);
+            NativeEngine::call('surface_effector2d_set_force_scale', $this->componentId, $value);
         }
     }
 
@@ -58,7 +58,7 @@ final class SurfaceEffector2D extends Component
          *     enabled?: bool
          * } $state
          */
-        $state = \lenga_internal_surface_effector2d_get_state($this->componentId);
+        $state = NativeEngine::call('surface_effector2d_get_state', $this->componentId);
 
         return \is_array($state) ? $state : [];
     }

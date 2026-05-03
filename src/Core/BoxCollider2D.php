@@ -23,7 +23,7 @@ final class BoxCollider2D extends Component
         }
 
         set(Vector3 $value) {
-            \lenga_internal_box_collider2d_set_size($this->componentId, $value->x, $value->y, $value->z);
+            NativeEngine::call('box_collider2d_set_size', $this->componentId, $value->x, $value->y, $value->z);
         }
     }
 
@@ -39,7 +39,7 @@ final class BoxCollider2D extends Component
         }
 
         set(Vector3 $value) {
-            \lenga_internal_box_collider2d_set_offset($this->componentId, $value->x, $value->y, $value->z);
+            NativeEngine::call('box_collider2d_set_offset', $this->componentId, $value->x, $value->y, $value->z);
         }
     }
 
@@ -49,7 +49,7 @@ final class BoxCollider2D extends Component
         }
 
         set(bool $value) {
-            \lenga_internal_box_collider2d_set_is_trigger($this->componentId, $value);
+            NativeEngine::call('box_collider2d_set_is_trigger', $this->componentId, $value);
         }
     }
 
@@ -59,7 +59,7 @@ final class BoxCollider2D extends Component
         }
 
         set(string $value) {
-            \lenga_internal_box_collider2d_set_material_path($this->componentId, $value);
+            NativeEngine::call('box_collider2d_set_material_path', $this->componentId, $value);
         }
     }
 
@@ -83,11 +83,11 @@ final class BoxCollider2D extends Component
 
         set(PhysicsMaterial2D $value) {
             if ($value->assetPath !== '') {
-                \lenga_internal_box_collider2d_set_material_path($this->componentId, $value->assetPath);
+                NativeEngine::call('box_collider2d_set_material_path', $this->componentId, $value->assetPath);
                 return;
             }
 
-            \lenga_internal_box_collider2d_set_material(
+            NativeEngine::call('box_collider2d_set_material',
                 $this->componentId,
                 $value->friction,
                 $value->bounciness,
@@ -99,7 +99,7 @@ final class BoxCollider2D extends Component
 
     public function isTouching(bool $includeTriggers = true, ?int $layerMask = null): bool
     {
-        return \lenga_internal_box_collider2d_is_touching(
+        return NativeEngine::call('box_collider2d_is_touching',
             $this->componentId,
             $includeTriggers,
             $layerMask ?? Physics2D::ALL_LAYERS,
@@ -111,7 +111,7 @@ final class BoxCollider2D extends Component
      */
     public function getContacts(bool $includeTriggers = true, ?int $layerMask = null): array
     {
-        $results = \lenga_internal_box_collider2d_get_contacts(
+        $results = NativeEngine::call('box_collider2d_get_contacts',
             $this->componentId,
             $includeTriggers,
             $layerMask ?? Physics2D::ALL_LAYERS,
@@ -167,7 +167,7 @@ final class BoxCollider2D extends Component
          *     }
          * } $state
          */
-        $state = \lenga_internal_box_collider2d_get_state($this->componentId);
+        $state = NativeEngine::call('box_collider2d_get_state', $this->componentId);
 
         return \is_array($state) ? $state : [];
     }

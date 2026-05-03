@@ -20,7 +20,7 @@ final class DirectionalLight extends Component
         }
 
         set(float $value) {
-            \lenga_internal_directional_light_set_intensity($this->componentId, $value);
+            NativeEngine::call('directional_light_set_intensity', $this->componentId, $value);
         }
     }
 
@@ -30,7 +30,7 @@ final class DirectionalLight extends Component
         }
 
         set(bool $value) {
-            \lenga_internal_directional_light_set_shadows_enabled($this->componentId, $value);
+            NativeEngine::call('directional_light_set_shadows_enabled', $this->componentId, $value);
         }
     }
 
@@ -41,7 +41,7 @@ final class DirectionalLight extends Component
         }
 
         set(float $value) {
-            \lenga_internal_directional_light_set_shadow_strength($this->componentId, $value);
+            NativeEngine::call('directional_light_set_shadow_strength', $this->componentId, $value);
         }
     }
 
@@ -52,7 +52,7 @@ final class DirectionalLight extends Component
         }
 
         set(float $value) {
-            \lenga_internal_directional_light_set_shadow_bias($this->componentId, $value);
+            NativeEngine::call('directional_light_set_shadow_bias', $this->componentId, $value);
         }
     }
 
@@ -63,7 +63,7 @@ final class DirectionalLight extends Component
         }
 
         set(float $value) {
-            \lenga_internal_directional_light_set_shadow_projection_size($this->componentId, $value);
+            NativeEngine::call('directional_light_set_shadow_projection_size', $this->componentId, $value);
         }
     }
 
@@ -74,7 +74,7 @@ final class DirectionalLight extends Component
         }
 
         set(float $value) {
-            \lenga_internal_directional_light_set_shadow_distance($this->componentId, $value);
+            NativeEngine::call('directional_light_set_shadow_distance', $this->componentId, $value);
         }
     }
 
@@ -97,7 +97,7 @@ final class DirectionalLight extends Component
 
     public function setColor(int $red, int $green, int $blue, int $alpha = 255): void
     {
-        \lenga_internal_directional_light_set_color($this->componentId, $red, $green, $blue, $alpha);
+        NativeEngine::call('directional_light_set_color', $this->componentId, $red, $green, $blue, $alpha);
     }
 
     /**
@@ -125,7 +125,7 @@ final class DirectionalLight extends Component
          *     enabled?: bool
          * } $state
          */
-        $state = \lenga_internal_directional_light_get_state($this->componentId);
+        $state = NativeEngine::call('directional_light_get_state', $this->componentId);
 
         return \is_array($state) ? $state : [];
     }

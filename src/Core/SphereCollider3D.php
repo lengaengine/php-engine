@@ -20,7 +20,7 @@ final class SphereCollider3D extends Component
         }
 
         set(float $value) {
-            \lenga_internal_sphere_collider3d_set_radius($this->componentId, $value);
+            NativeEngine::call('sphere_collider3d_set_radius', $this->componentId, $value);
         }
     }
 
@@ -36,7 +36,7 @@ final class SphereCollider3D extends Component
         }
 
         set(Vector3 $value) {
-            \lenga_internal_sphere_collider3d_set_offset($this->componentId, $value->x, $value->y, $value->z);
+            NativeEngine::call('sphere_collider3d_set_offset', $this->componentId, $value->x, $value->y, $value->z);
         }
     }
 
@@ -46,13 +46,13 @@ final class SphereCollider3D extends Component
         }
 
         set(bool $value) {
-            \lenga_internal_sphere_collider3d_set_is_trigger($this->componentId, $value);
+            NativeEngine::call('sphere_collider3d_set_is_trigger', $this->componentId, $value);
         }
     }
 
     public function isTouching(bool $includeTriggers = true, ?int $layerMask = null): bool
     {
-        return \lenga_internal_sphere_collider3d_is_touching(
+        return NativeEngine::call('sphere_collider3d_is_touching',
             $this->componentId,
             $includeTriggers,
             $layerMask ?? Physics3D::ALL_LAYERS,
@@ -64,7 +64,7 @@ final class SphereCollider3D extends Component
      */
     public function getContacts(bool $includeTriggers = true, ?int $layerMask = null): array
     {
-        $results = \lenga_internal_sphere_collider3d_get_contacts(
+        $results = NativeEngine::call('sphere_collider3d_get_contacts',
             $this->componentId,
             $includeTriggers,
             $layerMask ?? Physics3D::ALL_LAYERS,
@@ -131,7 +131,7 @@ final class SphereCollider3D extends Component
          *     offset?: array{x?: float|int, y?: float|int, z?: float|int}
          * } $state
          */
-        $state = \lenga_internal_sphere_collider3d_get_state($this->componentId);
+        $state = NativeEngine::call('sphere_collider3d_get_state', $this->componentId);
 
         return \is_array($state) ? $state : [];
     }

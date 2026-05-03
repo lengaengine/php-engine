@@ -25,7 +25,26 @@ final class GameObject
         $this->activeSelfValue = $activeSelf;
         $this->activeInHierarchyValue = $activeSelf;
         $this->transformValue = $transform ?? new Transform(null, null, null, null, null, $instanceId);
-        $this->transformValue->__internalAttachGameObject($this, $instanceId);
+        $this->attachTransformToSelf($instanceId);
+    }
+
+    private function attachTransformToSelf(?int $gameObjectId = null): void
+    {
+        $gameObject = $this;
+        $bound = \Closure::bind(
+            function () use ($gameObject, $gameObjectId): void {
+                $this->gameObjectValue = $gameObject;
+                $this->gameObjectId = $gameObjectId ?? $gameObject->getInstanceId();
+            },
+            $this->transformValue,
+            Transform::class,
+        );
+
+        if ($bound === null) {
+            throw new \RuntimeException('Failed to bind Transform to GameObject.');
+        }
+
+        $bound();
     }
 
     private ?int $instanceId = null;
@@ -40,7 +59,7 @@ final class GameObject
     public string $name {
         get {
             if ($this->instanceId !== null) {
-                $this->nameValue = \lenga_internal_game_object_get_name($this->instanceId);
+                $this->nameValue = NativeEngine::call('game_object_get_name', $this->instanceId);
             }
 
             return $this->nameValue;
@@ -50,7 +69,7 @@ final class GameObject
             $this->nameValue = $value;
 
             if ($this->instanceId !== null) {
-                \lenga_internal_game_object_set_name($this->instanceId, $value);
+                NativeEngine::call('game_object_set_name', $this->instanceId, $value);
             }
         }
     }
@@ -64,7 +83,7 @@ final class GameObject
     public string $tag {
         get {
             if ($this->instanceId !== null) {
-                $this->tagValue = \lenga_internal_game_object_get_tag($this->instanceId);
+                $this->tagValue = NativeEngine::call('game_object_get_tag', $this->instanceId);
             }
 
             return $this->tagValue;
@@ -74,7 +93,7 @@ final class GameObject
             $this->tagValue = $value;
 
             if ($this->instanceId !== null) {
-                \lenga_internal_game_object_set_tag($this->instanceId, $value);
+                NativeEngine::call('game_object_set_tag', $this->instanceId, $value);
             }
         }
     }
@@ -88,7 +107,7 @@ final class GameObject
     public int $layer {
         get {
             if ($this->instanceId !== null) {
-                $this->layerValue = \lenga_internal_game_object_get_layer($this->instanceId);
+                $this->layerValue = NativeEngine::call('game_object_get_layer', $this->instanceId);
             }
 
             return $this->layerValue;
@@ -98,7 +117,7 @@ final class GameObject
             $this->layerValue = $value;
 
             if ($this->instanceId !== null) {
-                \lenga_internal_game_object_set_layer($this->instanceId, $value);
+                NativeEngine::call('game_object_set_layer', $this->instanceId, $value);
             }
         }
     }
@@ -106,7 +125,7 @@ final class GameObject
     public bool $activeSelf {
         get {
             if ($this->instanceId !== null) {
-                $this->activeSelfValue = \lenga_internal_game_object_get_active_self($this->instanceId);
+                $this->activeSelfValue = NativeEngine::call('game_object_get_active_self', $this->instanceId);
             }
 
             return $this->activeSelfValue;
@@ -116,7 +135,7 @@ final class GameObject
     public bool $activeInHierarchy {
         get {
             if ($this->instanceId !== null) {
-                $this->activeInHierarchyValue = \lenga_internal_game_object_get_active_in_hierarchy($this->instanceId);
+                $this->activeInHierarchyValue = NativeEngine::call('game_object_get_active_in_hierarchy', $this->instanceId);
             }
 
             return $this->activeInHierarchyValue;
@@ -150,7 +169,7 @@ final class GameObject
             $this->layerValue = $resolved->layerValue;
             $this->activeSelfValue = $resolved->activeSelfValue;
             $this->activeInHierarchyValue = $resolved->activeInHierarchyValue;
-            $this->transformValue->__internalAttachGameObject($this, $this->instanceId);
+            $this->attachTransformToSelf($this->instanceId);
             return;
         }
 
@@ -164,15 +183,15 @@ final class GameObject
         $this->activeSelfValue = true;
         $this->activeInHierarchyValue = true;
         $this->transformValue = new Transform(null, null, null, null, null, $this->instanceId);
-        $this->transformValue->__internalAttachGameObject($this, $this->instanceId);
+        $this->attachTransformToSelf($this->instanceId);
     }
 
     public function setActive(bool $value): void
     {
         if ($this->instanceId !== null) {
-            \lenga_internal_game_object_set_active_by_id($this->instanceId, $value);
-            $this->activeSelfValue = \lenga_internal_game_object_get_active_self($this->instanceId);
-            $this->activeInHierarchyValue = \lenga_internal_game_object_get_active_in_hierarchy($this->instanceId);
+            NativeEngine::call('game_object_set_active_by_id', $this->instanceId, $value);
+            $this->activeSelfValue = NativeEngine::call('game_object_get_active_self', $this->instanceId);
+            $this->activeInHierarchyValue = NativeEngine::call('game_object_get_active_in_hierarchy', $this->instanceId);
             return;
         }
 
@@ -182,7 +201,7 @@ final class GameObject
 
         $this->activeSelfValue = $value;
         $this->activeInHierarchyValue = $value;
-        \lenga_internal_game_object_set_active($this->nameValue, $value);
+        NativeEngine::call('game_object_set_active', $this->nameValue, $value);
     }
 
     public function isActiveSelf(): bool
@@ -207,7 +226,7 @@ final class GameObject
         }
 
         /** @var array{name?: string}|false $data */
-        $data = \lenga_internal_game_object_get_scene_by_id($this->instanceId);
+        $data = NativeEngine::call('game_object_get_scene_by_id', $this->instanceId);
 
         return \is_array($data) ? Scene::fromNativeData($data) : null;
     }
@@ -219,7 +238,7 @@ final class GameObject
         }
 
         /** @var array{name?: string, tag?: string, layer?: int, id?: int, activeSelf?: bool, activeInHierarchy?: bool, transformId?: int|null}|false $data */
-        $data = \lenga_internal_game_object_get_parent_by_id($this->instanceId);
+        $data = NativeEngine::call('game_object_get_parent_by_id', $this->instanceId);
 
         return \is_array($data) ? self::fromNativeLookupData($data) : null;
     }
@@ -234,7 +253,7 @@ final class GameObject
         }
 
         /** @var list<array{name?: string, tag?: string, layer?: int, id?: int, activeSelf?: bool, activeInHierarchy?: bool, transformId?: int|null}>|false $data */
-        $data = \lenga_internal_game_object_get_children_by_id($this->instanceId);
+        $data = NativeEngine::call('game_object_get_children_by_id', $this->instanceId);
         if (!\is_array($data)) {
             return [];
         }
@@ -256,7 +275,7 @@ final class GameObject
             return false;
         }
 
-        return \lenga_internal_game_object_set_parent_by_id(
+        return NativeEngine::call('game_object_set_parent_by_id',
             $this->instanceId,
             $parent?->instanceId,
             $worldPositionStays,
@@ -269,7 +288,7 @@ final class GameObject
             return;
         }
 
-        \lenga_internal_game_object_destroy_by_id($this->instanceId);
+        NativeEngine::call('game_object_destroy_by_id', $this->instanceId);
     }
 
     public function hasComponent(string $type): bool
@@ -280,7 +299,7 @@ final class GameObject
 
         $descriptor = self::normalizeComponentSpecifier($type);
 
-        return \lenga_internal_game_object_has_component_by_id(
+        return NativeEngine::call('game_object_has_component_by_id',
             $this->instanceId,
             $descriptor['nativeType'],
             $descriptor['scriptClass'],
@@ -307,7 +326,7 @@ final class GameObject
 
         $descriptor = self::normalizeComponentSpecifier($type);
 
-        $nativeResult = \lenga_internal_game_object_get_component_by_id(
+        $nativeResult = NativeEngine::call('game_object_get_component_by_id',
             $this->instanceId,
             $descriptor['nativeType'],
             $descriptor['scriptClass'],
@@ -332,14 +351,14 @@ final class GameObject
 
         if ($type === null) {
             return $this->wrapNativeComponentResults(
-                \lenga_internal_game_object_get_components_by_id($this->instanceId, null, null),
+                NativeEngine::call('game_object_get_components_by_id', $this->instanceId, null, null),
             );
         }
 
         $descriptor = self::normalizeComponentSpecifier($type);
 
         return $this->wrapNativeComponentResults(
-            \lenga_internal_game_object_get_components_by_id(
+            NativeEngine::call('game_object_get_components_by_id',
                 $this->instanceId,
                 $descriptor['nativeType'],
                 $descriptor['scriptClass'],
@@ -406,7 +425,7 @@ final class GameObject
             );
         }
 
-        $nativeResult = \lenga_internal_game_object_add_component_by_id(
+        $nativeResult = NativeEngine::call('game_object_add_component_by_id',
             $this->instanceId,
             $descriptor['nativeType'],
             $descriptor['scriptClass'],
@@ -428,7 +447,7 @@ final class GameObject
     public static function find(string $name): ?self
     {
         /** @var array{name?: string, tag?: string, layer?: int, id?: int, activeSelf?: bool, activeInHierarchy?: bool, transformId?: int|null}|false $data */
-        $data = \lenga_internal_game_object_find_by_name($name);
+        $data = NativeEngine::call('game_object_find_by_name', $name);
         if (!\is_array($data)) {
             return null;
         }
@@ -439,7 +458,7 @@ final class GameObject
     public static function findBySceneId(string $sceneObjectId): ?self
     {
         /** @var array{name?: string, tag?: string, layer?: int, id?: int, activeSelf?: bool, activeInHierarchy?: bool, transformId?: int|null, sceneObjectId?: string}|false $data */
-        $data = \lenga_internal_game_object_find_by_scene_id($sceneObjectId);
+        $data = NativeEngine::call('game_object_find_by_scene_id', $sceneObjectId);
         if (!\is_array($data)) {
             return null;
         }
@@ -450,7 +469,7 @@ final class GameObject
     public static function lookupByInstanceId(int $instanceId): ?self
     {
         /** @var array{name?: string, tag?: string, layer?: int, id?: int, activeSelf?: bool, activeInHierarchy?: bool, transformId?: int|null, sceneObjectId?: string}|false $data */
-        $data = \lenga_internal_game_object_lookup_by_id($instanceId);
+        $data = NativeEngine::call('game_object_lookup_by_id', $instanceId);
         if (!\is_array($data)) {
             return null;
         }
@@ -461,7 +480,7 @@ final class GameObject
     public static function findWithTag(string $tag): ?self
     {
         /** @var array{name?: string, tag?: string, layer?: int, id?: int, activeSelf?: bool, activeInHierarchy?: bool, transformId?: int|null}|false $data */
-        $data = \lenga_internal_game_object_find_with_tag($tag);
+        $data = NativeEngine::call('game_object_find_with_tag', $tag);
         if (!\is_array($data)) {
             return null;
         }
@@ -475,7 +494,7 @@ final class GameObject
     public static function findGameObjectsWithTag(string $tag): array
     {
         /** @var list<array{name?: string, tag?: string, layer?: int, id?: int, activeSelf?: bool, activeInHierarchy?: bool, transformId?: int|null}>|false $results */
-        $results = \lenga_internal_game_object_find_game_objects_with_tag($tag);
+        $results = NativeEngine::call('game_object_find_game_objects_with_tag', $tag);
         if (!\is_array($results)) {
             return [];
         }
@@ -489,7 +508,7 @@ final class GameObject
     public static function create(string $name): self
     {
         /** @var array{name?: string, tag?: string, layer?: int, id?: int, activeSelf?: bool, activeInHierarchy?: bool, transformId?: int|null}|false $data */
-        $data = \lenga_internal_scene_create_game_object($name);
+        $data = NativeEngine::call('scene_create_game_object', $name);
         if (!\is_array($data)) {
             throw new \RuntimeException("Failed to create GameObject '{$name}' in the active scene.");
         }
@@ -505,7 +524,7 @@ final class GameObject
         }
 
         /** @var array{name?: string, tag?: string, layer?: int, id?: int, activeSelf?: bool, activeInHierarchy?: bool, transformId?: int|null}|false $data */
-        $data = \lenga_internal_game_object_instantiate_by_id($instanceId, $name);
+        $data = NativeEngine::call('game_object_instantiate_by_id', $instanceId, $name);
         if (!\is_array($data)) {
             throw new \RuntimeException("Failed to instantiate GameObject '{$original->name}'.");
         }
@@ -773,11 +792,28 @@ final class GameObject
         if (
             isset($nativeResult['sceneComponentId']) &&
             \is_string($nativeResult['sceneComponentId']) &&
-            \method_exists($component, '__internalAttachSceneComponentId')
+            $component instanceof Component
         ) {
-            $component->__internalAttachSceneComponentId($nativeResult['sceneComponentId']);
+            self::attachSceneComponentId($component, $nativeResult['sceneComponentId']);
         }
 
         return $component;
+    }
+
+    private static function attachSceneComponentId(Component $component, string $sceneComponentId): void
+    {
+        $bound = \Closure::bind(
+            function () use ($sceneComponentId): void {
+                $this->sceneComponentId = $sceneComponentId;
+            },
+            $component,
+            Component::class,
+        );
+
+        if ($bound === null) {
+            throw new \RuntimeException('Failed to bind scene component id.');
+        }
+
+        $bound();
     }
 }

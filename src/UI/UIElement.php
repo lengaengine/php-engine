@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Lenga\Engine\UI;
 
+use Lenga\Engine\Core\NativeEngine;
+
 abstract class UIElement
 {
     private readonly RectTransform $rectTransformValue;
@@ -29,7 +31,7 @@ abstract class UIElement
         }
 
         set(bool $value) {
-            \lenga_internal_ui_element_set_enabled($this->elementId, $value);
+            NativeEngine::call('ui_element_set_enabled', $this->elementId, $value);
         }
     }
 
@@ -39,7 +41,7 @@ abstract class UIElement
         }
 
         set(bool $value) {
-            \lenga_internal_ui_element_set_visible($this->elementId, $value);
+            NativeEngine::call('ui_element_set_visible', $this->elementId, $value);
         }
     }
 
@@ -55,7 +57,7 @@ abstract class UIElement
         }
 
         set(int $value) {
-            \lenga_internal_ui_element_set_sort_order($this->elementId, $value);
+            NativeEngine::call('ui_element_set_sort_order', $this->elementId, $value);
         }
     }
 
@@ -86,14 +88,14 @@ abstract class UIElement
     public function getParent(): ?self
     {
         /** @var array{id?: int, name?: string, type?: string, canvasId?: int|null}|null|false $data */
-        $data = \lenga_internal_ui_element_get_parent($this->elementId);
+        $data = NativeEngine::call('ui_element_get_parent', $this->elementId);
 
         return \is_array($data) ? self::fromNativeLookupData($data) : null;
     }
 
     public function setParent(?self $parent): bool
     {
-        return \lenga_internal_ui_element_set_parent($this->elementId, $parent?->getId());
+        return NativeEngine::call('ui_element_set_parent', $this->elementId, $parent?->getId());
     }
 
     /**
@@ -102,7 +104,7 @@ abstract class UIElement
     public function getChildren(): array
     {
         /** @var list<array{id?: int, name?: string, type?: string, canvasId?: int|null}>|false $data */
-        $data = \lenga_internal_ui_element_get_children($this->elementId);
+        $data = NativeEngine::call('ui_element_get_children', $this->elementId);
         if (!\is_array($data)) {
             return [];
         }
@@ -190,6 +192,44 @@ abstract class UIElement
             'Slider' => new Slider($name, $id, $canvasId),
             default => throw new \RuntimeException("Unsupported native UI element type '{$type}'."),
         };
+    }
+
+    public static function findBySceneId(string $sceneElementId): ?self
+    {
+        /** @var array{id?: int, name?: string, type?: string, canvasId?: int|null}|false $data */
+        $data = NativeEngine::call('ui_element_find_by_scene_id', $sceneElementId);
+        if (!\is_array($data)) {
+            return null;
+        }
+
+        return self::fromNativeLookupData($data);
+    }
+
+    public static function fromSerializedReference(array $data): ?self
+    {
+        $sceneElementId = isset($data['elementId']) && \is_string($data['elementId'])
+            ? $data['elementId']
+            : '';
+        if ($sceneElementId !== '') {
+            $element = self::findBySceneId($sceneElementId);
+            if ($element !== null) {
+                return $element;
+            }
+        }
+
+        $instanceId = isset($data['instanceId']) && \is_int($data['instanceId'])
+            ? $data['instanceId']
+            : null;
+        if ($instanceId !== null && $instanceId > 0 && isset($data['type']) && \is_string($data['type'])) {
+            return self::fromNativeLookupData([
+                'id' => $instanceId,
+                'name' => isset($data['name']) && \is_string($data['name']) ? $data['name'] : 'UIElement',
+                'type' => $data['type'],
+                'canvasId' => isset($data['canvasId']) && \is_int($data['canvasId']) ? $data['canvasId'] : null,
+            ]);
+        }
+
+        return null;
     }
 
     /**
@@ -307,7 +347,7 @@ abstract class UIElement
          *     handleSize?: array{x?: float, y?: float}
          * }|false $state
          */
-        $state = \lenga_internal_ui_element_get_state($this->elementId);
+        $state = NativeEngine::call('ui_element_get_state', $this->elementId);
         if (!\is_array($state)) {
             throw new \RuntimeException("Failed to resolve native UI element '{$this->nameValue}'.");
         }

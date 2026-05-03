@@ -14,23 +14,28 @@ use Lenga\Engine\Core\GameObject;
  */
 final class BehaviourBridge
 {
+    /**
+     * @var array<string, \Closure>
+     */
+    private static array $internalCalls = [];
+
     private function __construct()
     {
     }
 
     public static function attachGameObject(Behaviour $behaviour, GameObject $gameObject): void
     {
-        $behaviour->__internalAttachGameObject($gameObject);
+        self::callInternal($behaviour, 'internalAttachGameObject', $gameObject);
     }
 
     public static function attachComponentId(Behaviour $behaviour, int $componentId): void
     {
-        $behaviour->__internalAttachComponentId($componentId);
+        self::callInternal($behaviour, 'internalAttachComponentId', $componentId);
     }
 
     public static function attachSceneComponentId(Behaviour $behaviour, string $sceneComponentId): void
     {
-        $behaviour->__internalAttachSceneComponentId($sceneComponentId);
+        self::callInternal($behaviour, 'internalAttachSceneComponentId', $sceneComponentId);
     }
 
     /**
@@ -38,21 +43,34 @@ final class BehaviourBridge
      */
     public static function applyProperties(Behaviour $behaviour, array $properties): void
     {
-        $behaviour->__internalApplyProperties($properties);
+        self::callInternal($behaviour, 'internalApplyProperties', $properties);
     }
 
     public static function invokeLifecycle(Behaviour $behaviour, string $methodName): void
     {
         match ($methodName) {
-            'awake' => $behaviour->__lengaInternalAwake(),
-            'onEnable' => $behaviour->__lengaInternalOnEnable(),
-            'start' => $behaviour->__lengaInternalStart(),
-            'fixedUpdate' => $behaviour->__lengaInternalFixedUpdate(),
-            'update' => $behaviour->__lengaInternalUpdate(),
-            'lateUpdate' => $behaviour->__lengaInternalLateUpdate(),
-            'onDisable' => $behaviour->__lengaInternalOnDisable(),
-            'onDestroy' => $behaviour->__lengaInternalOnDestroy(),
+            'awake' => self::callInternal($behaviour, 'internalAwake'),
+            'onEnable' => self::callInternal($behaviour, 'internalOnEnable'),
+            'start' => self::callInternal($behaviour, 'internalStart'),
+            'fixedUpdate' => self::callInternal($behaviour, 'internalFixedUpdate'),
+            'update' => self::callInternal($behaviour, 'internalUpdate'),
+            'lateUpdate' => self::callInternal($behaviour, 'internalLateUpdate'),
+            'onDisable' => self::callInternal($behaviour, 'internalOnDisable'),
+            'onDestroy' => self::callInternal($behaviour, 'internalOnDestroy'),
             default => null,
         };
+    }
+
+    private static function callInternal(Behaviour $behaviour, string $methodName, mixed ...$arguments): mixed
+    {
+        $call = self::$internalCalls[$methodName] ??= \Closure::bind(
+            static function (Behaviour $target, mixed ...$arguments) use ($methodName): mixed {
+                return $target->{$methodName}(...$arguments);
+            },
+            null,
+            Behaviour::class
+        );
+
+        return $call($behaviour, ...$arguments);
     }
 }

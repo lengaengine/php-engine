@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Lenga\Engine\UI;
 
+use Lenga\Engine\Core\NativeEngine;
 use Lenga\Engine\Core\Vector2;
 use Lenga\Engine\Enumerations\CanvasRenderMode;
 
@@ -28,7 +29,7 @@ final class Canvas
         }
 
         set(bool $value) {
-            \lenga_internal_ui_canvas_set_enabled($this->canvasId, $value);
+            NativeEngine::call('ui_canvas_set_enabled', $this->canvasId, $value);
         }
     }
 
@@ -38,7 +39,7 @@ final class Canvas
         }
 
         set(bool $value) {
-            \lenga_internal_ui_canvas_set_visible($this->canvasId, $value);
+            NativeEngine::call('ui_canvas_set_visible', $this->canvasId, $value);
         }
     }
 
@@ -48,7 +49,7 @@ final class Canvas
         }
 
         set(int $value) {
-            \lenga_internal_ui_canvas_set_sort_order($this->canvasId, $value);
+            NativeEngine::call('ui_canvas_set_sort_order', $this->canvasId, $value);
         }
     }
 
@@ -59,7 +60,7 @@ final class Canvas
         }
 
         set(CanvasRenderMode $value) {
-            \lenga_internal_ui_canvas_set_render_mode($this->canvasId, $value->value);
+            NativeEngine::call('ui_canvas_set_render_mode', $this->canvasId, $value->value);
         }
     }
 
@@ -74,7 +75,7 @@ final class Canvas
         }
 
         set(Vector2 $value) {
-            \lenga_internal_ui_canvas_set_reference_resolution($this->canvasId, $value->x, $value->y);
+            NativeEngine::call('ui_canvas_set_reference_resolution', $this->canvasId, $value->x, $value->y);
         }
     }
 
@@ -84,7 +85,7 @@ final class Canvas
         }
 
         set(float $value) {
-            \lenga_internal_ui_canvas_set_match_width_or_height($this->canvasId, $value);
+            NativeEngine::call('ui_canvas_set_match_width_or_height', $this->canvasId, $value);
         }
     }
 
@@ -96,7 +97,7 @@ final class Canvas
     public function createText(string $name, ?UIElement $parent = null): Text
     {
         /** @var array{id?: int, name?: string, type?: string, canvasId?: int|null}|false $data */
-        $data = \lenga_internal_ui_canvas_create_text($this->canvasId, $name, $parent?->getId());
+        $data = NativeEngine::call('ui_canvas_create_text', $this->canvasId, $name, $parent?->getId());
         if (!\is_array($data)) {
             throw new \RuntimeException("Failed to create UI Text element '{$name}'.");
         }
@@ -112,7 +113,7 @@ final class Canvas
     public function createImage(string $name, ?UIElement $parent = null): Image
     {
         /** @var array{id?: int, name?: string, type?: string, canvasId?: int|null}|false $data */
-        $data = \lenga_internal_ui_canvas_create_image($this->canvasId, $name, $parent?->getId());
+        $data = NativeEngine::call('ui_canvas_create_image', $this->canvasId, $name, $parent?->getId());
         if (!\is_array($data)) {
             throw new \RuntimeException("Failed to create UI Image element '{$name}'.");
         }
@@ -128,7 +129,7 @@ final class Canvas
     public function createButton(string $name, ?UIElement $parent = null): Button
     {
         /** @var array{id?: int, name?: string, type?: string, canvasId?: int|null}|false $data */
-        $data = \lenga_internal_ui_canvas_create_button($this->canvasId, $name, $parent?->getId());
+        $data = NativeEngine::call('ui_canvas_create_button', $this->canvasId, $name, $parent?->getId());
         if (!\is_array($data)) {
             throw new \RuntimeException("Failed to create UI Button element '{$name}'.");
         }
@@ -144,7 +145,7 @@ final class Canvas
     public function createSlider(string $name, ?UIElement $parent = null): Slider
     {
         /** @var array{id?: int, name?: string, type?: string, canvasId?: int|null}|false $data */
-        $data = \lenga_internal_ui_canvas_create_slider($this->canvasId, $name, $parent?->getId());
+        $data = NativeEngine::call('ui_canvas_create_slider', $this->canvasId, $name, $parent?->getId());
         if (!\is_array($data)) {
             throw new \RuntimeException("Failed to create UI Slider element '{$name}'.");
         }
@@ -163,7 +164,7 @@ final class Canvas
     public function getRootElements(): array
     {
         /** @var list<array{id?: int, name?: string, type?: string, canvasId?: int|null}>|false $data */
-        $data = \lenga_internal_ui_canvas_get_root_elements($this->canvasId);
+        $data = NativeEngine::call('ui_canvas_get_root_elements', $this->canvasId);
         if (!\is_array($data)) {
             return [];
         }
@@ -211,7 +212,7 @@ final class Canvas
     public function getSelectedElement(): ?UIElement
     {
         /** @var array{id?: int, name?: string, type?: string, canvasId?: int|null}|null|false $data */
-        $data = \lenga_internal_ui_canvas_get_selected_element($this->canvasId);
+        $data = NativeEngine::call('ui_canvas_get_selected_element', $this->canvasId);
 
         return \is_array($data) ? UIElement::fromNativeLookupData($data) : null;
     }
@@ -225,17 +226,17 @@ final class Canvas
 
     public function selectElement(UIElement $element, bool $viaPointer = false): bool
     {
-        return \lenga_internal_ui_canvas_select_element($this->canvasId, $element->getId(), $viaPointer);
+        return NativeEngine::call('ui_canvas_select_element', $this->canvasId, $element->getId(), $viaPointer);
     }
 
     public function clearSelection(): bool
     {
-        return \lenga_internal_ui_canvas_clear_selection($this->canvasId);
+        return NativeEngine::call('ui_canvas_clear_selection', $this->canvasId);
     }
 
     public function submitSelected(): bool
     {
-        return \lenga_internal_ui_canvas_submit_selected($this->canvasId);
+        return NativeEngine::call('ui_canvas_submit_selected', $this->canvasId);
     }
 
     /**
@@ -252,6 +253,42 @@ final class Canvas
             (string) ($data['name'] ?? 'Canvas'),
             $id,
         );
+    }
+
+    public static function findBySceneId(string $sceneCanvasId): ?self
+    {
+        /** @var array{id?: int, name?: string}|false $data */
+        $data = NativeEngine::call('ui_canvas_find_by_scene_id', $sceneCanvasId);
+        if (!\is_array($data)) {
+            return null;
+        }
+
+        return self::fromNativeLookupData($data);
+    }
+
+    public static function fromSerializedReference(array $data): ?self
+    {
+        $sceneCanvasId = isset($data['canvasId']) && \is_string($data['canvasId'])
+            ? $data['canvasId']
+            : '';
+        if ($sceneCanvasId !== '') {
+            $canvas = self::findBySceneId($sceneCanvasId);
+            if ($canvas !== null) {
+                return $canvas;
+            }
+        }
+
+        $instanceId = isset($data['instanceId']) && \is_int($data['instanceId'])
+            ? $data['instanceId']
+            : null;
+        if ($instanceId !== null && $instanceId > 0) {
+            return self::fromNativeLookupData([
+                'id' => $instanceId,
+                'name' => isset($data['name']) && \is_string($data['name']) ? $data['name'] : 'Canvas',
+            ]);
+        }
+
+        return null;
     }
 
     /**
@@ -279,7 +316,7 @@ final class Canvas
          *     matchWidthOrHeight?: float
          * }|false $state
          */
-        $state = \lenga_internal_ui_canvas_get_state($this->canvasId);
+        $state = NativeEngine::call('ui_canvas_get_state', $this->canvasId);
         if (!\is_array($state)) {
             throw new \RuntimeException("Failed to resolve native Canvas '{$this->nameValue}'.");
         }

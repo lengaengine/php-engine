@@ -7,6 +7,8 @@ namespace Lenga\Engine\Core;
 use Lenga\Engine\Attributes\RequireComponent;
 use Lenga\Engine\Attributes\SerializeReference;
 use Lenga\Engine\Interfaces\ComponentInterface;
+use Lenga\Engine\UI\Canvas;
+use Lenga\Engine\UI\UIElement;
 
 abstract class Behaviour implements ComponentInterface
 {
@@ -29,6 +31,11 @@ abstract class Behaviour implements ComponentInterface
      * @var array<int, SignalSubscription>
      */
     private array $ownedSubscriptionsUntilDestroy = [];
+    /**
+     * @var array<string, SignalSubscription>
+     */
+    private static array $eventSubscriptionsByOwnerCallsite = [];
+    private bool $lifecycleEnabled = false;
 
     public function __construct() {}
 
@@ -58,24 +65,7 @@ abstract class Behaviour implements ComponentInterface
         }
     }
 
-    // INTERNAL: Called by the engine bridge
-    public function __internalAttachGameObject(GameObject $gameObject): void
-    {
-        $this->gameObjectValue = $gameObject;
-        $this->__internalEnsureRequiredComponents($gameObject);
-    }
-
-    public function __internalAttachComponentId(int $componentId): void
-    {
-        $this->componentId = $componentId;
-    }
-
-    public function __internalAttachSceneComponentId(string $sceneComponentId): void
-    {
-        $this->sceneComponentId = $sceneComponentId;
-    }
-
-    private function __internalEnsureRequiredComponents(GameObject $gameObject): void
+    private function ensureRequiredComponents(GameObject $gameObject): void
     {
         static $resolving = [];
 
@@ -123,7 +113,7 @@ abstract class Behaviour implements ComponentInterface
                 return true;
             }
 
-            return \lenga_internal_component_get_enabled($this->componentId);
+            return NativeEngine::call('component_get_enabled', $this->componentId);
         }
 
         set(bool $value) {
@@ -131,13 +121,41 @@ abstract class Behaviour implements ComponentInterface
                 return;
             }
 
-            \lenga_internal_component_set_enabled($this->componentId, $value);
+            NativeEngine::call('component_set_enabled', $this->componentId, $value);
         }
     }
 
     public function getInstanceId(): ?int
     {
         return $this->componentId;
+    }
+
+    private function internalAttachGameObject(GameObject $gameObject): void
+    {
+        $this->gameObjectValue = $gameObject;
+        $this->ensureRequiredComponents($gameObject);
+    }
+
+    private function internalAttachComponentId(int $componentId): void
+    {
+        $this->componentId = $componentId;
+    }
+
+    private function internalAttachSceneComponentId(string $sceneComponentId): void
+    {
+        $this->sceneComponentId = $sceneComponentId;
+    }
+
+    /**
+     * @param array<string, mixed> $properties
+     */
+    private function internalApplyProperties(array $properties): void
+    {
+        if ($properties === []) {
+            return;
+        }
+
+        $this->applySerializedPropertiesToObject($this, $properties);
     }
 
     public function __serialize(): array
@@ -209,23 +227,6 @@ abstract class Behaviour implements ComponentInterface
         }
     }
 
-    /**
-     * INTERNAL: Apply serialized scene properties before lifecycle callbacks run.
-     *
-     * MVP support is intentionally limited to properties that already exist on the
-     * behaviour class. Unknown keys are ignored.
-     *
-     * @param array<string, mixed> $properties
-     */
-    public function __internalApplyProperties(array $properties): void
-    {
-        if ($properties === []) {
-            return;
-        }
-
-        $this->applySerializedPropertiesToObject($this, $properties);
-    }
-
     private function resolveSerializedPropertyValue(\ReflectionProperty $property, mixed $value): mixed
     {
         if ($value instanceof Vector2 || $value instanceof Vector3) {
@@ -244,6 +245,23 @@ abstract class Behaviour implements ComponentInterface
         $resolvedTypeName = $this->resolvePropertyTypeName($type);
         if ($resolvedTypeName === null) {
             return $value;
+        }
+
+        if ($value['__lengaRefKind'] === 'Canvas') {
+            return $resolvedTypeName === Canvas::class
+                ? Canvas::fromSerializedReference($value)
+                : null;
+        }
+
+        if ($value['__lengaRefKind'] === 'UIElement') {
+            $element = UIElement::fromSerializedReference($value);
+            if ($element === null) {
+                return null;
+            }
+
+            return $resolvedTypeName === UIElement::class || $element instanceof $resolvedTypeName
+                ? $element
+                : null;
         }
 
         $gameObject = GameObject::fromSerializedReference($value);
@@ -577,7 +595,10 @@ abstract class Behaviour implements ComponentInterface
         bool $disposeOnDisable = true
     ): SignalSubscription
     {
-        return $this->trackSubscription(EventBus::on($eventName, $listener), $disposeOnDisable);
+        return $this->trackSubscription(
+            $this->replaceOwnerCallsiteEventSubscription($eventName, $listener, false),
+            $disposeOnDisable
+        );
     }
 
     protected function onceEvent(
@@ -586,7 +607,10 @@ abstract class Behaviour implements ComponentInterface
         bool $disposeOnDisable = true
     ): SignalSubscription
     {
-        return $this->trackSubscription(EventBus::once($eventName, $listener), $disposeOnDisable);
+        return $this->trackSubscription(
+            $this->replaceOwnerCallsiteEventSubscription($eventName, $listener, true),
+            $disposeOnDisable
+        );
     }
 
     protected function trackSubscription(
@@ -606,46 +630,58 @@ abstract class Behaviour implements ComponentInterface
         return $subscription;
     }
 
-    final public function __lengaInternalAwake(): void
+    private function internalAwake(): void
     {
         $this->awake();
     }
 
-    final public function __lengaInternalOnEnable(): void
+    private function internalOnEnable(): void
     {
+        if ($this->lifecycleEnabled) {
+            return;
+        }
+
+        $this->lifecycleEnabled = true;
         $this->onEnable();
     }
 
-    final public function __lengaInternalStart(): void
+    private function internalStart(): void
     {
         $this->start();
     }
 
-    final public function __lengaInternalFixedUpdate(): void
+    private function internalFixedUpdate(): void
     {
         $this->fixedUpdate();
         $this->tickCoroutinesFixedUpdate();
     }
 
-    final public function __lengaInternalUpdate(): void
+    private function internalUpdate(): void
     {
         $this->update();
         $this->tickCoroutines();
     }
 
-    final public function __lengaInternalLateUpdate(): void
+    private function internalLateUpdate(): void
     {
         $this->lateUpdate();
     }
 
-    final public function __lengaInternalOnDisable(): void
+    private function internalOnDisable(): void
     {
+        if (!$this->lifecycleEnabled) {
+            $this->releaseOwnedSubscriptionsOnDisable();
+            return;
+        }
+
+        $this->lifecycleEnabled = false;
         $this->releaseOwnedSubscriptionsOnDisable();
         $this->onDisable();
     }
 
-    final public function __lengaInternalOnDestroy(): void
+    private function internalOnDestroy(): void
     {
+        $this->lifecycleEnabled = false;
         $this->releaseOwnedSubscriptions();
         $this->onDestroy();
         $this->stopAllCoroutines();
@@ -698,6 +734,65 @@ abstract class Behaviour implements ComponentInterface
         }
     }
 
+    private function replaceOwnerCallsiteEventSubscription(
+        string $eventName,
+        callable $listener,
+        bool $once
+    ): SignalSubscription
+    {
+        $registryKey = $this->eventSubscriptionRegistryKey($eventName, $once);
+        if (isset(self::$eventSubscriptionsByOwnerCallsite[$registryKey])) {
+            self::$eventSubscriptionsByOwnerCallsite[$registryKey]->dispose();
+        }
+
+        $subscription = null;
+        if ($once) {
+            $rawSubscription = EventBus::on(
+                $eventName,
+                static function (mixed ...$arguments) use (&$subscription, $listener): void {
+                    $subscription?->dispose();
+                    $listener(...$arguments);
+                }
+            );
+        } else {
+            $rawSubscription = EventBus::on($eventName, $listener);
+        }
+
+        $subscription = new SignalSubscription(
+            static function () use ($rawSubscription, $registryKey, &$subscription): void {
+                $rawSubscription->dispose();
+                if ((self::$eventSubscriptionsByOwnerCallsite[$registryKey] ?? null) === $subscription) {
+                    unset(self::$eventSubscriptionsByOwnerCallsite[$registryKey]);
+                }
+            }
+        );
+
+        self::$eventSubscriptionsByOwnerCallsite[$registryKey] = $subscription;
+        return $subscription;
+    }
+
+    private function eventSubscriptionRegistryKey(string $eventName, bool $once): string
+    {
+        $ownerKey = $this->componentId !== null
+            ? 'component:' . $this->componentId
+            : 'object:' . \spl_object_id($this);
+
+        return $ownerKey . '|' . ($once ? 'once' : 'on') . '|' . $eventName . '|' . $this->eventSubscriptionCallsite();
+    }
+
+    private function eventSubscriptionCallsite(): string
+    {
+        foreach (\debug_backtrace(\DEBUG_BACKTRACE_IGNORE_ARGS, 10) as $frame) {
+            if (!isset($frame['file'], $frame['line']) || $frame['file'] === __FILE__) {
+                continue;
+            }
+
+            return $frame['file'] . ':' . $frame['line'];
+        }
+
+        return 'unknown:0';
+    }
+
     private function releaseOwnedSubscriptionsOnDisable(): void
     {
         $this->releaseTrackedSubscriptions($this->ownedSubscriptionsOnDisable);
@@ -720,56 +815,56 @@ abstract class Behaviour implements ComponentInterface
 
     /**
      * Called when the script instance is being loaded.
-     * 
+     *
      * @return void
      */
     public function awake(): void {}
 
     /**
      * Called when the object becomes enabled and active.
-     * 
+     *
      * @return void
      */
     public function onEnable(): void {}
 
     /**
      * Called before the first frame update, after all Awake calls.
-     * 
+     *
      * @return void
      */
     public function start(): void {}
 
     /**
      * Called on a fixed timestep, used for physics-like updates.
-     * 
+     *
      * @return void
      */
     public function fixedUpdate(): void {}
 
     /**
      * Called once per frame.
-     * 
+     *
      * @return void
      */
     public function update(): void {}
 
     /**
      * Called once per frame, after all Update calls.
-     * 
+     *
      * @return void
      */
     public function lateUpdate(): void {}
 
     /**
      * Called when the object becomes disabled or inactive.
-     * 
+     *
      * @return void
      */
     public function onDisable(): void {}
 
     /**
      * Called when the behaviour is destroyed.
-     * 
+     *
      * @return void
      */
     public function onDestroy(): void {}

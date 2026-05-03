@@ -37,7 +37,7 @@ final class SpriteRenderer extends Component
         }
 
         set(string $value) {
-            \lenga_internal_sprite_renderer_set_sorting_layer($this->componentId, $value);
+            NativeEngine::call('sprite_renderer_set_sorting_layer', $this->componentId, $value);
         }
     }
 
@@ -47,7 +47,7 @@ final class SpriteRenderer extends Component
         }
 
         set(int $value) {
-            \lenga_internal_sprite_renderer_set_order_in_layer($this->componentId, $value);
+            NativeEngine::call('sprite_renderer_set_order_in_layer', $this->componentId, $value);
         }
     }
 
@@ -67,7 +67,7 @@ final class SpriteRenderer extends Component
         }
 
         set (Vector2 $value) {
-            \lenga_internal_sprite_renderer_set_pivot($this->componentId, $value->x, $value->y);
+            NativeEngine::call('sprite_renderer_set_pivot', $this->componentId, $value->x, $value->y);
         }
     }
 
@@ -77,7 +77,7 @@ final class SpriteRenderer extends Component
         }
 
         set (bool $value) {
-            \lenga_internal_sprite_renderer_set_flip_x($this->componentId, $value);
+            NativeEngine::call('sprite_renderer_set_flip_x', $this->componentId, $value);
         }
     }
 
@@ -87,13 +87,13 @@ final class SpriteRenderer extends Component
         }
 
         set (bool $value) {
-            \lenga_internal_sprite_renderer_set_flip_y($this->componentId, $value);
+            NativeEngine::call('sprite_renderer_set_flip_y', $this->componentId, $value);
         }
     }
 
     public function setSize(float $width, float $height): void
     {
-        \lenga_internal_sprite_renderer_set_size($this->componentId, $width, $height);
+        NativeEngine::call('sprite_renderer_set_size', $this->componentId, $width, $height);
     }
 
     /**
@@ -115,7 +115,7 @@ final class SpriteRenderer extends Component
 
     public function setColor(int $red, int $green, int $blue, int $alpha = 255): void
     {
-        \lenga_internal_sprite_renderer_set_color(
+        NativeEngine::call('sprite_renderer_set_color',
             $this->componentId,
             $red,
             $green,
@@ -126,7 +126,7 @@ final class SpriteRenderer extends Component
 
     public function loadTexture(string $texturePath): bool
     {
-        return \lenga_internal_sprite_renderer_load_texture($this->componentId, $texturePath);
+        return NativeEngine::call('sprite_renderer_load_texture', $this->componentId, $texturePath);
     }
 
     /**
@@ -154,7 +154,7 @@ final class SpriteRenderer extends Component
          *     color?: array{r?: int, g?: int, b?: int, a?: int}
          * } $state
          */
-        $state = \lenga_internal_sprite_renderer_get_state($this->componentId);
+        $state = NativeEngine::call('sprite_renderer_get_state', $this->componentId);
 
         return $state;
     }

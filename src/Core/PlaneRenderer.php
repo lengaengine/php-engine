@@ -37,7 +37,7 @@ final class PlaneRenderer extends Component
 
     public function setSize(float $width, float $length): void
     {
-        \lenga_internal_plane_renderer_set_size($this->componentId, $width, $length);
+        NativeEngine::call('plane_renderer_set_size', $this->componentId, $width, $length);
     }
 
     public string $materialPath {
@@ -46,7 +46,7 @@ final class PlaneRenderer extends Component
         }
 
         set(string $value) {
-            \lenga_internal_plane_renderer_set_material_path($this->componentId, $value);
+            NativeEngine::call('plane_renderer_set_material_path', $this->componentId, $value);
         }
     }
 
@@ -69,7 +69,7 @@ final class PlaneRenderer extends Component
 
     public function setColor(int $red, int $green, int $blue, int $alpha = 255): void
     {
-        \lenga_internal_plane_renderer_set_color($this->componentId, $red, $green, $blue, $alpha);
+        NativeEngine::call('plane_renderer_set_color', $this->componentId, $red, $green, $blue, $alpha);
     }
 
     /**
@@ -91,7 +91,7 @@ final class PlaneRenderer extends Component
          *     enabled?: bool
          * } $state
          */
-        $state = \lenga_internal_plane_renderer_get_state($this->componentId);
+        $state = NativeEngine::call('plane_renderer_get_state', $this->componentId);
 
         return \is_array($state) ? $state : [];
     }

@@ -30,11 +30,11 @@ abstract class Component implements ComponentInterface
 
     public bool $enabled {
         get {
-            return \lenga_internal_component_get_enabled($this->componentId);
+            return NativeEngine::call('component_get_enabled', $this->componentId);
         }
 
         set(bool $value) {
-            \lenga_internal_component_set_enabled($this->componentId, $value);
+            NativeEngine::call('component_set_enabled', $this->componentId, $value);
         }
     }
 
@@ -46,11 +46,6 @@ abstract class Component implements ComponentInterface
     public function getSceneComponentId(): ?string
     {
         return $this->sceneComponentId;
-    }
-
-    public function __internalAttachSceneComponentId(string $sceneComponentId): void
-    {
-        $this->sceneComponentId = $sceneComponentId;
     }
 
     public function __serialize(): array

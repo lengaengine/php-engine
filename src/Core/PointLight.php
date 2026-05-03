@@ -20,7 +20,7 @@ final class PointLight extends Component
         }
 
         set(float $value) {
-            \lenga_internal_point_light_set_intensity($this->componentId, $value);
+            NativeEngine::call('point_light_set_intensity', $this->componentId, $value);
         }
     }
 
@@ -31,7 +31,7 @@ final class PointLight extends Component
         }
 
         set(float $value) {
-            \lenga_internal_point_light_set_range($this->componentId, $value);
+            NativeEngine::call('point_light_set_range', $this->componentId, $value);
         }
     }
 
@@ -54,7 +54,7 @@ final class PointLight extends Component
 
     public function setColor(int $red, int $green, int $blue, int $alpha = 255): void
     {
-        \lenga_internal_point_light_set_color($this->componentId, $red, $green, $blue, $alpha);
+        NativeEngine::call('point_light_set_color', $this->componentId, $red, $green, $blue, $alpha);
     }
 
     /**
@@ -74,7 +74,7 @@ final class PointLight extends Component
          *     enabled?: bool
          * } $state
          */
-        $state = \lenga_internal_point_light_get_state($this->componentId);
+        $state = NativeEngine::call('point_light_get_state', $this->componentId);
 
         return \is_array($state) ? $state : [];
     }
