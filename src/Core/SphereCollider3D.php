@@ -90,7 +90,7 @@ final class SphereCollider3D extends Component
     }
 
     /**
-     * @deprecated Use CharacterController::move() for Unity-style kinematic movement.
+     * @deprecated Use CharacterController::move() for kinematic movement.
      */
     public function moveAndSlide(
         Vector3 $delta,

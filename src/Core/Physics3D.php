@@ -95,7 +95,7 @@ final class Physics3D
     }
 
     /**
-     * @deprecated Use CharacterController::move() for Unity-style kinematic movement.
+     * @deprecated Use CharacterController::move() for kinematic movement.
      */
     public static function moveAndSlideSphere(
         Vector3 $position,
@@ -198,7 +198,7 @@ final class Physics3D
     }
 
     /**
-     * @deprecated Use CharacterController::move() for Unity-style kinematic movement.
+     * @deprecated Use CharacterController::move() for kinematic movement.
      */
     public static function moveAndSlideCapsule(
         Vector3 $position,

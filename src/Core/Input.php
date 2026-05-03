@@ -86,19 +86,19 @@ final class Input
         return self::isKeyReleased($key);
     }
 
-    /** Mirrors Unity-style virtual buttons such as `Jump`. */
+    /** Reads virtual buttons such as `Jump`. */
     public static function getButton(string $axis): bool
     {
         return (bool) NativeEngine::call('input_get_button', $axis);
     }
 
-    /** Mirrors Unity-style virtual buttons such as `Jump`. */
+    /** Reads whether a virtual button was pressed this frame. */
     public static function getButtonDown(string $axis): bool
     {
         return (bool) NativeEngine::call('input_get_button_down', $axis);
     }
 
-    /** Mirrors Unity-style virtual buttons such as `Jump`. */
+    /** Reads whether a virtual button was released this frame. */
     public static function getButtonUp(string $axis): bool
     {
         return (bool) NativeEngine::call('input_get_button_up', $axis);

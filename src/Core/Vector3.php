@@ -291,7 +291,7 @@ final class Vector3 implements ArrayAccess
     /**
      * Spherically interpolates between two vectors, treating them as directions.
      * The direction is interpolated on the sphere, and the magnitude is
-     * interpolated linearly, matching Unity's Vector3.Slerp behavior.
+     * interpolated linearly for stable gameplay-friendly results.
      */
     public static function slerp(Vector3 $a, Vector3 $b, float $t): self
     {

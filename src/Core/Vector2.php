@@ -8,7 +8,7 @@ use ArrayAccess;
 use OutOfBoundsException;
 
 /**
- * 2D vector value type mirroring Unity's UnityEngine.Vector2.
+ * 2D vector value type for gameplay math.
  *
  * Backed internally by a Vector3 data store (z is always 0).
  * Supports array-style component access using offsets 0/'x' and 1/'y'.
@@ -376,7 +376,7 @@ final class Vector2 implements ArrayAccess
 
     /**
      * Multiplies two vectors component-wise and returns the result.
-     * Equivalent to Unity's Vector2.Scale(a, b).
+     * Component-wise vector scale.
      *
      * @param Vector2 $a
      * @param Vector2 $b

@@ -60,7 +60,7 @@ abstract class Behaviour implements ComponentInterface
     public function __construct() {}
 
     // ---------------------------------------------------------------------
-    // Unity-style property: gameObject
+    // Owning GameObject
     // ---------------------------------------------------------------------
 
     public GameObject $gameObject {
@@ -75,7 +75,7 @@ abstract class Behaviour implements ComponentInterface
     }
 
     // ---------------------------------------------------------------------
-    // Unity-style property: transform
+    // Owning Transform
     // (always reflects this behaviour's GameObject)
     // ---------------------------------------------------------------------
 

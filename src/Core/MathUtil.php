@@ -7,12 +7,8 @@ namespace Lenga\Engine\Core;
 /**
  * A collection of common math functions.
  *
- * PHP port of Unity's Mathf struct. Every static method mirrors the C#
- * signature as closely as PHP's type system allows. Angles are always
- * in **radians** unless the method name says otherwise (e.g. LerpAngle,
- * MoveTowardsAngle, DeltaAngle — those work in **degrees**).
- *
- * @see https://docs.unity3d.com/ScriptReference/Mathf.html
+ * Angles are always in radians unless the method name says otherwise
+ * (for example, LerpAngle, MoveTowardsAngle, and DeltaAngle work in degrees).
  */
 final class MathUtil
 {
@@ -31,9 +27,9 @@ final class MathUtil
 
     /**
      * The smallest positive non-zero float that is meaningful for equality
-     * comparisons. Mirrors Unity's Mathf.Epsilon (≈1.401298E-45 in C#).
+     * comparisons.
      *
-     * PHP's float is double-precision, so we use PHP_FLOAT_EPSILON instead
+     * PHP's float is double-precision, so we use PHP_FLOAT_EPSILON
      * (≈2.22E-16). For an approximately-equal comparison on normal-range
      * numbers, use {@see approximately()} which applies a tolerance that
      * scales with the operand magnitudes.
@@ -284,7 +280,7 @@ final class MathUtil
      * Loops the value t so that it is never larger than length and never
      * smaller than 0.
      *
-     * Equivalent to Unity's Mathf.Repeat.
+     * Useful for looping timers, animation phases, and cyclic indices.
      */
     public static function repeat(float $t, float $length): float
     {
@@ -314,7 +310,7 @@ final class MathUtil
     }
 
     // ──────────────────────────────────────────────
-    //  Wrapping (custom, not in Unity Mathf)
+    //  Wrapping
     // ──────────────────────────────────────────────
 
     /**
@@ -549,8 +545,7 @@ final class MathUtil
      * Compares two floating-point values and returns true if they are
      * similar.
      *
-     * Uses the same tolerance algorithm as Unity: the values are
-     * considered equal when the absolute difference is less than
+     * Values are considered equal when the absolute difference is less than
      * max(1E-06 * max(|a|,|b|), Epsilon * 8).
      */
     public static function approximately(float $a, float $b): bool
@@ -588,7 +583,7 @@ final class MathUtil
         $next = self::nextPowerOfTwo($value);
         $prev = $next >> 1;
 
-        // On a tie, round up to the higher power (matches Unity behaviour).
+        // On a tie, round up to the higher power.
         return ($value - $prev < $next - $value) ? $prev : $next;
     }
 
