@@ -40,6 +40,45 @@ final class AudioSource extends Component
     }
 
     /**
+     * The mixer asset that receives this source's output.
+     *
+     * Leave this null to send the source directly to the engine's default
+     * master output.
+     */
+    public ?AudioMixer $outputAudioMixer {
+        get {
+            return AudioMixer::fromSerializedReference($this->getState()['outputAudioMixer'] ?? null);
+        }
+
+        set(?AudioMixer $value) {
+            NativeEngine::call(
+                'audio_source_set_output',
+                $this->componentId,
+                $value?->__serialize(),
+                $this->outputChannelId,
+            );
+        }
+    }
+
+    /**
+     * The mixer channel that receives this source's output.
+     */
+    public string $outputChannelId {
+        get {
+            return (string) ($this->getState()['outputChannelId'] ?? 'master');
+        }
+
+        set(string $value) {
+            NativeEngine::call(
+                'audio_source_set_output',
+                $this->componentId,
+                $this->outputAudioMixer?->__serialize(),
+                $value,
+            );
+        }
+    }
+
+    /**
      * @var bool When enabled the AudioSource will begin to play as soon as the
      * component/GameObject becomes active.
      */
@@ -119,8 +158,23 @@ final class AudioSource extends Component
     }
 
     /**
+     * Routes this source to a mixer channel in one operation.
+     */
+    public function setOutput(?AudioMixer $mixer, string $channelId = 'master'): bool
+    {
+        return (bool) NativeEngine::call(
+            'audio_source_set_output',
+            $this->componentId,
+            $mixer?->__serialize(),
+            $channelId,
+        );
+    }
+
+    /**
      * @return array{
      *     clip?: array{__lengaAssetKind: string, assetPath: string}|null,
+     *     outputAudioMixer?: array{__lengaAssetKind: string, assetPath: string}|null,
+     *     outputChannelId?: string,
      *     playOnAwake?: bool,
      *     loop?: bool,
      *     volume?: float,
@@ -133,6 +187,8 @@ final class AudioSource extends Component
     {
         /** @var array{
          *     clip?: array{__lengaAssetKind: string, assetPath: string}|null,
+         *     outputAudioMixer?: array{__lengaAssetKind: string, assetPath: string}|null,
+         *     outputChannelId?: string,
          *     playOnAwake?: bool,
          *     loop?: bool,
          *     volume?: float,

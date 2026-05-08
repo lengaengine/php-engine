@@ -9,6 +9,7 @@ use Generator;
 use Lenga\Engine\Attributes\RequireComponent;
 use Lenga\Engine\Attributes\SerializeReference;
 use Lenga\Engine\Audio\AudioClip;
+use Lenga\Engine\Audio\AudioMixer;
 use Lenga\Engine\Interfaces\ComponentInterface;
 use Lenga\Engine\UI\Canvas;
 use Lenga\Engine\UI\UIElement;
@@ -362,6 +363,10 @@ abstract class Behaviour implements ComponentInterface
 
         if ($resolvedTypeName === AudioClip::class) {
             return AudioClip::fromSerializedReference($value);
+        }
+
+        if ($resolvedTypeName === AudioMixer::class) {
+            return AudioMixer::fromSerializedReference($value);
         }
 
         if (enum_exists($resolvedTypeName)) {
