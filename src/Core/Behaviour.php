@@ -8,6 +8,7 @@ use BackedEnum;
 use Generator;
 use Lenga\Engine\Attributes\RequireComponent;
 use Lenga\Engine\Attributes\SerializeReference;
+use Lenga\Engine\Audio\AudioClip;
 use Lenga\Engine\Interfaces\ComponentInterface;
 use Lenga\Engine\UI\Canvas;
 use Lenga\Engine\UI\UIElement;
@@ -357,6 +358,10 @@ abstract class Behaviour implements ComponentInterface
         $resolvedTypeName = $this->resolvePropertyTypeName($type);
         if ($resolvedTypeName === null) {
             return $value;
+        }
+
+        if ($resolvedTypeName === AudioClip::class) {
+            return AudioClip::fromSerializedReference($value);
         }
 
         if (enum_exists($resolvedTypeName)) {

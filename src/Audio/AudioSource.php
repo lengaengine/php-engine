@@ -8,7 +8,14 @@ use Lenga\Engine\Attributes\Range;
 use Lenga\Engine\Core\Component;
 use Lenga\Engine\Core\GameObject;
 use Lenga\Engine\Core\NativeEngine;
+use function is_array;
 
+/**
+ * Plays audio from a GameObject.
+ *
+ * Attach an AudioSource to an object, assign an AudioClip in the Inspector or
+ * through script, then call play() when the sound should be heard.
+ */
 final class AudioSource extends Component
 {
     public function __construct(GameObject $gameObject, int $componentId)
@@ -17,15 +24,18 @@ final class AudioSource extends Component
     }
 
     /**
-     * @var string The path to the audio clip.
+     * The audio clip currently assigned to this source.
+     *
+     * Set this to one of your serialized AudioClip references before calling
+     * play() when a source needs to choose sounds dynamically.
      */
-    public string $clipPath {
+    public ?AudioClip $clip {
         get {
-            return (string) ($this->getState()['clipPath'] ?? '');
+            return AudioClip::fromSerializedReference($this->getState()['clip'] ?? null);
         }
 
-        set(string $value) {
-            NativeEngine::call('audio_source_set_clip_path', $this->componentId, $value);
+        set(?AudioClip $value) {
+            NativeEngine::call('audio_source_set_clip', $this->componentId, $value?->__serialize());
         }
     }
 
@@ -43,6 +53,9 @@ final class AudioSource extends Component
         }
     }
 
+    /**
+     * Whether playback should restart automatically after reaching the end.
+     */
     public bool $loop {
         get {
             return (bool) ($this->getState()['loop'] ?? false);
@@ -53,6 +66,9 @@ final class AudioSource extends Component
         }
     }
 
+    /**
+     * Playback volume from 0.0 to 1.0.
+     */
     #[Range(0, 1)]
     public float $volume {
         get {
@@ -64,6 +80,9 @@ final class AudioSource extends Component
         }
     }
 
+    /**
+     * Playback pitch multiplier. Values above 1.0 play faster and higher.
+     */
     #[Range(0.01, 3)]
     public float $pitch {
         get {
@@ -75,24 +94,33 @@ final class AudioSource extends Component
         }
     }
 
+    /**
+     * Returns true while the assigned clip is currently playing.
+     */
     public function isPlaying(): bool
     {
         return (bool) ($this->getState()['isPlaying'] ?? false);
     }
 
+    /**
+     * Starts playback from the beginning of the assigned clip.
+     */
     public function play(): bool
     {
-        return NativeEngine::call('audio_source_play', $this->componentId);
+        return (bool) NativeEngine::call('audio_source_play', $this->componentId);
     }
 
+    /**
+     * Stops playback and resets the source.
+     */
     public function stop(): bool
     {
-        return NativeEngine::call('audio_source_stop', $this->componentId);
+        return (bool) NativeEngine::call('audio_source_stop', $this->componentId);
     }
 
     /**
      * @return array{
-     *     clipPath?: string,
+     *     clip?: array{__lengaAssetKind: string, assetPath: string}|null,
      *     playOnAwake?: bool,
      *     loop?: bool,
      *     volume?: float,
@@ -104,7 +132,7 @@ final class AudioSource extends Component
     private function getState(): array
     {
         /** @var array{
-         *     clipPath?: string,
+         *     clip?: array{__lengaAssetKind: string, assetPath: string}|null,
          *     playOnAwake?: bool,
          *     loop?: bool,
          *     volume?: float,
@@ -115,6 +143,6 @@ final class AudioSource extends Component
          */
         $state = NativeEngine::call('audio_source_get_state', $this->componentId);
 
-        return \is_array($state) ? $state : [];
+        return is_array($state) ? $state : [];
     }
 }
