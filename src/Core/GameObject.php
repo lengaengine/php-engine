@@ -6,6 +6,7 @@ namespace Lenga\Engine\Core;
 
 use Closure;
 use InvalidArgumentException;
+use Lenga\Engine\Audio\AudioSource;
 use Lenga\Engine\SceneManagement\Scene;
 use RuntimeException;
 

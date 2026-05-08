@@ -56,7 +56,7 @@ final class TrailRenderer extends Component
 
     public float $startWidth {
         get {
-            return (float) ($this->getState()['startWidth'] ?? 0.25);
+            return (float) ($this->getState()['startWidth'] ?? 0.5);
         }
 
         set(float $value) {
