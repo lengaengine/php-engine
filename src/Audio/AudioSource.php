@@ -2,9 +2,12 @@
 
 declare(strict_types=1);
 
-namespace Lenga\Engine\Core;
+namespace Lenga\Engine\Audio;
 
 use Lenga\Engine\Attributes\Range;
+use Lenga\Engine\Core\Component;
+use Lenga\Engine\Core\GameObject;
+use Lenga\Engine\Core\NativeEngine;
 
 final class AudioSource extends Component
 {
