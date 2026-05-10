@@ -24,3 +24,8 @@ These rules apply to `lenga/engine` package code and tests. They are version-con
 - Run `php -l` on changed PHP files before committing.
 - Run `php-engine/vendor/bin/phpunit php-engine/tests` after runtime boundary, lifecycle, event, or API-surface changes.
 - Keep the internal API boundary tests updated when bridge rules change.
+
+## Commit Messages
+
+- Use Conventional Commits for all commit messages before work is shared. Prefer `type(scope): summary` when a useful scope exists, for example `feat(api): add audio clips`, `fix(events): prevent duplicate listeners`, or `test(bridge): cover native call names`.
+- Keep commit subjects lowercase after the type/scope prefix unless a proper noun, API symbol, or file name requires casing.
