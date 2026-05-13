@@ -9,6 +9,16 @@ use InvalidArgumentException;
 use Lenga\Engine\Audio\AudioSource;
 use Lenga\Engine\SceneManagement\Scene;
 use RuntimeException;
+use function array_map;
+use function array_values;
+use function class_exists;
+use function count;
+use function is_array;
+use function is_int;
+use function is_object;
+use function is_string;
+use function is_subclass_of;
+use function ltrim;
 
 final class GameObject
 {
@@ -177,11 +187,11 @@ final class GameObject
             return;
         }
 
-        $this->instanceId = isset($data['instanceId']) && \is_int($data['instanceId']) ? $data['instanceId'] : null;
-        $this->sceneObjectIdValue = isset($data['sceneObjectId']) && \is_string($data['sceneObjectId'])
+        $this->instanceId = isset($data['instanceId']) && is_int($data['instanceId']) ? $data['instanceId'] : null;
+        $this->sceneObjectIdValue = isset($data['sceneObjectId']) && is_string($data['sceneObjectId'])
             ? $data['sceneObjectId']
             : '';
-        $this->nameValue = isset($data['name']) && \is_string($data['name']) ? $data['name'] : 'GameObject';
+        $this->nameValue = isset($data['name']) && is_string($data['name']) ? $data['name'] : 'GameObject';
         $this->tagValue = 'Untagged';
         $this->layerValue = 0;
         $this->activeSelfValue = true;
@@ -232,7 +242,7 @@ final class GameObject
         /** @var array{name?: string}|false $data */
         $data = NativeEngine::call('game_object_get_scene_by_id', $this->instanceId);
 
-        return \is_array($data) ? Scene::fromNativeData($data) : null;
+        return is_array($data) ? Scene::fromNativeData($data) : null;
     }
 
     public function getParent(): ?self
@@ -244,7 +254,7 @@ final class GameObject
         /** @var array{name?: string, tag?: string, layer?: int, id?: int, activeSelf?: bool, activeInHierarchy?: bool, transformId?: int|null}|false $data */
         $data = NativeEngine::call('game_object_get_parent_by_id', $this->instanceId);
 
-        return \is_array($data) ? self::fromNativeLookupData($data) : null;
+        return is_array($data) ? self::fromNativeLookupData($data) : null;
     }
 
     /**
@@ -258,7 +268,7 @@ final class GameObject
 
         /** @var list<array{name?: string, tag?: string, layer?: int, id?: int, activeSelf?: bool, activeInHierarchy?: bool, transformId?: int|null}>|false $data */
         $data = NativeEngine::call('game_object_get_children_by_id', $this->instanceId);
-        if (!\is_array($data)) {
+        if (!is_array($data)) {
             return [];
         }
 
@@ -270,7 +280,7 @@ final class GameObject
 
     public function childCount(): int
     {
-        return \count($this->getChildren());
+        return count($this->getChildren());
     }
 
     public function setParent(?self $parent, bool $worldPositionStays = true): bool
@@ -452,7 +462,7 @@ final class GameObject
     {
         /** @var array{name?: string, tag?: string, layer?: int, id?: int, activeSelf?: bool, activeInHierarchy?: bool, transformId?: int|null}|false $data */
         $data = NativeEngine::call('game_object_find_by_name', $name);
-        if (!\is_array($data)) {
+        if (!is_array($data)) {
             return null;
         }
 
@@ -463,7 +473,7 @@ final class GameObject
     {
         /** @var array{name?: string, tag?: string, layer?: int, id?: int, activeSelf?: bool, activeInHierarchy?: bool, transformId?: int|null, sceneObjectId?: string}|false $data */
         $data = NativeEngine::call('game_object_find_by_scene_id', $sceneObjectId);
-        if (!\is_array($data)) {
+        if (!is_array($data)) {
             return null;
         }
 
@@ -474,7 +484,7 @@ final class GameObject
     {
         /** @var array{name?: string, tag?: string, layer?: int, id?: int, activeSelf?: bool, activeInHierarchy?: bool, transformId?: int|null, sceneObjectId?: string}|false $data */
         $data = NativeEngine::call('game_object_lookup_by_id', $instanceId);
-        if (!\is_array($data)) {
+        if (!is_array($data)) {
             return null;
         }
 
@@ -485,7 +495,7 @@ final class GameObject
     {
         /** @var array{name?: string, tag?: string, layer?: int, id?: int, activeSelf?: bool, activeInHierarchy?: bool, transformId?: int|null}|false $data */
         $data = NativeEngine::call('game_object_find_with_tag', $tag);
-        if (!\is_array($data)) {
+        if (!is_array($data)) {
             return null;
         }
 
@@ -499,7 +509,7 @@ final class GameObject
     {
         /** @var list<array{name?: string, tag?: string, layer?: int, id?: int, activeSelf?: bool, activeInHierarchy?: bool, transformId?: int|null}>|false $results */
         $results = NativeEngine::call('game_object_find_game_objects_with_tag', $tag);
-        if (!\is_array($results)) {
+        if (!is_array($results)) {
             return [];
         }
 
@@ -513,7 +523,7 @@ final class GameObject
     {
         /** @var array{name?: string, tag?: string, layer?: int, id?: int, activeSelf?: bool, activeInHierarchy?: bool, transformId?: int|null}|false $data */
         $data = NativeEngine::call('scene_create_game_object', $name);
-        if (!\is_array($data)) {
+        if (!is_array($data)) {
             throw new RuntimeException("Failed to create GameObject '{$name}' in the active scene.");
         }
 
@@ -529,7 +539,7 @@ final class GameObject
 
         /** @var array{name?: string, tag?: string, layer?: int, id?: int, activeSelf?: bool, activeInHierarchy?: bool, transformId?: int|null}|false $data */
         $data = NativeEngine::call('game_object_instantiate_by_id', $instanceId, $name);
-        if (!\is_array($data)) {
+        if (!is_array($data)) {
             throw new RuntimeException("Failed to instantiate GameObject '{$original->name}'.");
         }
 
@@ -541,11 +551,11 @@ final class GameObject
      */
     public static function fromNativeLookupData(array $data, ?Transform $transform = null): self
     {
-        $transformId = isset($data['transformId']) && \is_int($data['transformId'])
+        $transformId = isset($data['transformId']) && is_int($data['transformId'])
             ? $data['transformId']
             : null;
 
-        $instanceId = isset($data['id']) && \is_int($data['id'])
+        $instanceId = isset($data['id']) && is_int($data['id'])
             ? $data['id']
             : null;
 
@@ -565,7 +575,7 @@ final class GameObject
 
     public static function fromSerializedReference(array $data): ?self
     {
-        $sceneObjectId = isset($data['sceneObjectId']) && \is_string($data['sceneObjectId'])
+        $sceneObjectId = isset($data['sceneObjectId']) && is_string($data['sceneObjectId'])
             ? $data['sceneObjectId']
             : '';
         if ($sceneObjectId !== '') {
@@ -575,7 +585,7 @@ final class GameObject
             }
         }
 
-        $instanceId = isset($data['instanceId']) && \is_int($data['instanceId'])
+        $instanceId = isset($data['instanceId']) && is_int($data['instanceId'])
             ? $data['instanceId']
             : null;
         if ($instanceId !== null) {
@@ -591,18 +601,18 @@ final class GameObject
             return null;
         }
 
-        if (\is_object($nativeResult)) {
+        if (is_object($nativeResult)) {
             return $nativeResult;
         }
 
-        if (!\is_array($nativeResult)) {
+        if (!is_array($nativeResult)) {
             return null;
         }
 
         $gameObject = null;
-        if (\is_array($nativeResult['gameObject'] ?? null)) {
+        if (is_array($nativeResult['gameObject'] ?? null)) {
             $gameObject = self::fromNativeLookupData($nativeResult['gameObject']);
-        } elseif (isset($nativeResult['gameObjectId']) && \is_int($nativeResult['gameObjectId'])) {
+        } elseif (isset($nativeResult['gameObjectId']) && is_int($nativeResult['gameObjectId'])) {
             $gameObject = self::lookupByInstanceId($nativeResult['gameObjectId']);
         }
 
@@ -618,7 +628,7 @@ final class GameObject
      */
     public static function wrapNativeComponentLookupResults(mixed $nativeResult): array
     {
-        if (!\is_array($nativeResult)) {
+        if (!is_array($nativeResult)) {
             return [];
         }
 
@@ -644,6 +654,7 @@ final class GameObject
             Transform::class, 'Transform' => ['nativeType' => 'Transform', 'scriptClass' => null],
             Camera::class, 'Camera' => ['nativeType' => 'Camera', 'scriptClass' => null],
             Rigidbody2D::class, 'Rigidbody2D' => ['nativeType' => 'Rigidbody2D', 'scriptClass' => null],
+            Rigidbody3D::class, 'Rigidbody3D' => ['nativeType' => 'Rigidbody3D', 'scriptClass' => null],
             PlatformEffector2D::class, 'PlatformEffector2D' => ['nativeType' => 'PlatformEffector2D', 'scriptClass' => null],
             AreaEffector2D::class, 'AreaEffector2D' => ['nativeType' => 'AreaEffector2D', 'scriptClass' => null],
             PointEffector2D::class, 'PointEffector2D' => ['nativeType' => 'PointEffector2D', 'scriptClass' => null],
@@ -677,7 +688,7 @@ final class GameObject
      */
     private static function normalizeDynamicComponentSpecifier(string $type): array
     {
-        if (\class_exists($type) && \is_subclass_of($type, Behaviour::class)) {
+        if (class_exists($type) && is_subclass_of($type, Behaviour::class)) {
             return ['nativeType' => 'Behaviour', 'scriptClass' => $type];
         }
 
@@ -707,7 +718,7 @@ final class GameObject
      */
     private function wrapNativeComponentResults(mixed $nativeResult): array
     {
-        if (!\is_array($nativeResult)) {
+        if (!is_array($nativeResult)) {
             return [];
         }
 
@@ -728,24 +739,24 @@ final class GameObject
             return null;
         }
 
-        if (\is_object($nativeResult)) {
+        if (is_object($nativeResult)) {
             return $nativeResult;
         }
 
-        if (!\is_array($nativeResult)) {
+        if (!is_array($nativeResult)) {
             return null;
         }
 
-        $componentId = isset($nativeResult['id']) && \is_int($nativeResult['id'])
+        $componentId = isset($nativeResult['id']) && is_int($nativeResult['id'])
             ? $nativeResult['id']
             : null;
         $componentType = (string) ($nativeResult['type'] ?? 'Component');
 
         if ($componentType === 'Transform') {
-            $transformId = isset($nativeResult['transformId']) && \is_int($nativeResult['transformId'])
+            $transformId = isset($nativeResult['transformId']) && is_int($nativeResult['transformId'])
                 ? $nativeResult['transformId']
                 : null;
-            $gameObjectId = isset($nativeResult['gameObjectId']) && \is_int($nativeResult['gameObjectId'])
+            $gameObjectId = isset($nativeResult['gameObjectId']) && is_int($nativeResult['gameObjectId'])
                 ? $nativeResult['gameObjectId']
                 : $this->instanceId;
 
@@ -767,6 +778,7 @@ final class GameObject
         $component = match ($componentType) {
             'Camera' => new Camera($this, $componentId),
             'Rigidbody2D' => new Rigidbody2D($this, $componentId),
+            'Rigidbody3D' => new Rigidbody3D($this, $componentId),
             'PlatformEffector2D' => new PlatformEffector2D($this, $componentId),
             'AreaEffector2D' => new AreaEffector2D($this, $componentId),
             'PointEffector2D' => new PointEffector2D($this, $componentId),
@@ -797,7 +809,7 @@ final class GameObject
 
         if (
             isset($nativeResult['sceneComponentId']) &&
-            \is_string($nativeResult['sceneComponentId']) &&
+            is_string($nativeResult['sceneComponentId']) &&
             $component instanceof Component
         ) {
             self::attachSceneComponentId($component, $nativeResult['sceneComponentId']);
