@@ -122,7 +122,7 @@ final class Rigidbody3D extends Component
         }
     }
 
-    /** Prevents the physics simulation from rotating this body. */
+    /** Prevents the physics simulation from rotating this body on every axis. */
     public bool $freezeRotation {
         get {
             return (bool) ($this->getState()['freezeRotation'] ?? false);
@@ -130,6 +130,51 @@ final class Rigidbody3D extends Component
 
         set(bool $value) {
             NativeEngine::call('rigidbody3d_set_freeze_rotation', $this->componentId, $value);
+        }
+    }
+
+    /** Prevents the physics simulation from rotating this body around the world X axis. */
+    public bool $freezeRotationX {
+        get {
+            return (bool) ($this->getState()['freezeRotationX'] ?? false);
+        }
+
+        set(bool $value) {
+            $this->setFreezeRotationAxes(
+                $value,
+                $this->freezeRotationY,
+                $this->freezeRotationZ,
+            );
+        }
+    }
+
+    /** Prevents the physics simulation from rotating this body around the world Y axis. */
+    public bool $freezeRotationY {
+        get {
+            return (bool) ($this->getState()['freezeRotationY'] ?? false);
+        }
+
+        set(bool $value) {
+            $this->setFreezeRotationAxes(
+                $this->freezeRotationX,
+                $value,
+                $this->freezeRotationZ,
+            );
+        }
+    }
+
+    /** Prevents the physics simulation from rotating this body around the world Z axis. */
+    public bool $freezeRotationZ {
+        get {
+            return (bool) ($this->getState()['freezeRotationZ'] ?? false);
+        }
+
+        set(bool $value) {
+            $this->setFreezeRotationAxes(
+                $this->freezeRotationX,
+                $this->freezeRotationY,
+                $value,
+            );
         }
     }
 
@@ -160,6 +205,14 @@ final class Rigidbody3D extends Component
             $force->z,
             $mode->value,
         );
+    }
+
+    /**
+     * Sets all three rotation constraints in one native call.
+     */
+    public function setFreezeRotationAxes(bool $x, bool $y, bool $z): void
+    {
+        NativeEngine::call('rigidbody3d_set_freeze_rotation_axes', $this->componentId, $x, $y, $z);
     }
 
     /**
@@ -218,6 +271,9 @@ final class Rigidbody3D extends Component
      *     linearDrag?: float,
      *     angularDrag?: float,
      *     freezeRotation?: bool,
+     *     freezeRotationX?: bool,
+     *     freezeRotationY?: bool,
+     *     freezeRotationZ?: bool,
      *     collisionDetection?: string,
      *     enabled?: bool
      * }
@@ -231,6 +287,9 @@ final class Rigidbody3D extends Component
          *     linearDrag?: float,
          *     angularDrag?: float,
          *     freezeRotation?: bool,
+         *     freezeRotationX?: bool,
+         *     freezeRotationY?: bool,
+         *     freezeRotationZ?: bool,
          *     collisionDetection?: string,
          *     enabled?: bool
          * }|false $state

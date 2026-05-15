@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Lenga\Engine\Core;
 
 use Lenga\Engine\Attributes\Min;
+use function is_array;
 
 final class CapsuleCollider3D extends Component
 {
@@ -61,6 +62,59 @@ final class CapsuleCollider3D extends Component
         }
     }
 
+    /**
+     * The project-relative path to the 3D physics material asset assigned to this collider.
+     */
+    public string $materialPath {
+        get {
+            return (string) ($this->getState()['materialPath'] ?? '');
+        }
+
+        set(string $value) {
+            NativeEngine::call('capsule_collider3d_set_material_path', $this->componentId, $value);
+        }
+    }
+
+    /**
+     * The resolved 3D physics material values currently applied to this collider.
+     */
+    public PhysicsMaterial3D $material {
+        get {
+            $state = $this->getState();
+            /** @var array{
+             *     dynamicFriction?: float|int,
+             *     staticFriction?: float|int,
+             *     friction?: float|int,
+             *     bounciness?: float|int,
+             *     frictionCombine?: string,
+             *     bounceCombine?: string
+             * } $materialState
+             */
+            $materialState = is_array($state['material'] ?? null) ? $state['material'] : [];
+
+            return PhysicsMaterial3D::fromArray(
+                $materialState,
+                (string) ($state['materialPath'] ?? ''),
+            );
+        }
+
+        set(PhysicsMaterial3D $value) {
+            if ($value->assetPath !== '') {
+                NativeEngine::call('capsule_collider3d_set_material_path', $this->componentId, $value->assetPath);
+                return;
+            }
+
+            NativeEngine::call('capsule_collider3d_set_material',
+                $this->componentId,
+                $value->dynamicFriction,
+                $value->staticFriction,
+                $value->bounciness,
+                $value->frictionCombine,
+                $value->bounceCombine,
+            );
+        }
+    }
+
     public function isTouching(bool $includeTriggers = true, ?int $layerMask = null): bool
     {
         return NativeEngine::call('capsule_collider3d_is_touching',
@@ -81,13 +135,13 @@ final class CapsuleCollider3D extends Component
             $layerMask ?? Physics3D::ALL_LAYERS,
         );
 
-        if (!\is_array($results)) {
+        if (!is_array($results)) {
             return [];
         }
 
         $contacts = [];
         foreach ($results as $result) {
-            if (\is_array($result)) {
+            if (is_array($result)) {
                 $contacts[] = Collision3D::fromNativeData($result);
                 continue;
             }
@@ -132,7 +186,16 @@ final class CapsuleCollider3D extends Component
      *     isTrigger?: bool,
      *     radius?: float|int,
      *     height?: float|int,
-     *     offset?: array{x?: float|int, y?: float|int, z?: float|int}
+     *     offset?: array{x?: float|int, y?: float|int, z?: float|int},
+     *     materialPath?: string,
+     *     material?: array{
+     *         dynamicFriction?: float|int,
+     *         staticFriction?: float|int,
+     *         friction?: float|int,
+     *         bounciness?: float|int,
+     *         frictionCombine?: string,
+     *         bounceCombine?: string
+     *     }
      * }
      */
     private function getState(): array
@@ -142,11 +205,20 @@ final class CapsuleCollider3D extends Component
          *     isTrigger?: bool,
          *     radius?: float|int,
          *     height?: float|int,
-         *     offset?: array{x?: float|int, y?: float|int, z?: float|int}
+         *     offset?: array{x?: float|int, y?: float|int, z?: float|int},
+         *     materialPath?: string,
+         *     material?: array{
+         *         dynamicFriction?: float|int,
+         *         staticFriction?: float|int,
+         *         friction?: float|int,
+         *         bounciness?: float|int,
+         *         frictionCombine?: string,
+         *         bounceCombine?: string
+         *     }
          * } $state
          */
         $state = NativeEngine::call('capsule_collider3d_get_state', $this->componentId);
 
-        return \is_array($state) ? $state : [];
+        return is_array($state) ? $state : [];
     }
 }
