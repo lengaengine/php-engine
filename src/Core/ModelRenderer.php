@@ -6,6 +6,7 @@ namespace Lenga\Engine\Core;
 
 use Lenga\Engine\Attributes\Min;
 use Lenga\Engine\Attributes\Range;
+use function is_array;
 
 final class ModelRenderer extends Component
 {
@@ -119,7 +120,7 @@ final class ModelRenderer extends Component
     {
         /** @var list<string>|mixed $names */
         $names = $this->getState()['animationNames'] ?? [];
-        return \is_array($names) ? array_values(array_map(static fn ($value) => (string) $value, $names)) : [];
+        return is_array($names) ? array_values(array_map(static fn ($value) => (string) $value, $names)) : [];
     }
 
     public function isPlaying(): bool
@@ -196,6 +197,6 @@ final class ModelRenderer extends Component
          */
         $state = NativeEngine::call('model_renderer_get_state', $this->componentId);
 
-        return \is_array($state) ? $state : [];
+        return is_array($state) ? $state : [];
     }
 }

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Lenga\Engine\Core;
 
 use Lenga\Engine\Attributes\Min;
+use function is_array;
 
 final class CylinderRenderer extends Component
 {
@@ -132,6 +133,6 @@ final class CylinderRenderer extends Component
          */
         $state = NativeEngine::call('cylinder_renderer_get_state', $this->componentId);
 
-        return \is_array($state) ? $state : [];
+        return is_array($state) ? $state : [];
     }
 }

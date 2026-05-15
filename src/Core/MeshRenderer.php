@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Lenga\Engine\Core;
 
+use function is_array;
+
 final class MeshRenderer extends Component
 {
     public function __construct(GameObject $gameObject, int $componentId)
@@ -73,6 +75,6 @@ final class MeshRenderer extends Component
          */
         $state = NativeEngine::call('mesh_renderer_get_state', $this->componentId);
 
-        return \is_array($state) ? $state : [];
+        return is_array($state) ? $state : [];
     }
 }
