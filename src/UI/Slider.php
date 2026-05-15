@@ -4,8 +4,10 @@ declare(strict_types=1);
 
 namespace Lenga\Engine\UI;
 
+use Lenga\Engine\Core\Color;
 use Lenga\Engine\Core\NativeEngine;
 use Lenga\Engine\Core\Vector2;
+use Lenga\Engine\Internal\ColorBridge;
 
 /**
  * UI slider element with value range, interaction state, and visual part styling.
@@ -91,24 +93,36 @@ final class Slider extends UIElement
     }
 
     /**
-     * @return array{r:int, g:int, b:int, a:int}
+     * The slider track background color.
+     */
+    public Color $backgroundColor {
+        get => ColorBridge::fromState($this->getState()['backgroundColor'] ?? null, Color::fromRGBA(56, 66, 82));
+
+        set(Color $value) {
+            $color = $value->toRGBA();
+            NativeEngine::call('ui_slider_set_background_color', $this->getId(), $color['r'], $color['g'], $color['b'], $color['a']);
+        }
+    }
+
+    /**
+     * Gets the slider track background color as byte-channel RGBA values.
+     *
+     * @return array{r: int, g: int, b: int, a: int}
      */
     public function getBackgroundColor(): array
     {
-        /** @var array{r?: int, g?: int, b?: int, a?: int} $value */
-        $value = $this->getState()['backgroundColor'] ?? [];
-
-        return [
-            'r' => (int) ($value['r'] ?? 56),
-            'g' => (int) ($value['g'] ?? 66),
-            'b' => (int) ($value['b'] ?? 82),
-            'a' => (int) ($value['a'] ?? 255),
-        ];
+        return $this->backgroundColor->toRGBA();
     }
 
-    public function setBackgroundColor(int $red, int $green, int $blue, int $alpha = 255): void
+    /**
+     * Sets the slider track background color.
+     *
+     * @param Color|array{r?: int|float, g?: int|float, b?: int|float, a?: int|float, 0?: int|float, 1?: int|float, 2?: int|float, 3?: int|float}|int $red
+     */
+    public function setBackgroundColor(Color|array|int $red, ?int $green = null, ?int $blue = null, int $alpha = 255): void
     {
-        NativeEngine::call('ui_slider_set_background_color', $this->getId(), $red, $green, $blue, $alpha);
+        $color = ColorBridge::toNative($red, $green, $blue, $alpha);
+        NativeEngine::call('ui_slider_set_background_color', $this->getId(), $color['r'], $color['g'], $color['b'], $color['a']);
     }
 
     public string $backgroundImage {
@@ -138,24 +152,36 @@ final class Slider extends UIElement
     }
 
     /**
-     * @return array{r:int, g:int, b:int, a:int}
+     * The slider filled-region color.
+     */
+    public Color $fillColor {
+        get => ColorBridge::fromState($this->getState()['fillColor'] ?? null, Color::fromRGBA(34, 197, 155));
+
+        set(Color $value) {
+            $color = $value->toRGBA();
+            NativeEngine::call('ui_slider_set_fill_color', $this->getId(), $color['r'], $color['g'], $color['b'], $color['a']);
+        }
+    }
+
+    /**
+     * Gets the slider filled-region color as byte-channel RGBA values.
+     *
+     * @return array{r: int, g: int, b: int, a: int}
      */
     public function getFillColor(): array
     {
-        /** @var array{r?: int, g?: int, b?: int, a?: int} $value */
-        $value = $this->getState()['fillColor'] ?? [];
-
-        return [
-            'r' => (int) ($value['r'] ?? 34),
-            'g' => (int) ($value['g'] ?? 197),
-            'b' => (int) ($value['b'] ?? 155),
-            'a' => (int) ($value['a'] ?? 255),
-        ];
+        return $this->fillColor->toRGBA();
     }
 
-    public function setFillColor(int $red, int $green, int $blue, int $alpha = 255): void
+    /**
+     * Sets the slider filled-region color.
+     *
+     * @param Color|array{r?: int|float, g?: int|float, b?: int|float, a?: int|float, 0?: int|float, 1?: int|float, 2?: int|float, 3?: int|float}|int $red
+     */
+    public function setFillColor(Color|array|int $red, ?int $green = null, ?int $blue = null, int $alpha = 255): void
     {
-        NativeEngine::call('ui_slider_set_fill_color', $this->getId(), $red, $green, $blue, $alpha);
+        $color = ColorBridge::toNative($red, $green, $blue, $alpha);
+        NativeEngine::call('ui_slider_set_fill_color', $this->getId(), $color['r'], $color['g'], $color['b'], $color['a']);
     }
 
     public string $fillImage {
@@ -185,24 +211,36 @@ final class Slider extends UIElement
     }
 
     /**
-     * @return array{r:int, g:int, b:int, a:int}
+     * The slider handle color.
+     */
+    public Color $handleColor {
+        get => ColorBridge::fromState($this->getState()['handleColor'] ?? null, Color::white());
+
+        set(Color $value) {
+            $color = $value->toRGBA();
+            NativeEngine::call('ui_slider_set_handle_color', $this->getId(), $color['r'], $color['g'], $color['b'], $color['a']);
+        }
+    }
+
+    /**
+     * Gets the slider handle color as byte-channel RGBA values.
+     *
+     * @return array{r: int, g: int, b: int, a: int}
      */
     public function getHandleColor(): array
     {
-        /** @var array{r?: int, g?: int, b?: int, a?: int} $value */
-        $value = $this->getState()['handleColor'] ?? [];
-
-        return [
-            'r' => (int) ($value['r'] ?? 255),
-            'g' => (int) ($value['g'] ?? 255),
-            'b' => (int) ($value['b'] ?? 255),
-            'a' => (int) ($value['a'] ?? 255),
-        ];
+        return $this->handleColor->toRGBA();
     }
 
-    public function setHandleColor(int $red, int $green, int $blue, int $alpha = 255): void
+    /**
+     * Sets the slider handle color.
+     *
+     * @param Color|array{r?: int|float, g?: int|float, b?: int|float, a?: int|float, 0?: int|float, 1?: int|float, 2?: int|float, 3?: int|float}|int $red
+     */
+    public function setHandleColor(Color|array|int $red, ?int $green = null, ?int $blue = null, int $alpha = 255): void
     {
-        NativeEngine::call('ui_slider_set_handle_color', $this->getId(), $red, $green, $blue, $alpha);
+        $color = ColorBridge::toNative($red, $green, $blue, $alpha);
+        NativeEngine::call('ui_slider_set_handle_color', $this->getId(), $color['r'], $color['g'], $color['b'], $color['a']);
     }
 
     public string $handleImage {

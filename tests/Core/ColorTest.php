@@ -1,183 +1,133 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Lenga\Engine\Tests\Core;
 
+use InvalidArgumentException;
 use Lenga\Engine\Core\Color;
+use Lenga\Engine\Internal\ColorBridge;
 use PHPUnit\Framework\TestCase;
 
-/**
- * Unit tests for the Color class.
- *
- * Covers construction, property access, value clamping, and factory methods.
- */
 final class ColorTest extends TestCase
 {
-    // ──────────────────────────────────────────
-    //  Constructor & Default Values
-    // ──────────────────────────────────────────
-
-    public function testConstructorWithDefaultValues(): void
+    public function testConstructorUsesNormalizedChannels(): void
     {
-        $color = new Color();
+        $color = new Color(1.0, 0.5, 0.25, 0.125);
 
-        self::assertEquals(0, $color->r);
-        self::assertEquals(0, $color->g);
-        self::assertEquals(0, $color->b);
-        self::assertEquals(1, $color->a);
+        self::assertSame(1.0, $color->r);
+        self::assertSame(0.5, $color->g);
+        self::assertSame(0.25, $color->b);
+        self::assertSame(0.125, $color->a);
     }
 
-    public function testConstructorWithAllValues(): void
+    public function testConstructorClampsNormalizedChannels(): void
     {
-        $color = new Color(1, 0.5, 0.25, 0.13);
+        $color = new Color(1.5, -0.25, 0.75, 2.0);
 
-        self::assertEquals(1.0, $color->r);
-        self::assertEquals(0.5, $color->g);
-        self::assertEquals(0.25, $color->b);
-        self::assertEquals(0.13, $color->a);
+        self::assertSame(1.0, $color->r);
+        self::assertSame(0.0, $color->g);
+        self::assertSame(0.75, $color->b);
+        self::assertSame(1.0, $color->a);
     }
 
-    public function testConstructorWithPartialValues(): void
+    public function testFactoryColorsUseExpectedChannels(): void
     {
-        $color = new Color(0.78, 0.39);
-
-        self::assertEquals(0.78, $color->r);
-        self::assertEquals(0.39, $color->g);
-        self::assertEquals(0.0, $color->b);
-        self::assertEquals(1, $color->a);
+        self::assertSame(['r' => 0, 'g' => 0, 'b' => 0, 'a' => 255], Color::black()->toRGBA());
+        self::assertSame(['r' => 0, 'g' => 0, 'b' => 255, 'a' => 255], Color::blue()->toRGBA());
+        self::assertSame(['r' => 0, 'g' => 0, 'b' => 0, 'a' => 0], Color::clear()->toRGBA());
+        self::assertSame(['r' => 0, 'g' => 255, 'b' => 255, 'a' => 255], Color::cyan()->toRGBA());
+        self::assertSame(['r' => 128, 'g' => 128, 'b' => 128, 'a' => 255], Color::gray()->toRGBA());
+        self::assertSame(['r' => 0, 'g' => 255, 'b' => 0, 'a' => 255], Color::green()->toRGBA());
+        self::assertSame(['r' => 255, 'g' => 0, 'b' => 255, 'a' => 255], Color::magenta()->toRGBA());
+        self::assertSame(['r' => 255, 'g' => 0, 'b' => 0, 'a' => 255], Color::red()->toRGBA());
+        self::assertSame(['r' => 255, 'g' => 255, 'b' => 255, 'a' => 255], Color::white()->toRGBA());
+        self::assertSame(['r' => 255, 'g' => 255, 'b' => 0, 'a' => 255], Color::yellow()->toRGBA());
     }
 
-    // ──────────────────────────────────────────
-    //  Value Clamping (0-255)
-    // ──────────────────────────────────────────
-
-    public function testRedChannelClamping(): void
+    public function testFromRGBAConvertsByteChannelsToNormalizedChannels(): void
     {
-        $color = new Color(1.18, 0, 0, 0);
-        self::assertEquals(1.0, $color->r);
+        $color = Color::fromRGBA(255, 128, 64, 32);
 
-        $color = new Color(-0.2, 0, 0, 0);
-        self::assertEquals(0, $color->r);
+        self::assertSame(1.0, $color->r);
+        self::assertEqualsWithDelta(128 / 255, $color->g, 0.00001);
+        self::assertEqualsWithDelta(64 / 255, $color->b, 0.00001);
+        self::assertEqualsWithDelta(32 / 255, $color->a, 0.00001);
     }
 
-    public function testGreenChannelClamping(): void
+    public function testFromRGBAClampsByteChannels(): void
     {
-        $color = new Color(0, 1.18, 0, 0);
-        self::assertEquals(1.0, $color->g);
+        $color = Color::fromRGBA(300, -10, 42, 999);
 
-        $color = new Color(0, -0.2, 0, 0);
-        self::assertEquals(0, $color->g);
+        self::assertSame(['r' => 255, 'g' => 0, 'b' => 42, 'a' => 255], $color->toRGBA());
     }
 
-    public function testBlueChannelClamping(): void
+    public function testFromRGBAArraySupportsAssociativeAndIndexedChannels(): void
     {
-        $color = new Color(0, 0, 1.96, 0);
-        self::assertEquals(1.0, $color->b);
-
-        $color = new Color(0, 0, -0.39, 0);
-        self::assertEquals(0, $color->b);
-    }
-
-    public function testAlphaChannelClamping(): void
-    {
-        $color = new Color(0, 0, 0, 3.92);
-        self::assertEquals(1.0, $color->a);
-
-        $color = new Color(0, 0, 0, -0.78);
-        self::assertEquals(0, $color->a);
-    }
-
-    public function testAllChannelsClampedBoundaryValues(): void
-    {
-        // Test boundary values: just below 0, at 0, at 255, just above 255
-        $color = new Color(-(1/255), (256/255), 0, 1.0);
-
-        self::assertEquals(0.0, $color->r);
-        self::assertEquals(1.0, $color->g);
-        self::assertEquals(0.0, $color->b);
-        self::assertEquals(1.0, $color->a);
-    }
-
-    // ──────────────────────────────────────────
-    //  Property Read-Only Access
-    // ──────────────────────────────────────────
-
-    public function testRedPropertyReadOnly(): void
-    {
-        $color = new Color(0.5, 0, 0, 0);
-
-        // Properties are backed by hooks - we can only access them
-        self::assertEquals(0.5, $color->r);
-    }
-
-    public function testGreenPropertyReadOnly(): void
-    {
-        $color = new Color(0, 0.78, 0, 0);
-        self::assertEquals(0.78, $color->g);
-    }
-
-    public function testBluePropertyReadOnly(): void
-    {
-        $color = new Color(0, 0, 0.59, 0);
-        self::assertEquals(0.59, $color->b);
-    }
-
-    public function testAlphaPropertyReadOnly(): void
-    {
-        $color = new Color(0, 0, 0, 0.29);
-        self::assertEquals(0.29, $color->a);
-    }
-
-    // ──────────────────────────────────────────
-    //  Factory Methods
-    // ──────────────────────────────────────────
-
-    public function testBlackFactoryMethod(): void
-    {
-        $black = Color::black();
-
-        self::assertEquals(0, $black->r);
-        self::assertEquals(0, $black->g);
-        self::assertEquals(0, $black->b);
-        // Note: The current implementation has 2550 which clamps to 255
-        self::assertEquals(1.0, $black->a);
-    }
-
-    // ──────────────────────────────────────────
-    //  Combined Tests
-    // ──────────────────────────────────────────
-
-    public function testMultipleColorsIndependent(): void
-    {
-        $red = new Color(1.0, 0, 0, 1.0);
-        $green = new Color(0, 1.0, 0, 1.0);
-        $blue = new Color(0, 0, 1.0, 1.0);
-
-        self::assertEquals(1.0, $red->r);
-        self::assertEquals(0, $red->g);
-        self::assertEquals(0, $red->b);
-
-        self::assertEquals(0, $green->r);
-        self::assertEquals(1.0, $green->g);
-        self::assertEquals(0, $green->b);
-
-        self::assertEquals(0, $blue->r);
-        self::assertEquals(0, $blue->g);
-        self::assertEquals(1.0, $blue->b);
-    }
-
-    public function testExtremeValuesAreClamped(): void
-    {
-        $color = new Color(
-            PHP_INT_MAX ,
-            PHP_INT_MIN,
-            999999,
-            -999999,
+        self::assertSame(
+            ['r' => 10, 'g' => 20, 'b' => 30, 'a' => 40],
+            Color::fromRGBAArray(['r' => 10, 'g' => 20, 'b' => 30, 'a' => 40])->toRGBA(),
         );
+        self::assertSame(
+            ['r' => 50, 'g' => 60, 'b' => 70, 'a' => 80],
+            Color::fromRGBAArray([50, 60, 70, 80])->toRGBA(),
+        );
+    }
 
-        self::assertEquals(1.0, $color->r);
-        self::assertEquals(0.0, $color->g);
-        self::assertEquals(1.0, $color->b);
-        self::assertEquals(0.0, $color->a);
+    public function testToNormalizedRGBAUsesNormalizedChannels(): void
+    {
+        $color = new Color(0.1, 0.2, 0.3, 0.4);
+
+        self::assertSame(['r' => 0.1, 'g' => 0.2, 'b' => 0.3, 'a' => 0.4], $color->toNormalizedRGBA());
+    }
+
+    public function testSerializationRoundTripsRGBAChannels(): void
+    {
+        $serialized = serialize(Color::fromRGBA(12, 34, 56, 78));
+
+        $color = unserialize($serialized, ['allowed_classes' => [Color::class]]);
+
+        self::assertInstanceOf(Color::class, $color);
+        self::assertSame(['r' => 12, 'g' => 34, 'b' => 56, 'a' => 78], $color->toRGBA());
+    }
+
+    public function testStringConversionIsReadable(): void
+    {
+        self::assertSame('rgba(255, 128, 0, 64)', (string) Color::fromRGBA(255, 128, 0, 64));
+    }
+
+    public function testColorBridgeNormalizesPublicColorInputs(): void
+    {
+        self::assertSame(
+            ['r' => 255, 'g' => 128, 'b' => 0, 'a' => 64],
+            ColorBridge::toNative(Color::fromRGBA(255, 128, 0, 64)),
+        );
+        self::assertSame(
+            ['r' => 1, 'g' => 2, 'b' => 3, 'a' => 4],
+            ColorBridge::toNative(['r' => 1, 'g' => 2, 'b' => 3, 'a' => 4]),
+        );
+        self::assertSame(
+            ['r' => 5, 'g' => 6, 'b' => 7, 'a' => 255],
+            ColorBridge::toNative(5, 6, 7),
+        );
+    }
+
+    public function testColorBridgeFallsBackWhenNativeStateIsMissing(): void
+    {
+        self::assertSame(
+            ['r' => 10, 'g' => 20, 'b' => 30, 'a' => 40],
+            ColorBridge::fromState(null, Color::fromRGBA(10, 20, 30, 40))->toRGBA(),
+        );
+        self::assertSame(
+            ['r' => 10, 'g' => 99, 'b' => 30, 'a' => 40],
+            ColorBridge::fromState(['g' => 99], Color::fromRGBA(10, 20, 30, 40))->toRGBA(),
+        );
+    }
+
+    public function testColorBridgeRequiresCompleteByteChannelArguments(): void
+    {
+        $this->expectException(InvalidArgumentException::class);
+
+        ColorBridge::toNative(255);
     }
 }

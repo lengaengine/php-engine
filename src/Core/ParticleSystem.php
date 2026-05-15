@@ -4,6 +4,9 @@ declare(strict_types=1);
 
 namespace Lenga\Engine\Core;
 
+use Lenga\Engine\Internal\ColorBridge;
+use function is_array;
+
 final class ParticleSystem extends Component
 {
     public function __construct(GameObject $gameObject, int $componentId)
@@ -47,6 +50,100 @@ final class ParticleSystem extends Component
         get {
             return (string) ($this->getState()['texturePath'] ?? '');
         }
+    }
+
+    /**
+     * The color particles use when they are spawned.
+     */
+    public Color $startColor {
+        get => $this->readColor('startColor', Color::fromRGBA(255, 216, 96));
+
+        set(Color $value) {
+            $color = $value->toRGBA();
+            NativeEngine::call(
+                'particle_system_set_start_color',
+                $this->componentId,
+                $color['r'],
+                $color['g'],
+                $color['b'],
+                $color['a'],
+            );
+        }
+    }
+
+    /**
+     * Gets the particle start color as byte-channel RGBA values.
+     *
+     * @return array{r: int, g: int, b: int, a: int}
+     */
+    public function getStartColor(): array
+    {
+        return $this->startColor->toRGBA();
+    }
+
+    /**
+     * Sets the color particles use when they are spawned.
+     *
+     * @param Color|array{r?: int|float, g?: int|float, b?: int|float, a?: int|float, 0?: int|float, 1?: int|float, 2?: int|float, 3?: int|float}|int $red
+     */
+    public function setStartColor(Color|array|int $red, ?int $green = null, ?int $blue = null, int $alpha = 255): void
+    {
+        $color = ColorBridge::toNative($red, $green, $blue, $alpha);
+        NativeEngine::call(
+            'particle_system_set_start_color',
+            $this->componentId,
+            $color['r'],
+            $color['g'],
+            $color['b'],
+            $color['a'],
+        );
+    }
+
+    /**
+     * The color particles blend toward over their lifetime.
+     */
+    public Color $endColor {
+        get => $this->readColor('endColor', Color::fromRGBA(255, 216, 96, 0));
+
+        set(Color $value) {
+            $color = $value->toRGBA();
+            NativeEngine::call(
+                'particle_system_set_end_color',
+                $this->componentId,
+                $color['r'],
+                $color['g'],
+                $color['b'],
+                $color['a'],
+            );
+        }
+    }
+
+    /**
+     * Gets the particle end color as byte-channel RGBA values.
+     *
+     * @return array{r: int, g: int, b: int, a: int}
+     */
+    public function getEndColor(): array
+    {
+        return $this->endColor->toRGBA();
+    }
+
+    /**
+     * Sets the color particles blend toward over their lifetime.
+     *
+     * @param Color|array{r?: int|float, g?: int|float, b?: int|float, a?: int|float, 0?: int|float, 1?: int|float, 2?: int|float, 3?: int|float}|int $red
+     */
+    public function setEndColor(Color|array|int $red, ?int $green = null, ?int $blue = null, int $alpha = 255): void
+    {
+        $color = ColorBridge::toNative($red, $green, $blue, $alpha);
+        NativeEngine::call(
+            'particle_system_set_end_color',
+            $this->componentId,
+            $color['r'],
+            $color['g'],
+            $color['b'],
+            $color['a'],
+        );
     }
 
     public function play(): void
@@ -121,6 +218,11 @@ final class ParticleSystem extends Component
          */
         $state = NativeEngine::call('particle_system_get_state', $this->componentId);
 
-        return \is_array($state) ? $state : [];
+        return is_array($state) ? $state : [];
+    }
+
+    private function readColor(string $key, Color $fallback): Color
+    {
+        return ColorBridge::fromState($this->getState()[$key] ?? null, $fallback);
     }
 }

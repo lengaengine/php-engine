@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace Lenga\Engine\Core;
 
 use Lenga\Engine\Attributes\Min;
+use Lenga\Engine\Internal\ColorBridge;
+use function is_array;
 
 final class DirectionalLight extends Component
 {
@@ -79,25 +81,36 @@ final class DirectionalLight extends Component
     }
 
     /**
-     * @return array{r:int, g:int, b:int, a:int}
+     * The light color.
+     */
+    public Color $color {
+        get => ColorBridge::fromState($this->getState()['color'] ?? null, Color::white());
+
+        set(Color $value) {
+            $color = $value->toRGBA();
+            NativeEngine::call('directional_light_set_color', $this->componentId, $color['r'], $color['g'], $color['b'], $color['a']);
+        }
+    }
+
+    /**
+     * Gets the light color as byte-channel RGBA values.
+     *
+     * @return array{r: int, g: int, b: int, a: int}
      */
     public function getColor(): array
     {
-        /** @var array{color?: array{r?: int, g?: int, b?: int, a?: int}} $state */
-        $state = $this->getState();
-        $color = $state['color'] ?? [];
-
-        return [
-            'r' => (int) ($color['r'] ?? 255),
-            'g' => (int) ($color['g'] ?? 255),
-            'b' => (int) ($color['b'] ?? 255),
-            'a' => (int) ($color['a'] ?? 255),
-        ];
+        return $this->color->toRGBA();
     }
 
-    public function setColor(int $red, int $green, int $blue, int $alpha = 255): void
+    /**
+     * Sets the light color.
+     *
+     * @param Color|array{r?: int|float, g?: int|float, b?: int|float, a?: int|float, 0?: int|float, 1?: int|float, 2?: int|float, 3?: int|float}|int $red
+     */
+    public function setColor(Color|array|int $red, ?int $green = null, ?int $blue = null, int $alpha = 255): void
     {
-        NativeEngine::call('directional_light_set_color', $this->componentId, $red, $green, $blue, $alpha);
+        $color = ColorBridge::toNative($red, $green, $blue, $alpha);
+        NativeEngine::call('directional_light_set_color', $this->componentId, $color['r'], $color['g'], $color['b'], $color['a']);
     }
 
     /**
@@ -127,6 +140,6 @@ final class DirectionalLight extends Component
          */
         $state = NativeEngine::call('directional_light_get_state', $this->componentId);
 
-        return \is_array($state) ? $state : [];
+        return is_array($state) ? $state : [];
     }
 }

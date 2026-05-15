@@ -4,6 +4,9 @@ declare(strict_types=1);
 
 namespace Lenga\Engine\Core;
 
+use Lenga\Engine\Internal\ColorBridge;
+use function is_array;
+
 final class TrailRenderer extends Component
 {
     public const string ALIGNMENT_VIEW = 'View';
@@ -161,42 +164,96 @@ final class TrailRenderer extends Component
     }
 
     /**
-     * @return array{r:int, g:int, b:int, a:int}
+     * The color at the head of the trail.
+     */
+    public Color $startColor {
+        get => $this->readColor('startColor');
+
+        set(Color $value) {
+            $color = $value->toRGBA();
+            NativeEngine::call(
+                'trail_renderer_set_start_color',
+                $this->componentId,
+                $color['r'],
+                $color['g'],
+                $color['b'],
+                $color['a'],
+            );
+        }
+    }
+
+    /**
+     * Gets the color at the head of the trail as byte-channel RGBA values.
+     *
+     * @return array{r: int, g: int, b: int, a: int}
      */
     public function getStartColor(): array
     {
-        return $this->readColor('startColor');
+        return $this->startColor->toRGBA();
     }
 
-    public function setStartColor(int $red, int $green, int $blue, int $alpha = 255): void
+    /**
+     * Sets the color at the head of the trail.
+     *
+     * @param Color|array{r?: int|float, g?: int|float, b?: int|float, a?: int|float, 0?: int|float, 1?: int|float, 2?: int|float, 3?: int|float}|int $red
+     */
+    public function setStartColor(Color|array|int $red, ?int $green = null, ?int $blue = null, int $alpha = 255): void
     {
+        $color = ColorBridge::toNative($red, $green, $blue, $alpha);
         NativeEngine::call(
             'trail_renderer_set_start_color',
             $this->componentId,
-            $red,
-            $green,
-            $blue,
-            $alpha,
+            $color['r'],
+            $color['g'],
+            $color['b'],
+            $color['a'],
         );
     }
 
     /**
-     * @return array{r:int, g:int, b:int, a:int}
+     * The color at the tail of the trail.
+     */
+    public Color $endColor {
+        get => $this->readColor('endColor');
+
+        set(Color $value) {
+            $color = $value->toRGBA();
+            NativeEngine::call(
+                'trail_renderer_set_end_color',
+                $this->componentId,
+                $color['r'],
+                $color['g'],
+                $color['b'],
+                $color['a'],
+            );
+        }
+    }
+
+    /**
+     * Gets the color at the tail of the trail as byte-channel RGBA values.
+     *
+     * @return array{r: int, g: int, b: int, a: int}
      */
     public function getEndColor(): array
     {
-        return $this->readColor('endColor');
+        return $this->endColor->toRGBA();
     }
 
-    public function setEndColor(int $red, int $green, int $blue, int $alpha = 255): void
+    /**
+     * Sets the color at the tail of the trail.
+     *
+     * @param Color|array{r?: int|float, g?: int|float, b?: int|float, a?: int|float, 0?: int|float, 1?: int|float, 2?: int|float, 3?: int|float}|int $red
+     */
+    public function setEndColor(Color|array|int $red, ?int $green = null, ?int $blue = null, int $alpha = 255): void
     {
+        $color = ColorBridge::toNative($red, $green, $blue, $alpha);
         NativeEngine::call(
             'trail_renderer_set_end_color',
             $this->componentId,
-            $red,
-            $green,
-            $blue,
-            $alpha,
+            $color['r'],
+            $color['g'],
+            $color['b'],
+            $color['a'],
         );
     }
 
@@ -244,21 +301,8 @@ final class TrailRenderer extends Component
         return is_array($state) ? $state : [];
     }
 
-    /**
-     * @return array{r:int, g:int, b:int, a:int}
-     */
-    private function readColor(string $key): array
+    private function readColor(string $key): Color
     {
-        $color = $this->getState()[$key] ?? [];
-        if (!is_array($color)) {
-            $color = [];
-        }
-
-        return [
-            'r' => (int) ($color['r'] ?? 255),
-            'g' => (int) ($color['g'] ?? 255),
-            'b' => (int) ($color['b'] ?? 255),
-            'a' => (int) ($color['a'] ?? 255),
-        ];
+        return ColorBridge::fromState($this->getState()[$key] ?? null, Color::white());
     }
 }
