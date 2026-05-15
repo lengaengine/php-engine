@@ -39,6 +39,11 @@ final class BehaviourBridge
         self::callInternal($behaviour, 'internalAttachSceneComponentId', $sceneComponentId);
     }
 
+    public static function ensureRequiredComponents(Behaviour $behaviour): void
+    {
+        self::callInternal($behaviour, 'internalEnsureRequiredComponents');
+    }
+
     /**
      * @param array<string, mixed> $properties
      */

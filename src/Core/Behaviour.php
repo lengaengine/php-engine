@@ -19,6 +19,7 @@ use ReflectionObject;
 use ReflectionProperty;
 use ReflectionType;
 use ReflectionUnionType;
+use RuntimeException;
 use Throwable;
 use function class_exists;
 use function debug_backtrace;
@@ -91,42 +92,66 @@ abstract class Behaviour implements ComponentInterface
     {
         static $resolving = [];
 
-        try {
-            $reflection = new ReflectionObject($this);
-            foreach ($reflection->getAttributes(RequireComponent::class) as $attribute) {
-                $required = $attribute->newInstance();
-                foreach ($required->componentTypes as $componentType) {
-                    if (!is_string($componentType) || $componentType === '') {
-                        continue;
-                    }
+        $reflection = new ReflectionObject($this);
+        foreach ($reflection->getAttributes(RequireComponent::class) as $attribute) {
+            $required = $attribute->newInstance();
+            foreach ($required->componentTypes as $componentType) {
+                if (!is_string($componentType) || $componentType === '') {
+                    $message = $this->formatRequireComponentDiagnostic(
+                        $gameObject,
+                        '<invalid>',
+                        false,
+                        'Dependency metadata is invalid.',
+                    );
+                    Debug::error($message);
+                    throw new RuntimeException($message);
+                }
 
-                    if ($componentType === self::class || $componentType === static::class) {
-                        continue;
-                    }
+                if ($componentType === self::class || $componentType === static::class) {
+                    continue;
+                }
 
-                    if ($gameObject->hasComponent($componentType)) {
-                        continue;
-                    }
+                if ($gameObject->hasComponent($componentType)) {
+                    continue;
+                }
 
-                    $gameObjectId = $gameObject->getInstanceId() ?? spl_object_id($gameObject);
-                    $resolutionKey = $gameObjectId . '|' . $componentType;
-                    if (isset($resolving[$resolutionKey])) {
-                        continue;
-                    }
+                $gameObjectId = $gameObject->getInstanceId() ?? spl_object_id($gameObject);
+                $resolutionKey = $gameObjectId . '|' . $componentType;
+                if (isset($resolving[$resolutionKey])) {
+                    continue;
+                }
 
-                    $resolving[$resolutionKey] = true;
-                    try {
-                        $gameObject->addComponent($componentType);
-                    } finally {
-                        unset($resolving[$resolutionKey]);
-                    }
+                $resolving[$resolutionKey] = true;
+                try {
+                    $gameObject->addComponent($componentType);
+                } catch (Throwable $exception) {
+                    $message = $this->formatRequireComponentDiagnostic(
+                        $gameObject,
+                        $componentType,
+                        true,
+                        $exception->getMessage(),
+                    );
+                    Debug::error($message);
+                    throw new RuntimeException($message, previous: $exception);
+                } finally {
+                    unset($resolving[$resolutionKey]);
                 }
             }
-        } catch (Throwable $exception) {
-            Debug::warn(
-                "Failed to apply RequireComponent for '" . static::class . "': " . $exception->getMessage()
-            );
         }
+    }
+
+    private function formatRequireComponentDiagnostic(
+        GameObject $gameObject,
+        string $componentType,
+        bool $attemptedAutoAdd,
+        string $reason,
+    ): string {
+        return "RequireComponent dependency resolution failed during component attachment: "
+            . "behaviour='" . static::class . "', "
+            . "gameObject='{$gameObject->name}', "
+            . "requiredComponent='{$componentType}', "
+            . 'attemptedAutoAdd=' . ($attemptedAutoAdd ? 'true' : 'false') . ', '
+            . "reason='{$reason}'";
     }
 
     public bool $enabled {
@@ -155,7 +180,6 @@ abstract class Behaviour implements ComponentInterface
     private function internalAttachGameObject(GameObject $gameObject): void
     {
         $this->gameObjectValue = $gameObject;
-        $this->ensureRequiredComponents($gameObject);
     }
 
     private function internalAttachComponentId(int $componentId): void
@@ -166,6 +190,17 @@ abstract class Behaviour implements ComponentInterface
     private function internalAttachSceneComponentId(string $sceneComponentId): void
     {
         $this->sceneComponentId = $sceneComponentId;
+    }
+
+    private function internalEnsureRequiredComponents(): void
+    {
+        if ($this->gameObjectValue === null) {
+            throw new RuntimeException(
+                "Cannot resolve RequireComponent dependencies for '" . static::class . "' before it is attached to a GameObject.",
+            );
+        }
+
+        $this->ensureRequiredComponents($this->gameObjectValue);
     }
 
     /**

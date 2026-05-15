@@ -6,6 +6,12 @@ namespace Lenga\Engine\Attributes;
 
 use Attribute;
 
+/**
+ * Declares components that must exist on the same GameObject as a behaviour.
+ *
+ * When a behaviour with this attribute is attached, Lenga automatically adds
+ * any missing required components through the normal component creation path.
+ */
 #[Attribute(Attribute::TARGET_CLASS | Attribute::IS_REPEATABLE)]
 class RequireComponent
 {
