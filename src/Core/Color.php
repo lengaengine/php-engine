@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace Lenga\Engine\Core;
 
 use Stringable;
+use function abs;
+use function fmod;
 use function json_encode;
 use function max;
 use function min;
@@ -53,8 +55,7 @@ final class Color implements Stringable
         float $g = self::MIN_VALUE,
         float $b = self::MIN_VALUE,
         float $a = self::MAX_VALUE,
-    )
-    {
+    ) {
         $this->red = self::clampUnit($r);
         $this->green = self::clampUnit($g);
         $this->blue = self::clampUnit($b);
@@ -64,6 +65,13 @@ final class Color implements Stringable
     private static function clampUnit(float $value): float
     {
         return MathUtil::clamp($value, self::MIN_VALUE, self::MAX_VALUE);
+    }
+
+    private static function normalizeHue(float $value): float
+    {
+        $hue = fmod($value, 360.0);
+
+        return $hue < 0.0 ? $hue + 360.0 : $hue;
     }
 
     /**
@@ -147,10 +155,11 @@ final class Color implements Stringable
     }
 
     /**
-     * @param Color $from The start color when t=0
-     * @param Color $to The end color when t=1
-     * @param float $t The interpolation ratio. Will be clamped to the range [0.0, 1.0].
-     * @return self The `Color` resulting from linearly interpolating between `from` and `to` by the ratio `t`.
+     * Linearly interpolates between two colors by a clamped ratio.
+     *
+     * @param self $from The color returned when `$t` is `0.0` or lower.
+     * @param self $to The color returned when `$t` is `1.0` or higher.
+     * @param float $t The interpolation ratio, clamped to `0.0` through `1.0`.
      */
     public static function lerp(self $from, self $to, float $t): self
     {
@@ -161,67 +170,74 @@ final class Color implements Stringable
         $b = MathUtil::lerp($from->b, $to->b, $ratio);
         $a = MathUtil::lerp($from->a, $to->a, $ratio);
 
-        return new Color($r, $g, $b, $a);
+        return new self($r, $g, $b, $a);
     }
 
+    /**
+     * Converts normalized RGB channels to HSV values.
+     *
+     * Input channels are clamped to `0.0` through `1.0`. Hue is returned in
+     * degrees, while saturation and value are returned as percentages.
+     *
+     * @return array{h: int, s: int, v: int}
+     */
     public static function rgbToHsv(float $r, float $g, float $b): array
     {
-        $max = max($r, $g, $b);
-        $min = min($r, $g, $b);
+        $red = self::clampUnit($r);
+        $green = self::clampUnit($g);
+        $blue = self::clampUnit($b);
+
+        $max = max($red, $green, $blue);
+        $min = min($red, $green, $blue);
         $delta = $max - $min;
 
-        if ($delta == 0) {
-            $h = 0;
-        } elseif ($max == $r) {
-            $h = 60 * fmod((($g - $b) / $delta), 6);
-        } elseif ($max == $g) {
-            $h = 60 * ((($b - $r) / $delta) + 2);
-        } else {
-            $h = 60 * ((($r - $g) / $delta) + 4);
-        }
+        $hue = match (true) {
+            $delta === 0.0 => 0.0,
+            $max === $red => 60.0 * fmod((($green - $blue) / $delta), 6.0),
+            $max === $green => 60.0 * ((($blue - $red) / $delta) + 2.0),
+            default => 60.0 * ((($red - $green) / $delta) + 4.0),
+        };
 
-        if ($h < 0) {
-            $h += 360;
-        }
+        $hue = self::normalizeHue($hue);
+        $roundedHue = (int) round($hue);
 
         return [
-            'h' => round($h),
-            's' => ($max == 0) ? 0 : round(($delta / $max) * 100),
-            'v' => round($max * 100),
+            'h' => $roundedHue === 360 ? 0 : $roundedHue,
+            's' => $max === 0.0 ? 0 : (int) round(($delta / $max) * 100.0),
+            'v' => (int) round($max * 100.0),
         ];
     }
 
     /**
-     * Creates and RGB
-     * @param float $h
-     * @param float $s
-     * @param float $v
-     * @return array
+     * Converts HSV values to byte-channel RGB values.
+     *
+     * Hue wraps around the 360-degree color wheel. Saturation and value are
+     * clamped to percentage values from `0.0` through `100.0`.
+     *
+     * @return array{r: int, g: int, b: int}
      */
     public static function hsvToRgb(float $h, float $s, float $v): array
     {
-        $c = ($v / 100) * ($s / 100);
-        $x = $c * (1 - abs(fmod($h / 60, 2) - 1));
-        $m = ($v / 100) - $c;
+        $hue = self::normalizeHue($h);
+        $saturation = MathUtil::clamp($s, 0.0, 100.0) / 100.0;
+        $value = MathUtil::clamp($v, 0.0, 100.0) / 100.0;
+        $chroma = $value * $saturation;
+        $x = $chroma * (1.0 - abs(fmod($hue / 60.0, 2.0) - 1.0));
+        $m = $value - $chroma;
 
-        if ($h < 60) {
-            $r = $c; $g = $x; $b = 0;
-        } elseif ($h < 120) {
-            $r = $x; $g = $c; $b = 0;
-        } elseif ($h < 180) {
-            $r = 0; $g = $c; $b = $x;
-        } elseif ($h < 240) {
-            $r = 0; $g = $x; $b = $c;
-        } elseif ($h < 300) {
-            $r = $x; $g = 0; $b = $c;
-        } else {
-            $r = $c; $g = 0; $b = $x;
-        }
+        [$red, $green, $blue] = match (true) {
+            $hue < 60.0 => [$chroma, $x, 0.0],
+            $hue < 120.0 => [$x, $chroma, 0.0],
+            $hue < 180.0 => [0.0, $chroma, $x],
+            $hue < 240.0 => [0.0, $x, $chroma],
+            $hue < 300.0 => [$x, 0.0, $chroma],
+            default => [$chroma, 0.0, $x],
+        };
 
         return [
-            'r' => round(($r + $m) * self::MAX_BYTE_VALUE),
-            'g' => round(($g + $m) * self::MAX_BYTE_VALUE),
-            'b' => round(($b + $m) * self::MAX_BYTE_VALUE),
+            'r' => self::unitToByte($red + $m),
+            'g' => self::unitToByte($green + $m),
+            'b' => self::unitToByte($blue + $m),
         ];
     }
 
@@ -256,7 +272,7 @@ final class Color implements Stringable
 
     private static function unitToByte(float $value): int
     {
-        return self::clampByte((int)round(self::clampUnit($value) * self::MAX_BYTE_VALUE));
+        return self::clampByte((int) round(self::clampUnit($value) * self::MAX_BYTE_VALUE));
     }
 
     private static function clampByte(int $value): int
@@ -265,6 +281,8 @@ final class Color implements Stringable
     }
 
     /**
+     * Serializes the color as byte-channel RGBA values.
+     *
      * @return array{r: int, g: int, b: int, a: int}
      */
     public function __serialize(): array
@@ -288,6 +306,8 @@ final class Color implements Stringable
     }
 
     /**
+     * Restores the color from byte-channel RGBA values.
+     *
      * @param array{r?: int|float, g?: int|float, b?: int|float, a?: int|float, 0?: int|float, 1?: int|float, 2?: int|float, 3?: int|float} $data
      */
     public function __unserialize(array $data): void
@@ -307,15 +327,17 @@ final class Color implements Stringable
     public static function fromRGBAArray(array $value): self
     {
         return self::fromRGBA(
-            (int)($value['r'] ?? $value[0] ?? self::MAX_BYTE_VALUE),
-            (int)($value['g'] ?? $value[1] ?? self::MAX_BYTE_VALUE),
-            (int)($value['b'] ?? $value[2] ?? self::MAX_BYTE_VALUE),
-            (int)($value['a'] ?? $value[3] ?? self::MAX_BYTE_VALUE),
+            (int) ($value['r'] ?? $value[0] ?? self::MAX_BYTE_VALUE),
+            (int) ($value['g'] ?? $value[1] ?? self::MAX_BYTE_VALUE),
+            (int) ($value['b'] ?? $value[2] ?? self::MAX_BYTE_VALUE),
+            (int) ($value['a'] ?? $value[3] ?? self::MAX_BYTE_VALUE),
         );
     }
 
     /**
      * Creates a color from 0 to 255 byte-channel RGBA values.
+     *
+     * Values outside the byte range are clamped before conversion.
      */
     public static function fromRGBA(int $red, int $green, int $blue, int $alpha = self::MAX_BYTE_VALUE): self
     {

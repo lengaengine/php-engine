@@ -45,6 +45,51 @@ final class ColorTest extends TestCase
         self::assertSame(['r' => 255, 'g' => 255, 'b' => 0, 'a' => 255], Color::yellow()->toRGBA());
     }
 
+    public function testLerpInterpolatesChannelsAndClampsRatio(): void
+    {
+        self::assertSame(
+            ['r' => 128, 'g' => 0, 'b' => 128, 'a' => 255],
+            Color::lerp(Color::red(), Color::blue(), 0.5)->toRGBA(),
+        );
+        self::assertSame(
+            ['r' => 255, 'g' => 0, 'b' => 0, 'a' => 255],
+            Color::lerp(Color::red(), Color::blue(), -1.0)->toRGBA(),
+        );
+        self::assertSame(
+            ['r' => 0, 'g' => 0, 'b' => 255, 'a' => 255],
+            Color::lerp(Color::red(), Color::blue(), 2.0)->toRGBA(),
+        );
+    }
+
+    public function testRgbToHsvConvertsNormalizedChannels(): void
+    {
+        self::assertSame(['h' => 0, 's' => 100, 'v' => 100], Color::rgbToHsv(1.0, 0.0, 0.0));
+        self::assertSame(['h' => 120, 's' => 100, 'v' => 100], Color::rgbToHsv(0.0, 1.0, 0.0));
+        self::assertSame(['h' => 240, 's' => 100, 'v' => 100], Color::rgbToHsv(0.0, 0.0, 1.0));
+        self::assertSame(['h' => 180, 's' => 100, 'v' => 100], Color::rgbToHsv(0.0, 1.0, 1.0));
+        self::assertSame(['h' => 0, 's' => 0, 'v' => 50], Color::rgbToHsv(0.5, 0.5, 0.5));
+    }
+
+    public function testRgbToHsvClampsNormalizedInputs(): void
+    {
+        self::assertSame(['h' => 0, 's' => 100, 'v' => 100], Color::rgbToHsv(1.5, -0.25, 0.0));
+    }
+
+    public function testHsvToRgbConvertsPercentChannels(): void
+    {
+        self::assertSame(['r' => 255, 'g' => 0, 'b' => 0], Color::hsvToRgb(0.0, 100.0, 100.0));
+        self::assertSame(['r' => 0, 'g' => 255, 'b' => 0], Color::hsvToRgb(120.0, 100.0, 100.0));
+        self::assertSame(['r' => 0, 'g' => 0, 'b' => 255], Color::hsvToRgb(240.0, 100.0, 100.0));
+        self::assertSame(['r' => 128, 'g' => 128, 'b' => 128], Color::hsvToRgb(0.0, 0.0, 50.0));
+    }
+
+    public function testHsvToRgbWrapsHueAndClampsPercentChannels(): void
+    {
+        self::assertSame(['r' => 0, 'g' => 255, 'b' => 0], Color::hsvToRgb(480.0, 150.0, 110.0));
+        self::assertSame(['r' => 0, 'g' => 0, 'b' => 255], Color::hsvToRgb(-120.0, 100.0, 100.0));
+        self::assertSame(['r' => 0, 'g' => 0, 'b' => 0], Color::hsvToRgb(0.0, 100.0, -10.0));
+    }
+
     public function testFromRGBAConvertsByteChannelsToNormalizedChannels(): void
     {
         $color = Color::fromRGBA(255, 128, 64, 32);
