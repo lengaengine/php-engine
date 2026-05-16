@@ -286,7 +286,7 @@ abstract class Behaviour implements ComponentInterface
 
     private function resolveSerializedPropertyValue(ReflectionProperty $property, mixed $value): mixed
     {
-        if ($value instanceof Vector2 || $value instanceof Vector3) {
+        if ($value instanceof Color || $value instanceof Vector2 || $value instanceof Vector3) {
             return $value;
         }
 
@@ -406,6 +406,14 @@ abstract class Behaviour implements ComponentInterface
 
         if (enum_exists($resolvedTypeName)) {
             return $this->resolveEnumValue($resolvedTypeName, $value);
+        }
+
+        if ($resolvedTypeName === Color::class) {
+            if ($value === null && $type->allowsNull()) {
+                return null;
+            }
+
+            return is_array($value) ? Color::fromRGBAArray($value) : new Color();
         }
 
         if (!is_array($value)) {
