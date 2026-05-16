@@ -11,7 +11,7 @@ use function is_array;
 /**
  * Renders a 3D capsule primitive using the GameObject's Transform.
  */
-final class CapsuleRenderer extends Component
+final class CapsuleRenderer extends Renderer
 {
     public function __construct(GameObject $gameObject, int $componentId)
     {
@@ -94,52 +94,12 @@ final class CapsuleRenderer extends Component
     }
 
     /**
-     * Project-relative material asset path.
-     */
-    public string $materialPath {
-        get {
-            return (string) ($this->getState()['materialPath'] ?? '');
-        }
-
-        set(string $value) {
-            NativeEngine::call('capsule_renderer_set_material_path', $this->componentId, $value);
-        }
-    }
-
-    /**
-     * @return array{r:int, g:int, b:int, a:int}
-     */
-    public function getColor(): array
-    {
-        /** @var array{color?: array{r?: int, g?: int, b?: int, a?: int}} $state */
-        $state = $this->getState();
-        $color = $state['color'] ?? [];
-
-        return [
-            'r' => (int) ($color['r'] ?? 255),
-            'g' => (int) ($color['g'] ?? 255),
-            'b' => (int) ($color['b'] ?? 255),
-            'a' => (int) ($color['a'] ?? 255),
-        ];
-    }
-
-    /**
-     * Sets the capsule tint used when no material overrides the base color.
-     */
-    public function setColor(int $red, int $green, int $blue, int $alpha = 255): void
-    {
-        NativeEngine::call('capsule_renderer_set_color', $this->componentId, $red, $green, $blue, $alpha);
-    }
-
-    /**
      * @return array{
      *     center?: array{x?: float, y?: float, z?: float},
      *     radius?: float,
      *     height?: float,
      *     totalSlices?: int,
      *     totalRings?: int,
-     *     materialPath?: string,
-     *     color?: array{r?: int, g?: int, b?: int, a?: int},
      *     enabled?: bool
      * }
      */
@@ -151,8 +111,6 @@ final class CapsuleRenderer extends Component
          *     height?: float,
          *     totalSlices?: int,
          *     totalRings?: int,
-         *     materialPath?: string,
-         *     color?: array{r?: int, g?: int, b?: int, a?: int},
          *     enabled?: bool
          * } $state
          */

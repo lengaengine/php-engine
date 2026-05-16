@@ -7,7 +7,7 @@ namespace Lenga\Engine\Core;
 use Lenga\Engine\Attributes\Min;
 use function is_array;
 
-final class CylinderRenderer extends Component
+final class CylinderRenderer extends Renderer
 {
     public function __construct(GameObject $gameObject, int $componentId)
     {
@@ -74,38 +74,6 @@ final class CylinderRenderer extends Component
         }
     }
 
-    public string $materialPath {
-        get {
-            return (string) ($this->getState()['materialPath'] ?? '');
-        }
-
-        set(string $value) {
-            NativeEngine::call('cylinder_renderer_set_material_path', $this->componentId, $value);
-        }
-    }
-
-    /**
-     * @return array{r:int, g:int, b:int, a:int}
-     */
-    public function getColor(): array
-    {
-        /** @var array{color?: array{r?: int, g?: int, b?: int, a?: int}} $state */
-        $state = $this->getState();
-        $color = $state['color'] ?? [];
-
-        return [
-            'r' => (int) ($color['r'] ?? 255),
-            'g' => (int) ($color['g'] ?? 255),
-            'b' => (int) ($color['b'] ?? 255),
-            'a' => (int) ($color['a'] ?? 255),
-        ];
-    }
-
-    public function setColor(int $red, int $green, int $blue, int $alpha = 255): void
-    {
-        NativeEngine::call('cylinder_renderer_set_color', $this->componentId, $red, $green, $blue, $alpha);
-    }
-
     /**
      * @return array{
      *     position?: array{x?: float, y?: float, z?: float},
@@ -113,8 +81,6 @@ final class CylinderRenderer extends Component
      *     bottomRadius?: float,
      *     height?: float,
      *     totalSlices?: int,
-     *     materialPath?: string,
-     *     color?: array{r?: int, g?: int, b?: int, a?: int},
      *     enabled?: bool
      * }
      */
@@ -126,8 +92,6 @@ final class CylinderRenderer extends Component
          *     bottomRadius?: float,
          *     height?: float,
          *     totalSlices?: int,
-         *     materialPath?: string,
-         *     color?: array{r?: int, g?: int, b?: int, a?: int},
          *     enabled?: bool
          * } $state
          */

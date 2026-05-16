@@ -7,7 +7,7 @@ namespace Lenga\Engine\Core;
 use Lenga\Engine\Internal\ColorBridge;
 use function is_array;
 
-final class TrailRenderer extends Component
+final class TrailRenderer extends Renderer
 {
     public const string ALIGNMENT_VIEW = 'View';
     public const string ALIGNMENT_TRANSFORM_Z = 'TransformZ';

@@ -53,11 +53,17 @@ final class Color implements Stringable
         float $g = self::MIN_VALUE,
         float $b = self::MIN_VALUE,
         float $a = self::MAX_VALUE,
-    ) {
+    )
+    {
         $this->red = self::clampUnit($r);
         $this->green = self::clampUnit($g);
         $this->blue = self::clampUnit($b);
         $this->alpha = self::clampUnit($a);
+    }
+
+    private static function clampUnit(float $value): float
+    {
+        return MathUtil::clamp($value, self::MIN_VALUE, self::MAX_VALUE);
     }
 
     /**
@@ -141,45 +147,81 @@ final class Color implements Stringable
     }
 
     /**
-     * Creates a color from 0 to 255 byte-channel RGBA values.
+     * @param Color $from The start color when t=0
+     * @param Color $to The end color when t=1
+     * @param float $t The interpolation ratio. Will be clamped to the range [0.0, 1.0].
+     * @return self The `Color` resulting from linearly interpolating between `from` and `to` by the ratio `t`.
      */
-    public static function fromRGBA(int $red, int $green, int $blue, int $alpha = self::MAX_BYTE_VALUE): self
+    public static function lerp(self $from, self $to, float $t): self
     {
-        return new self(
-            self::clampByte($red) / self::MAX_BYTE_VALUE,
-            self::clampByte($green) / self::MAX_BYTE_VALUE,
-            self::clampByte($blue) / self::MAX_BYTE_VALUE,
-            self::clampByte($alpha) / self::MAX_BYTE_VALUE,
-        );
+        $ratio = MathUtil::clamp($t, 0.0, 1.0);
+
+        $r = MathUtil::lerp($from->r, $to->r, $ratio);
+        $g = MathUtil::lerp($from->g, $to->g, $ratio);
+        $b = MathUtil::lerp($from->b, $to->b, $ratio);
+        $a = MathUtil::lerp($from->a, $to->a, $ratio);
+
+        return new Color($r, $g, $b, $a);
     }
 
-    /**
-     * Creates a color from native engine color state.
-     *
-     * @param array{r?: int|float, g?: int|float, b?: int|float, a?: int|float, 0?: int|float, 1?: int|float, 2?: int|float, 3?: int|float} $value
-     */
-    public static function fromRGBAArray(array $value): self
+    public static function rgbToHsv(float $r, float $g, float $b): array
     {
-        return self::fromRGBA(
-            (int) ($value['r'] ?? $value[0] ?? self::MAX_BYTE_VALUE),
-            (int) ($value['g'] ?? $value[1] ?? self::MAX_BYTE_VALUE),
-            (int) ($value['b'] ?? $value[2] ?? self::MAX_BYTE_VALUE),
-            (int) ($value['a'] ?? $value[3] ?? self::MAX_BYTE_VALUE),
-        );
-    }
+        $max = max($r, $g, $b);
+        $min = min($r, $g, $b);
+        $delta = $max - $min;
 
-    /**
-     * Converts this color to 0 to 255 byte-channel RGBA values.
-     *
-     * @return array{r: int, g: int, b: int, a: int}
-     */
-    public function toRGBA(): array
-    {
+        if ($delta == 0) {
+            $h = 0;
+        } elseif ($max == $r) {
+            $h = 60 * fmod((($g - $b) / $delta), 6);
+        } elseif ($max == $g) {
+            $h = 60 * ((($b - $r) / $delta) + 2);
+        } else {
+            $h = 60 * ((($r - $g) / $delta) + 4);
+        }
+
+        if ($h < 0) {
+            $h += 360;
+        }
+
         return [
-            'r' => self::unitToByte($this->red),
-            'g' => self::unitToByte($this->green),
-            'b' => self::unitToByte($this->blue),
-            'a' => self::unitToByte($this->alpha),
+            'h' => round($h),
+            's' => ($max == 0) ? 0 : round(($delta / $max) * 100),
+            'v' => round($max * 100),
+        ];
+    }
+
+    /**
+     * Creates and RGB
+     * @param float $h
+     * @param float $s
+     * @param float $v
+     * @return array
+     */
+    public static function hsvToRgb(float $h, float $s, float $v): array
+    {
+        $c = ($v / 100) * ($s / 100);
+        $x = $c * (1 - abs(fmod($h / 60, 2) - 1));
+        $m = ($v / 100) - $c;
+
+        if ($h < 60) {
+            $r = $c; $g = $x; $b = 0;
+        } elseif ($h < 120) {
+            $r = $x; $g = $c; $b = 0;
+        } elseif ($h < 180) {
+            $r = 0; $g = $c; $b = $x;
+        } elseif ($h < 240) {
+            $r = 0; $g = $x; $b = $c;
+        } elseif ($h < 300) {
+            $r = $x; $g = 0; $b = $c;
+        } else {
+            $r = $c; $g = 0; $b = $x;
+        }
+
+        return [
+            'r' => round(($r + $m) * self::MAX_BYTE_VALUE),
+            'g' => round(($g + $m) * self::MAX_BYTE_VALUE),
+            'b' => round(($b + $m) * self::MAX_BYTE_VALUE),
         ];
     }
 
@@ -212,12 +254,37 @@ final class Color implements Stringable
         );
     }
 
+    private static function unitToByte(float $value): int
+    {
+        return self::clampByte((int)round(self::clampUnit($value) * self::MAX_BYTE_VALUE));
+    }
+
+    private static function clampByte(int $value): int
+    {
+        return max(self::MIN_BYTE_VALUE, min(self::MAX_BYTE_VALUE, $value));
+    }
+
     /**
      * @return array{r: int, g: int, b: int, a: int}
      */
     public function __serialize(): array
     {
         return $this->toRGBA();
+    }
+
+    /**
+     * Converts this color to 0 to 255 byte-channel RGBA values.
+     *
+     * @return array{r: int, g: int, b: int, a: int}
+     */
+    public function toRGBA(): array
+    {
+        return [
+            'r' => self::unitToByte($this->red),
+            'g' => self::unitToByte($this->green),
+            'b' => self::unitToByte($this->blue),
+            'a' => self::unitToByte($this->alpha),
+        ];
     }
 
     /**
@@ -233,25 +300,38 @@ final class Color implements Stringable
     }
 
     /**
+     * Creates a color from native engine color state.
+     *
+     * @param array{r?: int|float, g?: int|float, b?: int|float, a?: int|float, 0?: int|float, 1?: int|float, 2?: int|float, 3?: int|float} $value
+     */
+    public static function fromRGBAArray(array $value): self
+    {
+        return self::fromRGBA(
+            (int)($value['r'] ?? $value[0] ?? self::MAX_BYTE_VALUE),
+            (int)($value['g'] ?? $value[1] ?? self::MAX_BYTE_VALUE),
+            (int)($value['b'] ?? $value[2] ?? self::MAX_BYTE_VALUE),
+            (int)($value['a'] ?? $value[3] ?? self::MAX_BYTE_VALUE),
+        );
+    }
+
+    /**
+     * Creates a color from 0 to 255 byte-channel RGBA values.
+     */
+    public static function fromRGBA(int $red, int $green, int $blue, int $alpha = self::MAX_BYTE_VALUE): self
+    {
+        return new self(
+            self::clampByte($red) / self::MAX_BYTE_VALUE,
+            self::clampByte($green) / self::MAX_BYTE_VALUE,
+            self::clampByte($blue) / self::MAX_BYTE_VALUE,
+            self::clampByte($alpha) / self::MAX_BYTE_VALUE,
+        );
+    }
+
+    /**
      * JSON-encodes the byte-channel RGBA representation.
      */
     public function toJson(): string
     {
-        return (string) json_encode($this->toRGBA());
-    }
-
-    private static function clampUnit(float $value): float
-    {
-        return MathUtil::clamp($value, self::MIN_VALUE, self::MAX_VALUE);
-    }
-
-    private static function clampByte(int $value): int
-    {
-        return max(self::MIN_BYTE_VALUE, min(self::MAX_BYTE_VALUE, $value));
-    }
-
-    private static function unitToByte(float $value): int
-    {
-        return self::clampByte((int) round(self::clampUnit($value) * self::MAX_BYTE_VALUE));
+        return (string)json_encode($this->toRGBA());
     }
 }
