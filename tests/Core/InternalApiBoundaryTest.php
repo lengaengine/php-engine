@@ -30,7 +30,7 @@ final class InternalApiBoundaryTest extends TestCase
             }
 
             if (preg_match($pattern, $contents) === 1) {
-                $violations[] = substr($file->getPathname(), strlen($sourceRoot) + 1);
+                $violations[] = $this->relativeSourcePath($file, $sourceRoot);
             }
         }
 
@@ -49,7 +49,7 @@ final class InternalApiBoundaryTest extends TestCase
             }
 
             foreach ($this->findDirectInternalNativeCalls($contents) as $functionName) {
-                $violations[] = substr($file->getPathname(), strlen($sourceRoot) + 1) . ':' . $functionName;
+                $violations[] = $this->relativeSourcePath($file, $sourceRoot) . ':' . $functionName;
             }
         }
 
@@ -66,7 +66,7 @@ final class InternalApiBoundaryTest extends TestCase
         $violations = [];
 
         foreach ($this->sourceFiles($sourceRoot) as $file) {
-            $relativePath = substr($file->getPathname(), strlen($sourceRoot) + 1);
+            $relativePath = $this->relativeSourcePath($file, $sourceRoot);
             if ($relativePath === 'Core/NativeEngine.php') {
                 continue;
             }
@@ -90,6 +90,11 @@ final class InternalApiBoundaryTest extends TestCase
         self::assertIsString($sourceRoot);
 
         return $sourceRoot;
+    }
+
+    private function relativeSourcePath(SplFileInfo $file, string $sourceRoot): string
+    {
+        return str_replace('\\', '/', substr($file->getPathname(), strlen($sourceRoot) + 1));
     }
 
     /**
