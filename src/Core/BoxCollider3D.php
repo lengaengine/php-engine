@@ -6,6 +6,9 @@ namespace Lenga\Engine\Core;
 
 use function is_array;
 
+/**
+ * Represents a 3D box collider attached to a GameObject.
+ */
 final class BoxCollider3D extends Component
 {
     public function __construct(GameObject $gameObject, int $componentId)
@@ -13,6 +16,9 @@ final class BoxCollider3D extends Component
         parent::__construct($gameObject, $componentId, 'BoxCollider3D');
     }
 
+    /**
+     * The collider size in local units before the GameObject transform is applied.
+     */
     public Vector3 $size {
         get {
             $state = $this->getState()['size'] ?? [];
@@ -29,6 +35,9 @@ final class BoxCollider3D extends Component
         }
     }
 
+    /**
+     * The collider center offset relative to the GameObject transform.
+     */
     public Vector3 $offset {
         get {
             $state = $this->getState()['offset'] ?? [];
@@ -45,6 +54,9 @@ final class BoxCollider3D extends Component
         }
     }
 
+    /**
+     * Whether this collider reports overlaps without producing physical collision response.
+     */
     public bool $isTrigger {
         get {
             return (bool) ($this->getState()['isTrigger'] ?? false);
@@ -108,6 +120,12 @@ final class BoxCollider3D extends Component
         }
     }
 
+    /**
+     * Returns true when this collider is currently touching another 3D collider.
+     *
+     * Trigger contacts are counted when $includeTriggers is true. $layerMask filters
+     * other colliders by their GameObject layer.
+     */
     public function isTouching(bool $includeTriggers = true, ?int $layerMask = null): bool
     {
         return NativeEngine::call('box_collider3d_is_touching',
@@ -118,6 +136,11 @@ final class BoxCollider3D extends Component
     }
 
     /**
+     * Returns the current 3D contacts involving this collider.
+     *
+     * Trigger contacts are included when $includeTriggers is true. $layerMask filters
+     * other colliders by their GameObject layer.
+     *
      * @return list<Collision3D>
      */
     public function getContacts(bool $includeTriggers = true, ?int $layerMask = null): array

@@ -129,6 +129,11 @@ final class MeshCollider3D extends Component
         }
     }
 
+    /**
+     * Returns the number of meshes loaded from the assigned asset.
+     *
+     * Returns 0 when no mesh asset is assigned or the asset could not be loaded.
+     */
     public function getMeshCount(): int
     {
         return (int) ($this->getState()['meshCount'] ?? 0);
@@ -136,6 +141,9 @@ final class MeshCollider3D extends Component
 
     /**
      * Returns true when this collider is currently touching another 3D collider.
+     *
+     * Trigger contacts are counted when $includeTriggers is true. $layerMask filters
+     * other colliders by their GameObject layer.
      */
     public function isTouching(bool $includeTriggers = true, ?int $layerMask = null): bool
     {
@@ -148,6 +156,9 @@ final class MeshCollider3D extends Component
 
     /**
      * Returns the current 3D contacts involving this collider.
+     *
+     * Trigger contacts are included when $includeTriggers is true. $layerMask filters
+     * other colliders by their GameObject layer.
      *
      * @return list<Collision3D>
      */

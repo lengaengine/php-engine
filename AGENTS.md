@@ -7,6 +7,7 @@ These rules apply to `lenga/engine` package code and tests. They are version-con
 - Write PHP 8.5+ code. Do not target generic or older PHP syntax.
 - Use `declare(strict_types=1);` in new PHP files.
 - Use typed class constants, properties, parameters, and return types wherever PHP 8.5 supports them.
+- Document public PHP classes, properties, and methods with docblocks that describe developer-facing behavior, parameters, returns, and deprecations where relevant.
 - Prefer `use` imports over fully qualified class names. Keep fully qualified names only when there is a clear reason, such as global built-ins, unavoidable name collisions, or intentionally explicit runtime references.
 - Keep files LF/Unix line endings. Do not introduce CRLF line endings.
 

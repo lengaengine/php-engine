@@ -164,6 +164,9 @@ final class CylinderCollider3D extends Component
 
     /**
      * Returns true when this collider is currently touching another 3D collider.
+     *
+     * Trigger contacts are counted when $includeTriggers is true. $layerMask filters
+     * other colliders by their GameObject layer.
      */
     public function isTouching(bool $includeTriggers = true, ?int $layerMask = null): bool
     {
@@ -176,6 +179,9 @@ final class CylinderCollider3D extends Component
 
     /**
      * Returns the current 3D contacts involving this collider.
+     *
+     * Trigger contacts are included when $includeTriggers is true. $layerMask filters
+     * other colliders by their GameObject layer.
      *
      * @return list<Collision3D>
      */
