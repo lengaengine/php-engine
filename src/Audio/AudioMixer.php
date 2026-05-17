@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Lenga\Engine\Audio;
 
+use Lenga\Engine\Core\NativeEngine;
 use function basename;
 use function is_array;
 use function is_string;
@@ -87,6 +88,21 @@ final class AudioMixer
     public function matches(?self $other): bool
     {
         return $other !== null && $this->assetPathValue === $other->assetPath;
+    }
+
+    /**
+     * Smoothly blends this mixer toward a saved preset.
+     *
+     * The preset name or id must exist on the referenced AudioMixer asset.
+     */
+    public function transitionToPreset(string $targetPreset, float $transitionTimeInSeconds = 0.0): bool
+    {
+        return (bool) NativeEngine::call(
+            'audio_mixer_transition_to_preset',
+            $this->__serialize(),
+            $targetPreset,
+            $transitionTimeInSeconds,
+        );
     }
 
     private static function readAssetPath(mixed $value): string
