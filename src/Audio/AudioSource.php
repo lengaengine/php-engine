@@ -136,9 +136,20 @@ final class AudioSource extends Component
     /**
      * Returns true while the assigned clip is currently playing.
      */
+    public bool $isPlaying {
+        get {
+            return (bool) ($this->getState()['isPlaying'] ?? false);
+        }
+    }
+
+    /**
+     * Returns true while the assigned clip is currently playing.
+     *
+     * @deprecated Use the $isPlaying property instead.
+     */
     public function isPlaying(): bool
     {
-        return (bool) ($this->getState()['isPlaying'] ?? false);
+        return $this->isPlaying;
     }
 
     /**
@@ -147,6 +158,16 @@ final class AudioSource extends Component
     public bool $isPaused {
         get {
             return (bool) ($this->getState()['isPaused'] ?? false);
+        }
+    }
+
+    /**
+     * Returns true when playback is stopped on this source. Playback is considered stopped when this source is
+     * not playing and is not paused.
+     */
+    public bool $isStopped {
+        get {
+            return (!$this->isPlaying && !$this->isPaused);
         }
     }
 
