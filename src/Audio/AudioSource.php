@@ -142,11 +142,36 @@ final class AudioSource extends Component
     }
 
     /**
+     * Returns true when playback is paused on this source.
+     */
+    public bool $isPaused {
+        get {
+            return (bool) ($this->getState()['isPaused'] ?? false);
+        }
+    }
+
+    /**
      * Starts playback from the beginning of the assigned clip.
      */
     public function play(): bool
     {
         return (bool) NativeEngine::call('audio_source_play', $this->componentId);
+    }
+
+    /**
+     * Pauses playback without resetting the clip position.
+     */
+    public function pause(): bool
+    {
+        return (bool) NativeEngine::call('audio_source_pause', $this->componentId);
+    }
+
+    /**
+     * Resumes playback from the paused clip position.
+     */
+    public function resume(): bool
+    {
+        return (bool) NativeEngine::call('audio_source_resume', $this->componentId);
     }
 
     /**
@@ -180,6 +205,7 @@ final class AudioSource extends Component
      *     volume?: float,
      *     pitch?: float,
      *     isPlaying?: bool,
+     *     isPaused?: bool,
      *     enabled?: bool
      * }
      */
@@ -194,6 +220,7 @@ final class AudioSource extends Component
          *     volume?: float,
          *     pitch?: float,
          *     isPlaying?: bool,
+         *     isPaused?: bool,
          *     enabled?: bool
          * } $state
          */
