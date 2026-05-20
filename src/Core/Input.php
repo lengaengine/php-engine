@@ -140,6 +140,39 @@ final class Input
         return (bool) NativeEngine::call('input_get_mouse_button_up', $button);
     }
 
+    public static function getMousePosition(): Vector2
+    {
+        $position = NativeEngine::call('input_get_mouse_position');
+
+        if (!is_array($position)) {
+            return new Vector2(0.0, 0.0);
+        }
+
+        return new Vector2(
+            (float) ($position['x'] ?? 0.0),
+            (float) ($position['y'] ?? 0.0),
+        );
+    }
+
+    /**
+     * The current mouse position delta in pixel coordinates.
+     *
+     * @return Vector2
+     */
+    public static function getMousePositionDelta(): Vector2
+    {
+        $position = NativeEngine::call('input_get_mouse_position_delta');
+
+        if (!is_array($position)) {
+            return new Vector2(0.0, 0.0);
+        }
+
+        return new Vector2(
+            (float) ($position['x'] ?? 0.0),
+            (float) ($position['y'] ?? 0.0),
+        );
+    }
+
     /**
      * Returns a touch snapshot by frame-stable index.
      *
