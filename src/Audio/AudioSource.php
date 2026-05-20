@@ -136,9 +136,39 @@ final class AudioSource extends Component
     /**
      * Returns true while the assigned clip is currently playing.
      */
+    public bool $isPlaying {
+        get {
+            return (bool) ($this->getState()['isPlaying'] ?? false);
+        }
+    }
+
+    /**
+     * Returns true while the assigned clip is currently playing.
+     *
+     * @deprecated Use the $isPlaying property instead.
+     */
     public function isPlaying(): bool
     {
-        return (bool) ($this->getState()['isPlaying'] ?? false);
+        return $this->isPlaying;
+    }
+
+    /**
+     * Returns true when playback is paused on this source.
+     */
+    public bool $isPaused {
+        get {
+            return (bool) ($this->getState()['isPaused'] ?? false);
+        }
+    }
+
+    /**
+     * Returns true when playback is stopped on this source. Playback is considered stopped when this source is
+     * not playing and is not paused.
+     */
+    public bool $isStopped {
+        get {
+            return (!$this->isPlaying && !$this->isPaused);
+        }
     }
 
     /**
@@ -147,6 +177,22 @@ final class AudioSource extends Component
     public function play(): bool
     {
         return (bool) NativeEngine::call('audio_source_play', $this->componentId);
+    }
+
+    /**
+     * Pauses playback without resetting the clip position.
+     */
+    public function pause(): bool
+    {
+        return (bool) NativeEngine::call('audio_source_pause', $this->componentId);
+    }
+
+    /**
+     * Resumes playback from the paused clip position.
+     */
+    public function resume(): bool
+    {
+        return (bool) NativeEngine::call('audio_source_resume', $this->componentId);
     }
 
     /**
@@ -180,6 +226,7 @@ final class AudioSource extends Component
      *     volume?: float,
      *     pitch?: float,
      *     isPlaying?: bool,
+     *     isPaused?: bool,
      *     enabled?: bool
      * }
      */
@@ -194,6 +241,7 @@ final class AudioSource extends Component
          *     volume?: float,
          *     pitch?: float,
          *     isPlaying?: bool,
+         *     isPaused?: bool,
          *     enabled?: bool
          * } $state
          */
