@@ -7,6 +7,7 @@ namespace Lenga\Engine\Core;
 use Lenga\Engine\Enumerations\GamepadAxis;
 use Lenga\Engine\Enumerations\GamepadButton;
 use Lenga\Engine\Enumerations\KeyCode;
+use Lenga\Engine\Enumerations\MouseButton;
 use OutOfBoundsException;
 use function is_array;
 use function is_numeric;
@@ -123,21 +124,24 @@ final class Input
     }
 
     /** Reads whether the given mouse button is currently held. */
-    public static function getMouseButton(int $button): bool
+    public static function getMouseButton(MouseButton|int $button): bool
     {
-        return (bool) NativeEngine::call('input_get_mouse_button', $button);
+        $buttonId = $button instanceof MouseButton ? $button->value : $button;
+        return (bool) NativeEngine::call('input_get_mouse_button', $buttonId);
     }
 
     /** Reads whether the given mouse button was pressed this frame. */
-    public static function getMouseButtonDown(int $button): bool
+    public static function getMouseButtonDown(MouseButton|int $button): bool
     {
-        return (bool) NativeEngine::call('input_get_mouse_button_down', $button);
+        $buttonId = $button instanceof MouseButton ? $button->value : $button;
+        return (bool) NativeEngine::call('input_get_mouse_button_down', $buttonId);
     }
 
     /** Reads whether the given mouse button was released this frame. */
-    public static function getMouseButtonUp(int $button): bool
+    public static function getMouseButtonUp(MouseButton|int $button): bool
     {
-        return (bool) NativeEngine::call('input_get_mouse_button_up', $button);
+        $buttonId = $button instanceof MouseButton ? $button->value : $button;
+        return (bool) NativeEngine::call('input_get_mouse_button_up', $buttonId);
     }
 
     public static function getMousePosition(): Vector2
