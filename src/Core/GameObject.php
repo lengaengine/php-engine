@@ -7,7 +7,11 @@ namespace Lenga\Engine\Core;
 use Closure;
 use InvalidArgumentException;
 use Lenga\Engine\Audio\AudioSource;
+use Lenga\Engine\Interfaces\ComponentInterface;
+use Lenga\Engine\Interfaces\RendererInterface;
 use Lenga\Engine\SceneManagement\Scene;
+use ReflectionClass;
+use ReflectionException;
 use RuntimeException;
 use function array_map;
 use function array_values;
@@ -660,17 +664,36 @@ final class GameObject
             PointEffector2D::class, 'PointEffector2D' => ['nativeType' => 'PointEffector2D', 'scriptClass' => null],
             SurfaceEffector2D::class, 'SurfaceEffector2D' => ['nativeType' => 'SurfaceEffector2D', 'scriptClass' => null],
             BuoyancyEffector2D::class, 'BuoyancyEffector2D' => ['nativeType' => 'BuoyancyEffector2D', 'scriptClass' => null],
+            DistanceJoint2D::class, 'DistanceJoint2D' => ['nativeType' => 'DistanceJoint2D', 'scriptClass' => null],
+            HingeJoint2D::class, 'HingeJoint2D' => ['nativeType' => 'HingeJoint2D', 'scriptClass' => null],
+            FixedJoint2D::class, 'FixedJoint2D' => ['nativeType' => 'FixedJoint2D', 'scriptClass' => null],
+            SliderJoint2D::class, 'SliderJoint2D' => ['nativeType' => 'SliderJoint2D', 'scriptClass' => null],
             BoxCollider2D::class, 'BoxCollider2D' => ['nativeType' => 'BoxCollider2D', 'scriptClass' => null],
             CircleCollider2D::class, 'CircleCollider2D' => ['nativeType' => 'CircleCollider2D', 'scriptClass' => null],
             BoxCollider3D::class, 'BoxCollider3D' => ['nativeType' => 'BoxCollider3D', 'scriptClass' => null],
             CapsuleCollider3D::class, 'CapsuleCollider3D' => ['nativeType' => 'CapsuleCollider3D', 'scriptClass' => null],
             CharacterController::class, 'CharacterController' => ['nativeType' => 'CharacterController', 'scriptClass' => null],
             CylinderCollider3D::class, 'CylinderCollider3D' => ['nativeType' => 'CylinderCollider3D', 'scriptClass' => null],
+            MeshCollider3D::class, 'MeshCollider3D' => ['nativeType' => 'MeshCollider3D', 'scriptClass' => null],
             SphereCollider3D::class, 'SphereCollider3D' => ['nativeType' => 'SphereCollider3D', 'scriptClass' => null],
             AudioSource::class, 'AudioSource' => ['nativeType' => 'AudioSource', 'scriptClass' => null],
+            DirectionalLight::class, 'DirectionalLight' => ['nativeType' => 'DirectionalLight', 'scriptClass' => null],
+            PointLight::class, 'PointLight' => ['nativeType' => 'PointLight', 'scriptClass' => null],
+            PointLight2D::class, 'PointLight2D' => ['nativeType' => 'PointLight2D', 'scriptClass' => null],
+            GlobalLight2D::class, 'GlobalLight2D' => ['nativeType' => 'GlobalLight2D', 'scriptClass' => null],
+            SpriteLight2D::class, 'SpriteLight2D' => ['nativeType' => 'SpriteLight2D', 'scriptClass' => null],
+            LightOccluder2D::class, 'LightOccluder2D' => ['nativeType' => 'LightOccluder2D', 'scriptClass' => null],
             SpriteAnimation::class, 'SpriteAnimation' => ['nativeType' => 'SpriteAnimation', 'scriptClass' => null],
             RectangleRenderer::class, 'RectangleRenderer' => ['nativeType' => 'RectangleRenderer', 'scriptClass' => null],
+            CircleRenderer::class, 'CircleRenderer' => ['nativeType' => 'CircleRenderer', 'scriptClass' => null],
+            EllipseRenderer::class, 'EllipseRenderer' => ['nativeType' => 'EllipseRenderer', 'scriptClass' => null],
+            LineRenderer2D::class, 'LineRenderer2D' => ['nativeType' => 'LineRenderer2D', 'scriptClass' => null],
+            TriangleRenderer2D::class, 'TriangleRenderer2D' => ['nativeType' => 'TriangleRenderer2D', 'scriptClass' => null],
+            RingRenderer::class, 'RingRenderer' => ['nativeType' => 'RingRenderer', 'scriptClass' => null],
+            PolygonRenderer::class, 'PolygonRenderer' => ['nativeType' => 'PolygonRenderer', 'scriptClass' => null],
+            RoundedRectangleRenderer::class, 'RoundedRectangleRenderer' => ['nativeType' => 'RoundedRectangleRenderer', 'scriptClass' => null],
             SpriteRenderer::class, 'SpriteRenderer' => ['nativeType' => 'SpriteRenderer', 'scriptClass' => null],
+            Tilemap::class, 'Tilemap' => ['nativeType' => 'Tilemap', 'scriptClass' => null],
             ParticleSystem::class, 'ParticleSystem' => ['nativeType' => 'ParticleSystem', 'scriptClass' => null],
             TrailRenderer::class, 'TrailRenderer' => ['nativeType' => 'TrailRenderer', 'scriptClass' => null],
             CubeRenderer::class, 'CubeRenderer' => ['nativeType' => 'CubeRenderer', 'scriptClass' => null],
@@ -680,6 +703,8 @@ final class GameObject
             PlaneRenderer::class, 'PlaneRenderer' => ['nativeType' => 'PlaneRenderer', 'scriptClass' => null],
             MeshRenderer::class, 'MeshRenderer' => ['nativeType' => 'MeshRenderer', 'scriptClass' => null],
             ModelRenderer::class, 'ModelRenderer' => ['nativeType' => 'ModelRenderer', 'scriptClass' => null],
+            Component::class, ComponentInterface::class, 'Component' => ['nativeType' => 'Component', 'scriptClass' => null],
+            Renderer::class, RendererInterface::class, 'Renderer' => ['nativeType' => 'Renderer', 'scriptClass' => null],
             Behaviour::class, 'Behaviour' => ['nativeType' => 'Behaviour', 'scriptClass' => null],
             default => self::normalizeDynamicComponentSpecifier($type),
         };
@@ -692,6 +717,21 @@ final class GameObject
     {
         if (class_exists($type) && is_subclass_of($type, Behaviour::class)) {
             return ['nativeType' => 'Behaviour', 'scriptClass' => $type];
+        }
+
+        if (class_exists($type) && is_subclass_of($type, Component::class)) {
+            $nativeType = self::resolveNativeComponentTypeFromClass($type);
+            if ($nativeType !== null) {
+                return ['nativeType' => $nativeType, 'scriptClass' => null];
+            }
+        }
+
+        if (class_exists($type) && is_subclass_of($type, Renderer::class)) {
+            return ['nativeType' => 'Renderer', 'scriptClass' => null];
+        }
+
+        if (class_exists($type) && is_subclass_of($type, Component::class)) {
+            return ['nativeType' => 'Component', 'scriptClass' => null];
         }
 
         return ['nativeType' => $type, 'scriptClass' => null];
@@ -786,19 +826,36 @@ final class GameObject
             'PointEffector2D' => new PointEffector2D($this, $componentId),
             'SurfaceEffector2D' => new SurfaceEffector2D($this, $componentId),
             'BuoyancyEffector2D' => new BuoyancyEffector2D($this, $componentId),
+            'DistanceJoint2D' => new DistanceJoint2D($this, $componentId),
+            'HingeJoint2D' => new HingeJoint2D($this, $componentId),
+            'FixedJoint2D' => new FixedJoint2D($this, $componentId),
+            'SliderJoint2D' => new SliderJoint2D($this, $componentId),
             'BoxCollider2D' => new BoxCollider2D($this, $componentId),
             'CircleCollider2D' => new CircleCollider2D($this, $componentId),
             'BoxCollider3D' => new BoxCollider3D($this, $componentId),
             'CapsuleCollider3D' => new CapsuleCollider3D($this, $componentId),
             'CharacterController' => new CharacterController($this, $componentId),
             'CylinderCollider3D' => new CylinderCollider3D($this, $componentId),
+            'MeshCollider3D' => new MeshCollider3D($this, $componentId),
             'SphereCollider3D' => new SphereCollider3D($this, $componentId),
             'AudioSource' => new AudioSource($this, $componentId),
             'DirectionalLight' => new DirectionalLight($this, $componentId),
             'PointLight' => new PointLight($this, $componentId),
+            'PointLight2D' => new PointLight2D($this, $componentId),
+            'GlobalLight2D' => new GlobalLight2D($this, $componentId),
+            'SpriteLight2D' => new SpriteLight2D($this, $componentId),
+            'LightOccluder2D' => new LightOccluder2D($this, $componentId),
             'SpriteAnimation' => new SpriteAnimation($this, $componentId),
             'RectangleRenderer' => new RectangleRenderer($this, $componentId),
+            'CircleRenderer' => new CircleRenderer($this, $componentId),
+            'EllipseRenderer' => new EllipseRenderer($this, $componentId),
+            'LineRenderer2D' => new LineRenderer2D($this, $componentId),
+            'TriangleRenderer2D' => new TriangleRenderer2D($this, $componentId),
+            'RingRenderer' => new RingRenderer($this, $componentId),
+            'PolygonRenderer' => new PolygonRenderer($this, $componentId),
+            'RoundedRectangleRenderer' => new RoundedRectangleRenderer($this, $componentId),
             'SpriteRenderer' => new SpriteRenderer($this, $componentId),
+            'Tilemap' => new Tilemap($this, $componentId),
             'ParticleSystem' => new ParticleSystem($this, $componentId),
             'TrailRenderer' => new TrailRenderer($this, $componentId),
             'CubeRenderer' => new CubeRenderer($this, $componentId),
@@ -808,7 +865,8 @@ final class GameObject
             'PlaneRenderer' => new PlaneRenderer($this, $componentId),
             'MeshRenderer' => new MeshRenderer($this, $componentId),
             'ModelRenderer' => new ModelRenderer($this, $componentId),
-            default => new NativeComponent($this, $componentId, $componentType),
+            default => $this->createComponentWrapperByConvention($componentType, $componentId)
+                ?? new NativeComponent($this, $componentId, $componentType),
         };
 
         if (
@@ -820,6 +878,76 @@ final class GameObject
         }
 
         return $component;
+    }
+
+    /**
+     * @param class-string $type
+     */
+    private static function resolveNativeComponentTypeFromClass(string $type): ?string
+    {
+        try {
+            $reflection = new ReflectionClass($type);
+        } catch (ReflectionException) {
+            return null;
+        }
+
+        if ($reflection->isAbstract()) {
+            return null;
+        }
+
+        $nativeTypeConstant = $reflection->getReflectionConstant('NATIVE_TYPE');
+        if ($nativeTypeConstant !== false && $nativeTypeConstant->isPublic()) {
+            $nativeType = $nativeTypeConstant->getValue();
+            if (is_string($nativeType) && $nativeType !== '') {
+                return $nativeType;
+            }
+        }
+
+        $namespace = $reflection->getNamespaceName();
+        if ($namespace === __NAMESPACE__ || $namespace === 'Lenga\\Engine\\Audio') {
+            return $reflection->getShortName();
+        }
+
+        return null;
+    }
+
+    private function createComponentWrapperByConvention(string $componentType, int $componentId): ?Component
+    {
+        $componentClass = $this->resolveComponentWrapperClass($componentType);
+        if ($componentClass === null) {
+            return null;
+        }
+
+        return new $componentClass($this, $componentId);
+    }
+
+    /**
+     * @return class-string<Component>|null
+     */
+    private static function resolveComponentWrapperClass(string $componentType): ?string
+    {
+        $candidateClasses = [
+            __NAMESPACE__ . '\\' . $componentType,
+            $componentType === 'AudioSource' ? AudioSource::class : null,
+        ];
+
+        foreach ($candidateClasses as $candidateClass) {
+            if (!is_string($candidateClass) || !class_exists($candidateClass) || !is_subclass_of($candidateClass, Component::class)) {
+                continue;
+            }
+
+            try {
+                $reflection = new ReflectionClass($candidateClass);
+            } catch (ReflectionException) {
+                continue;
+            }
+
+            if (!$reflection->isAbstract()) {
+                return $candidateClass;
+            }
+        }
+
+        return null;
     }
 
     private static function attachSceneComponentId(Component $component, string $sceneComponentId): void

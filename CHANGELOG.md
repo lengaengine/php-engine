@@ -2,6 +2,12 @@
 
 All notable changes to `lenga/engine` will be documented in this file.
 
+## Unreleased
+
+### Fixed
+
+- Fixed `GameObject::getComponent()` and related component lookup APIs so base component contracts such as `Component`, `ComponentInterface`, `Renderer`, and `RendererInterface` can resolve concrete native renderer wrappers like `TrailRenderer`.
+
 ## 0.7.1 - 2026-04-21
 
 ### Fixed
