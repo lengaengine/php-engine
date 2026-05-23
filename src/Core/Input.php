@@ -7,6 +7,9 @@ namespace Lenga\Engine\Core;
 use Lenga\Engine\Enumerations\GamepadAxis;
 use Lenga\Engine\Enumerations\GamepadButton;
 use Lenga\Engine\Enumerations\KeyCode;
+use Lenga\Engine\Enumerations\MouseButton;
+use OutOfBoundsException;
+use function is_array;
 use function is_numeric;
 use function is_string;
 
@@ -17,6 +20,22 @@ use function is_string;
  */
 final class Input
 {
+    /** Number of touches captured for the current frame. */
+    public static int $touchCount = 0;
+
+    /**
+     * Touch snapshots captured for the current frame.
+     *
+     * @var list<Touch>
+     */
+    public static array $touches = [];
+
+    /** Whether the active backend reports real touch pressure values. */
+    public static bool $touchPressureSupported = false;
+
+    /** Whether the active backend reports touch input support. */
+    public static bool $touchSupported = false;
+
     private function __construct() {}
 
     /**
@@ -102,6 +121,75 @@ final class Input
     public static function getButtonUp(string $axis): bool
     {
         return (bool) NativeEngine::call('input_get_button_up', $axis);
+    }
+
+    /** Reads whether the given mouse button is currently held. */
+    public static function getMouseButton(MouseButton|int $button): bool
+    {
+        $buttonId = $button instanceof MouseButton ? $button->value : $button;
+        return (bool) NativeEngine::call('input_get_mouse_button', $buttonId);
+    }
+
+    /** Reads whether the given mouse button was pressed this frame. */
+    public static function getMouseButtonDown(MouseButton|int $button): bool
+    {
+        $buttonId = $button instanceof MouseButton ? $button->value : $button;
+        return (bool) NativeEngine::call('input_get_mouse_button_down', $buttonId);
+    }
+
+    /** Reads whether the given mouse button was released this frame. */
+    public static function getMouseButtonUp(MouseButton|int $button): bool
+    {
+        $buttonId = $button instanceof MouseButton ? $button->value : $button;
+        return (bool) NativeEngine::call('input_get_mouse_button_up', $buttonId);
+    }
+
+    public static function getMousePosition(): Vector2
+    {
+        $position = NativeEngine::call('input_get_mouse_position');
+
+        if (!is_array($position)) {
+            return new Vector2(0.0, 0.0);
+        }
+
+        return new Vector2(
+            (float) ($position['x'] ?? 0.0),
+            (float) ($position['y'] ?? 0.0),
+        );
+    }
+
+    /**
+     * The current mouse position delta in pixel coordinates.
+     *
+     * @return Vector2
+     */
+    public static function getMousePositionDelta(): Vector2
+    {
+        $position = NativeEngine::call('input_get_mouse_position_delta');
+
+        if (!is_array($position)) {
+            return new Vector2(0.0, 0.0);
+        }
+
+        return new Vector2(
+            (float) ($position['x'] ?? 0.0),
+            (float) ($position['y'] ?? 0.0),
+        );
+    }
+
+    /**
+     * Returns a touch snapshot by frame-stable index.
+     *
+     * @throws OutOfBoundsException when the touch index is not available.
+     */
+    public static function getTouch(int $index): Touch
+    {
+        $touch = NativeEngine::call('input_get_touch', $index);
+        if (!is_array($touch)) {
+            throw new OutOfBoundsException("Touch index {$index} is not available in the current frame.");
+        }
+
+        return Touch::fromNativeData($touch);
     }
 
     /** Raylib-style alias for `IsKeyPressed()`. */
@@ -227,6 +315,33 @@ final class Input
     public static function setGamepadMappings(string $mappings): int
     {
         return (int) NativeEngine::call('input_set_gamepad_mappings', $mappings);
+    }
+
+    /**
+     * Synchronizes frame-stable touch properties from the native runtime.
+     *
+     * @internal Called by the C++ runtime once per input frame.
+     *
+     * @param list<array<string, mixed>> $touches
+     */
+    public static function syncTouchSnapshotFromNative(
+        array $touches,
+        bool $touchSupported,
+        bool $touchPressureSupported,
+    ): void {
+        $touchSnapshots = [];
+        foreach ($touches as $touch) {
+            if (!is_array($touch)) {
+                continue;
+            }
+
+            $touchSnapshots[] = Touch::fromNativeData($touch);
+        }
+
+        self::$touches = $touchSnapshots;
+        self::$touchCount = count($touchSnapshots);
+        self::$touchSupported = $touchSupported;
+        self::$touchPressureSupported = $touchPressureSupported;
     }
 
     private static function resolveKeyCode(int|string|KeyCode $key): ?int

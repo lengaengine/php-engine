@@ -14,6 +14,8 @@ final class Camera extends Component
         parent::__construct($gameObject, $componentId, 'Camera');
     }
 
+    // TODO: Implement screen-space related methods e.g.
+
     public bool $primary {
         get {
             return (bool) ($this->getState()['primary'] ?? false);

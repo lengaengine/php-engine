@@ -7,6 +7,9 @@ namespace Lenga\Engine\Core;
 use Lenga\Engine\Attributes\Min;
 use function is_array;
 
+/**
+ * Represents a vertical 3D capsule collider attached to a GameObject.
+ */
 final class CapsuleCollider3D extends Component
 {
     public function __construct(GameObject $gameObject, int $componentId)
@@ -14,6 +17,9 @@ final class CapsuleCollider3D extends Component
         parent::__construct($gameObject, $componentId, 'CapsuleCollider3D');
     }
 
+    /**
+     * The local radius of the capsule's rounded ends and cylindrical body.
+     */
     #[Min(0)]
     public float $radius {
         get {
@@ -25,6 +31,9 @@ final class CapsuleCollider3D extends Component
         }
     }
 
+    /**
+     * The local height of the capsule from end to end.
+     */
     #[Min(0)]
     public float $height {
         get {
@@ -36,6 +45,9 @@ final class CapsuleCollider3D extends Component
         }
     }
 
+    /**
+     * The collider center offset relative to the GameObject transform.
+     */
     public Vector3 $offset {
         get {
             $state = $this->getState()['offset'] ?? [];
@@ -52,6 +64,9 @@ final class CapsuleCollider3D extends Component
         }
     }
 
+    /**
+     * Whether this collider reports overlaps without producing physical collision response.
+     */
     public bool $isTrigger {
         get {
             return (bool) ($this->getState()['isTrigger'] ?? false);
@@ -115,6 +130,12 @@ final class CapsuleCollider3D extends Component
         }
     }
 
+    /**
+     * Returns true when this collider is currently touching another 3D collider.
+     *
+     * Trigger contacts are counted when $includeTriggers is true. $layerMask filters
+     * other colliders by their GameObject layer.
+     */
     public function isTouching(bool $includeTriggers = true, ?int $layerMask = null): bool
     {
         return NativeEngine::call('capsule_collider3d_is_touching',
@@ -125,6 +146,11 @@ final class CapsuleCollider3D extends Component
     }
 
     /**
+     * Returns the current 3D contacts involving this collider.
+     *
+     * Trigger contacts are included when $includeTriggers is true. $layerMask filters
+     * other colliders by their GameObject layer.
+     *
      * @return list<Collision3D>
      */
     public function getContacts(bool $includeTriggers = true, ?int $layerMask = null): array
@@ -155,6 +181,8 @@ final class CapsuleCollider3D extends Component
     }
 
     /**
+     * Moves this capsule kinematically and slides along blocking 3D colliders.
+     *
      * @deprecated Use CharacterController::move() for kinematic movement.
      */
     public function moveAndSlide(

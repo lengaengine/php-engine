@@ -125,7 +125,7 @@ The current package includes first-class PHP surfaces for:
 - preferences
 - prefab instantiation
 - 2D rendering and physics
-- early 3D rendering and collision wrappers
+- 3D rendering, physics, collision, and model animation wrappers
 - UI canvases, elements, and controls
 - runtime event dispatch
 
