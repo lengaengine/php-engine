@@ -4,9 +4,14 @@ All notable changes to `lenga/engine` will be documented in this file.
 
 ## Unreleased
 
+### Added
+
+- Added `Lenga\Engine\Core\Random`, a gameplay-oriented random helper with an explicit pseudo-random engine and pure-PHP fallback for Web export compatibility.
+
 ### Fixed
 
 - Fixed `GameObject::getComponent()` and related component lookup APIs so base component contracts such as `Component`, `ComponentInterface`, `Renderer`, and `RendererInterface` can resolve concrete native renderer wrappers like `TrailRenderer`.
+- Fixed `Random`'s pure-PHP generator so Web exports avoid integer overflow warnings when generating seeded gameplay values.
 
 ## 0.7.1 - 2026-04-21
 
