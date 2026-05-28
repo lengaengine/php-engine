@@ -40,6 +40,19 @@ namespace Lenga\Engine\Core {
     }
 }
 
+namespace Lenga\Engine\Tests\Fixtures {
+    use Lenga\Engine\Core\Component;
+    use Lenga\Engine\Core\GameObject;
+
+    final class RegisteredLookupComponent extends Component
+    {
+        public function __construct(GameObject $gameObject, int $componentId)
+        {
+            parent::__construct($gameObject, $componentId, 'RegisteredLookupComponent');
+        }
+    }
+}
+
 namespace Lenga\Engine\Tests\Core {
     use Lenga\Engine\Core\Component;
     use Lenga\Engine\Core\GameObject;
@@ -47,6 +60,7 @@ namespace Lenga\Engine\Tests\Core {
     use Lenga\Engine\Core\TrailRenderer;
     use Lenga\Engine\Interfaces\ComponentInterface;
     use Lenga\Engine\Interfaces\RendererInterface;
+    use Lenga\Engine\Tests\Fixtures\RegisteredLookupComponent;
     use PHPUnit\Framework\Attributes\DataProvider;
     use PHPUnit\Framework\TestCase;
 
@@ -149,12 +163,46 @@ namespace Lenga\Engine\Tests\Core {
             self::assertSame('Component', $GLOBALS['lenga_component_lookup_inheritance_test_state']['calls'][0]['nativeType']);
         }
 
+        public function testRegisteredComponentWrapperSupportsFutureNonConventionalNamespaces(): void
+        {
+            GameObject::registerComponentWrapper('RegisteredLookupComponent', RegisteredLookupComponent::class);
+
+            $GLOBALS['lenga_component_lookup_inheritance_test_state']['results']['RegisteredLookupComponent'] = 'RegisteredLookupComponent';
+
+            $gameObject = new GameObject('Component Host', instanceId: 42);
+            $component = $gameObject->getComponent(RegisteredLookupComponent::class);
+
+            self::assertInstanceOf(RegisteredLookupComponent::class, $component);
+            self::assertSame(
+                [
+                    [
+                        'gameObjectId' => 42,
+                        'nativeType' => 'RegisteredLookupComponent',
+                        'scriptClass' => null,
+                    ],
+                ],
+                $GLOBALS['lenga_component_lookup_inheritance_test_state']['calls'],
+            );
+        }
+
+        public function testComponentLookupDocumentsClassStringSpecificReturnTypes(): void
+        {
+            $reflection = new \ReflectionMethod(GameObject::class, 'getComponent');
+            $docComment = $reflection->getDocComment();
+
+            self::assertIsString($docComment);
+            self::assertStringContainsString('@template TComponent of object', $docComment);
+            self::assertStringContainsString('@param class-string<TComponent>|non-empty-string $type', $docComment);
+            self::assertStringContainsString('@return TComponent|null', $docComment);
+        }
+
         /**
          * @return iterable<string, array{class-string<object>, string}>
          */
         public static function concreteComponentWrapperProvider(): iterable
         {
             yield 'AreaEffector2D' => [\Lenga\Engine\Core\AreaEffector2D::class, 'AreaEffector2D'];
+            yield 'AudioListener' => [\Lenga\Engine\Audio\AudioListener::class, 'AudioListener'];
             yield 'AudioSource' => [\Lenga\Engine\Audio\AudioSource::class, 'AudioSource'];
             yield 'BoxCollider2D' => [\Lenga\Engine\Core\BoxCollider2D::class, 'BoxCollider2D'];
             yield 'BoxCollider3D' => [\Lenga\Engine\Core\BoxCollider3D::class, 'BoxCollider3D'];

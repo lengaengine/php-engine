@@ -6,7 +6,6 @@ namespace Lenga\Engine\Core;
 
 use Closure;
 use InvalidArgumentException;
-use Lenga\Engine\Audio\AudioSource;
 use Lenga\Engine\Interfaces\ComponentInterface;
 use Lenga\Engine\Interfaces\RendererInterface;
 use Lenga\Engine\SceneManagement\Scene;
@@ -22,6 +21,7 @@ use function is_int;
 use function is_object;
 use function is_string;
 use function is_subclass_of;
+use function interface_exists;
 use function ltrim;
 
 final class GameObject
@@ -73,6 +73,14 @@ final class GameObject
     private int $layerValue = 0;
     private bool $activeSelfValue = true;
     private bool $activeInHierarchyValue = true;
+    /**
+     * @var array<string, class-string<Component>>
+     */
+    private static array $registeredComponentWrapperClasses = [];
+    /**
+     * @var array<class-string<Component>, string>
+     */
+    private static array $registeredComponentNativeTypesByClass = [];
 
     public string $name {
         get {
@@ -324,6 +332,17 @@ final class GameObject
         );
     }
 
+    /**
+     * Attempts to resolve a component attached to this object.
+     *
+     * Pass a concrete component class, such as `Rigidbody2D::class`, for IDEs
+     * and static analysers to infer the specific component wrapper type.
+     *
+     * @template TComponent of object
+     * @param class-string<TComponent>|non-empty-string $type
+     * @param TComponent|null $component
+     * @param-out TComponent|null $component
+     */
     public function tryGetComponent(string $type, ?object &$component = null): bool
     {
         $component = $this->getComponent($type);
@@ -331,6 +350,18 @@ final class GameObject
         return $component !== null;
     }
 
+    /**
+     * Resolves the first component of the requested type attached to this object.
+     *
+     * Prefer passing concrete class names, for example `Rigidbody2D::class`, so
+     * editor tooling can infer `Rigidbody2D|null` instead of an implementation
+     * detail union. Native component names such as `"Rigidbody2D"` remain
+     * supported for dynamic runtime code.
+     *
+     * @template TComponent of object
+     * @param class-string<TComponent>|non-empty-string $type
+     * @return TComponent|null
+     */
     public function getComponent(string $type): object|null
     {
         if ($this->instanceId === null) {
@@ -354,7 +385,11 @@ final class GameObject
     }
 
     /**
-     * @return list<object>
+     * Resolves all matching components attached to this object.
+     *
+     * @template TComponent of object
+     * @param class-string<TComponent>|non-empty-string|null $type
+     * @return ($type is null ? list<object> : list<TComponent>)
      */
     public function getComponents(?string $type = null): array
     {
@@ -385,7 +420,11 @@ final class GameObject
     }
 
     /**
-     * @return list<object>
+     * Resolves matching components on this object and its descendants.
+     *
+     * @template TComponent of object
+     * @param class-string<TComponent>|non-empty-string|null $type
+     * @return ($type is null ? list<object> : list<TComponent>)
      */
     public function getComponentsInChildren(?string $type = null, bool $includeInactive = false): array
     {
@@ -395,6 +434,13 @@ final class GameObject
         return $results;
     }
 
+    /**
+     * Resolves the first matching component on this object or its descendants.
+     *
+     * @template TComponent of object
+     * @param class-string<TComponent>|non-empty-string $type
+     * @return TComponent|null
+     */
     public function getComponentInChildren(string $type, bool $includeInactive = false): object|null
     {
         $components = $this->getComponentsInChildren($type, $includeInactive);
@@ -403,7 +449,11 @@ final class GameObject
     }
 
     /**
-     * @return list<object>
+     * Resolves matching components on this object and its ancestors.
+     *
+     * @template TComponent of object
+     * @param class-string<TComponent>|non-empty-string|null $type
+     * @return ($type is null ? list<object> : list<TComponent>)
      */
     public function getComponentsInParent(?string $type = null, bool $includeInactive = false): array
     {
@@ -423,6 +473,13 @@ final class GameObject
         return $results;
     }
 
+    /**
+     * Resolves the first matching component on this object or its ancestors.
+     *
+     * @template TComponent of object
+     * @param class-string<TComponent>|non-empty-string $type
+     * @return TComponent|null
+     */
     public function getComponentInParent(string $type, bool $includeInactive = false): object|null
     {
         $components = $this->getComponentsInParent($type, $includeInactive);
@@ -430,6 +487,13 @@ final class GameObject
         return $components[0] ?? null;
     }
 
+    /**
+     * Adds a component to this object and returns the concrete wrapper.
+     *
+     * @template TComponent of object
+     * @param class-string<TComponent>|non-empty-string $type
+     * @return TComponent
+     */
     public function addComponent(string $type): object
     {
         if ($this->instanceId === null) {
@@ -599,6 +663,53 @@ final class GameObject
         return null;
     }
 
+    /**
+     * Registers a PHP wrapper class for a native component type.
+     *
+     * Most engine components are discovered by convention from their native
+     * type, for example `Rigidbody2D` maps to `Lenga\Engine\Core\Rigidbody2D`.
+     * This hook keeps non-conventional wrapper namespaces dynamic without
+     * adding more branches to GameObject itself.
+     *
+     * @param class-string<Component> $componentClass
+     */
+    public static function registerComponentWrapper(string $nativeType, string $componentClass): void
+    {
+        $nativeType = \trim($nativeType);
+        $componentClass = ltrim($componentClass, '\\');
+
+        if ($nativeType === '') {
+            throw new InvalidArgumentException('Component native type cannot be empty.');
+        }
+
+        if (
+            !class_exists($componentClass) ||
+            !is_subclass_of($componentClass, Component::class)
+        ) {
+            throw new InvalidArgumentException(
+                "Component wrapper '{$componentClass}' must be a concrete subclass of Component.",
+            );
+        }
+
+        try {
+            $reflection = new ReflectionClass($componentClass);
+        } catch (ReflectionException $exception) {
+            throw new InvalidArgumentException(
+                "Component wrapper '{$componentClass}' could not be reflected.",
+                previous: $exception,
+            );
+        }
+
+        if ($reflection->isAbstract()) {
+            throw new InvalidArgumentException(
+                "Component wrapper '{$componentClass}' must be concrete.",
+            );
+        }
+
+        self::$registeredComponentWrapperClasses[$nativeType] = $componentClass;
+        self::$registeredComponentNativeTypesByClass[$componentClass] = $nativeType;
+    }
+
     public static function wrapNativeComponentLookupData(mixed $nativeResult): object|null
     {
         if ($nativeResult === false || $nativeResult === null) {
@@ -656,53 +767,6 @@ final class GameObject
 
         return match ($type) {
             Transform::class, 'Transform' => ['nativeType' => 'Transform', 'scriptClass' => null],
-            Camera::class, 'Camera' => ['nativeType' => 'Camera', 'scriptClass' => null],
-            Rigidbody2D::class, 'Rigidbody2D' => ['nativeType' => 'Rigidbody2D', 'scriptClass' => null],
-            Rigidbody3D::class, 'Rigidbody3D' => ['nativeType' => 'Rigidbody3D', 'scriptClass' => null],
-            PlatformEffector2D::class, 'PlatformEffector2D' => ['nativeType' => 'PlatformEffector2D', 'scriptClass' => null],
-            AreaEffector2D::class, 'AreaEffector2D' => ['nativeType' => 'AreaEffector2D', 'scriptClass' => null],
-            PointEffector2D::class, 'PointEffector2D' => ['nativeType' => 'PointEffector2D', 'scriptClass' => null],
-            SurfaceEffector2D::class, 'SurfaceEffector2D' => ['nativeType' => 'SurfaceEffector2D', 'scriptClass' => null],
-            BuoyancyEffector2D::class, 'BuoyancyEffector2D' => ['nativeType' => 'BuoyancyEffector2D', 'scriptClass' => null],
-            DistanceJoint2D::class, 'DistanceJoint2D' => ['nativeType' => 'DistanceJoint2D', 'scriptClass' => null],
-            HingeJoint2D::class, 'HingeJoint2D' => ['nativeType' => 'HingeJoint2D', 'scriptClass' => null],
-            FixedJoint2D::class, 'FixedJoint2D' => ['nativeType' => 'FixedJoint2D', 'scriptClass' => null],
-            SliderJoint2D::class, 'SliderJoint2D' => ['nativeType' => 'SliderJoint2D', 'scriptClass' => null],
-            BoxCollider2D::class, 'BoxCollider2D' => ['nativeType' => 'BoxCollider2D', 'scriptClass' => null],
-            CircleCollider2D::class, 'CircleCollider2D' => ['nativeType' => 'CircleCollider2D', 'scriptClass' => null],
-            BoxCollider3D::class, 'BoxCollider3D' => ['nativeType' => 'BoxCollider3D', 'scriptClass' => null],
-            CapsuleCollider3D::class, 'CapsuleCollider3D' => ['nativeType' => 'CapsuleCollider3D', 'scriptClass' => null],
-            CharacterController::class, 'CharacterController' => ['nativeType' => 'CharacterController', 'scriptClass' => null],
-            CylinderCollider3D::class, 'CylinderCollider3D' => ['nativeType' => 'CylinderCollider3D', 'scriptClass' => null],
-            MeshCollider3D::class, 'MeshCollider3D' => ['nativeType' => 'MeshCollider3D', 'scriptClass' => null],
-            SphereCollider3D::class, 'SphereCollider3D' => ['nativeType' => 'SphereCollider3D', 'scriptClass' => null],
-            AudioSource::class, 'AudioSource' => ['nativeType' => 'AudioSource', 'scriptClass' => null],
-            DirectionalLight::class, 'DirectionalLight' => ['nativeType' => 'DirectionalLight', 'scriptClass' => null],
-            PointLight::class, 'PointLight' => ['nativeType' => 'PointLight', 'scriptClass' => null],
-            PointLight2D::class, 'PointLight2D' => ['nativeType' => 'PointLight2D', 'scriptClass' => null],
-            GlobalLight2D::class, 'GlobalLight2D' => ['nativeType' => 'GlobalLight2D', 'scriptClass' => null],
-            SpriteLight2D::class, 'SpriteLight2D' => ['nativeType' => 'SpriteLight2D', 'scriptClass' => null],
-            LightOccluder2D::class, 'LightOccluder2D' => ['nativeType' => 'LightOccluder2D', 'scriptClass' => null],
-            SpriteAnimation::class, 'SpriteAnimation' => ['nativeType' => 'SpriteAnimation', 'scriptClass' => null],
-            RectangleRenderer::class, 'RectangleRenderer' => ['nativeType' => 'RectangleRenderer', 'scriptClass' => null],
-            CircleRenderer::class, 'CircleRenderer' => ['nativeType' => 'CircleRenderer', 'scriptClass' => null],
-            EllipseRenderer::class, 'EllipseRenderer' => ['nativeType' => 'EllipseRenderer', 'scriptClass' => null],
-            LineRenderer2D::class, 'LineRenderer2D' => ['nativeType' => 'LineRenderer2D', 'scriptClass' => null],
-            TriangleRenderer2D::class, 'TriangleRenderer2D' => ['nativeType' => 'TriangleRenderer2D', 'scriptClass' => null],
-            RingRenderer::class, 'RingRenderer' => ['nativeType' => 'RingRenderer', 'scriptClass' => null],
-            PolygonRenderer::class, 'PolygonRenderer' => ['nativeType' => 'PolygonRenderer', 'scriptClass' => null],
-            RoundedRectangleRenderer::class, 'RoundedRectangleRenderer' => ['nativeType' => 'RoundedRectangleRenderer', 'scriptClass' => null],
-            SpriteRenderer::class, 'SpriteRenderer' => ['nativeType' => 'SpriteRenderer', 'scriptClass' => null],
-            Tilemap::class, 'Tilemap' => ['nativeType' => 'Tilemap', 'scriptClass' => null],
-            ParticleSystem::class, 'ParticleSystem' => ['nativeType' => 'ParticleSystem', 'scriptClass' => null],
-            TrailRenderer::class, 'TrailRenderer' => ['nativeType' => 'TrailRenderer', 'scriptClass' => null],
-            CubeRenderer::class, 'CubeRenderer' => ['nativeType' => 'CubeRenderer', 'scriptClass' => null],
-            SphereRenderer::class, 'SphereRenderer' => ['nativeType' => 'SphereRenderer', 'scriptClass' => null],
-            CapsuleRenderer::class, 'CapsuleRenderer' => ['nativeType' => 'CapsuleRenderer', 'scriptClass' => null],
-            CylinderRenderer::class, 'CylinderRenderer' => ['nativeType' => 'CylinderRenderer', 'scriptClass' => null],
-            PlaneRenderer::class, 'PlaneRenderer' => ['nativeType' => 'PlaneRenderer', 'scriptClass' => null],
-            MeshRenderer::class, 'MeshRenderer' => ['nativeType' => 'MeshRenderer', 'scriptClass' => null],
-            ModelRenderer::class, 'ModelRenderer' => ['nativeType' => 'ModelRenderer', 'scriptClass' => null],
             Component::class, ComponentInterface::class, 'Component' => ['nativeType' => 'Component', 'scriptClass' => null],
             Renderer::class, RendererInterface::class, 'Renderer' => ['nativeType' => 'Renderer', 'scriptClass' => null],
             Behaviour::class, 'Behaviour' => ['nativeType' => 'Behaviour', 'scriptClass' => null],
@@ -720,7 +784,8 @@ final class GameObject
         }
 
         if (class_exists($type) && is_subclass_of($type, Component::class)) {
-            $nativeType = self::resolveNativeComponentTypeFromClass($type);
+            $nativeType = self::$registeredComponentNativeTypesByClass[$type]
+                ?? self::resolveNativeComponentTypeFromClass($type);
             if ($nativeType !== null) {
                 return ['nativeType' => $nativeType, 'scriptClass' => null];
             }
@@ -732,6 +797,16 @@ final class GameObject
 
         if (class_exists($type) && is_subclass_of($type, Component::class)) {
             return ['nativeType' => 'Component', 'scriptClass' => null];
+        }
+
+        if (interface_exists($type)) {
+            if (is_subclass_of($type, RendererInterface::class)) {
+                return ['nativeType' => 'Renderer', 'scriptClass' => null];
+            }
+
+            if (is_subclass_of($type, ComponentInterface::class)) {
+                return ['nativeType' => 'Component', 'scriptClass' => null];
+            }
         }
 
         return ['nativeType' => $type, 'scriptClass' => null];
@@ -817,57 +892,8 @@ final class GameObject
             return null;
         }
 
-        $component = match ($componentType) {
-            'Camera' => new Camera($this, $componentId),
-            'Rigidbody2D' => new Rigidbody2D($this, $componentId),
-            'Rigidbody3D' => new Rigidbody3D($this, $componentId),
-            'PlatformEffector2D' => new PlatformEffector2D($this, $componentId),
-            'AreaEffector2D' => new AreaEffector2D($this, $componentId),
-            'PointEffector2D' => new PointEffector2D($this, $componentId),
-            'SurfaceEffector2D' => new SurfaceEffector2D($this, $componentId),
-            'BuoyancyEffector2D' => new BuoyancyEffector2D($this, $componentId),
-            'DistanceJoint2D' => new DistanceJoint2D($this, $componentId),
-            'HingeJoint2D' => new HingeJoint2D($this, $componentId),
-            'FixedJoint2D' => new FixedJoint2D($this, $componentId),
-            'SliderJoint2D' => new SliderJoint2D($this, $componentId),
-            'BoxCollider2D' => new BoxCollider2D($this, $componentId),
-            'CircleCollider2D' => new CircleCollider2D($this, $componentId),
-            'BoxCollider3D' => new BoxCollider3D($this, $componentId),
-            'CapsuleCollider3D' => new CapsuleCollider3D($this, $componentId),
-            'CharacterController' => new CharacterController($this, $componentId),
-            'CylinderCollider3D' => new CylinderCollider3D($this, $componentId),
-            'MeshCollider3D' => new MeshCollider3D($this, $componentId),
-            'SphereCollider3D' => new SphereCollider3D($this, $componentId),
-            'AudioSource' => new AudioSource($this, $componentId),
-            'DirectionalLight' => new DirectionalLight($this, $componentId),
-            'PointLight' => new PointLight($this, $componentId),
-            'PointLight2D' => new PointLight2D($this, $componentId),
-            'GlobalLight2D' => new GlobalLight2D($this, $componentId),
-            'SpriteLight2D' => new SpriteLight2D($this, $componentId),
-            'LightOccluder2D' => new LightOccluder2D($this, $componentId),
-            'SpriteAnimation' => new SpriteAnimation($this, $componentId),
-            'RectangleRenderer' => new RectangleRenderer($this, $componentId),
-            'CircleRenderer' => new CircleRenderer($this, $componentId),
-            'EllipseRenderer' => new EllipseRenderer($this, $componentId),
-            'LineRenderer2D' => new LineRenderer2D($this, $componentId),
-            'TriangleRenderer2D' => new TriangleRenderer2D($this, $componentId),
-            'RingRenderer' => new RingRenderer($this, $componentId),
-            'PolygonRenderer' => new PolygonRenderer($this, $componentId),
-            'RoundedRectangleRenderer' => new RoundedRectangleRenderer($this, $componentId),
-            'SpriteRenderer' => new SpriteRenderer($this, $componentId),
-            'Tilemap' => new Tilemap($this, $componentId),
-            'ParticleSystem' => new ParticleSystem($this, $componentId),
-            'TrailRenderer' => new TrailRenderer($this, $componentId),
-            'CubeRenderer' => new CubeRenderer($this, $componentId),
-            'SphereRenderer' => new SphereRenderer($this, $componentId),
-            'CapsuleRenderer' => new CapsuleRenderer($this, $componentId),
-            'CylinderRenderer' => new CylinderRenderer($this, $componentId),
-            'PlaneRenderer' => new PlaneRenderer($this, $componentId),
-            'MeshRenderer' => new MeshRenderer($this, $componentId),
-            'ModelRenderer' => new ModelRenderer($this, $componentId),
-            default => $this->createComponentWrapperByConvention($componentType, $componentId)
-                ?? new NativeComponent($this, $componentId, $componentType),
-        };
+        $component = $this->createComponentWrapper($componentType, $componentId)
+            ?? new NativeComponent($this, $componentId, $componentType);
 
         if (
             isset($nativeResult['sceneComponentId']) &&
@@ -911,14 +937,14 @@ final class GameObject
         return null;
     }
 
-    private function createComponentWrapperByConvention(string $componentType, int $componentId): ?Component
+    private function createComponentWrapper(string $componentType, int $componentId): ?Component
     {
         $componentClass = $this->resolveComponentWrapperClass($componentType);
         if ($componentClass === null) {
             return null;
         }
 
-        return new $componentClass($this, $componentId);
+        return $this->instantiateComponentWrapper($componentClass, $componentId, $componentType);
     }
 
     /**
@@ -926,13 +952,17 @@ final class GameObject
      */
     private static function resolveComponentWrapperClass(string $componentType): ?string
     {
+        if (isset(self::$registeredComponentWrapperClasses[$componentType])) {
+            return self::$registeredComponentWrapperClasses[$componentType];
+        }
+
         $candidateClasses = [
             __NAMESPACE__ . '\\' . $componentType,
-            $componentType === 'AudioSource' ? AudioSource::class : null,
+            'Lenga\\Engine\\Audio\\' . $componentType,
         ];
 
         foreach ($candidateClasses as $candidateClass) {
-            if (!is_string($candidateClass) || !class_exists($candidateClass) || !is_subclass_of($candidateClass, Component::class)) {
+            if (!class_exists($candidateClass) || !is_subclass_of($candidateClass, Component::class)) {
                 continue;
             }
 
@@ -945,6 +975,32 @@ final class GameObject
             if (!$reflection->isAbstract()) {
                 return $candidateClass;
             }
+        }
+
+        return null;
+    }
+
+    /**
+     * @param class-string<Component> $componentClass
+     */
+    private function instantiateComponentWrapper(string $componentClass, int $componentId, string $componentType): ?Component
+    {
+        try {
+            $reflection = new ReflectionClass($componentClass);
+        } catch (ReflectionException) {
+            return null;
+        }
+
+        $constructor = $reflection->getConstructor();
+        $requiredParameters = $constructor?->getNumberOfRequiredParameters() ?? 0;
+        $totalParameters = $constructor?->getNumberOfParameters() ?? 0;
+
+        if ($requiredParameters <= 2 && $totalParameters >= 2) {
+            return new $componentClass($this, $componentId);
+        }
+
+        if ($requiredParameters <= 3 && $totalParameters >= 3) {
+            return new $componentClass($this, $componentId, $componentType);
         }
 
         return null;

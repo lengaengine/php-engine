@@ -20,7 +20,23 @@ interface GameObjectInterface
     public function childCount(): int;
     public function setParent(?self $parent, bool $worldPositionStays = true): bool;
     public function hasComponent(string $type): bool;
+
+    /**
+     * Resolves the first component of the requested type.
+     *
+     * @template TComponent of object
+     * @param class-string<TComponent>|non-empty-string $type
+     * @return TComponent|null
+     */
     public function getComponent(string $type): object|null;
+
+    /**
+     * Adds a component to this object.
+     *
+     * @template TComponent of object
+     * @param class-string<TComponent>|non-empty-string $type
+     * @return TComponent
+     */
     public function addComponent(string $type): object;
     public function destroy(): void;
 }
