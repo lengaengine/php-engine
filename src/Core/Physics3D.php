@@ -12,6 +12,22 @@ final class Physics3D
     {
     }
 
+    public static function getGravity(): Vector3
+    {
+        /** @var array{x?: float|int, y?: float|int, z?: float|int}|false $gravity */
+        $gravity = NativeEngine::call('physics3d_get_gravity');
+        if (!\is_array($gravity)) {
+            return new Vector3();
+        }
+
+        return Vector3::fromArray($gravity);
+    }
+
+    public static function setGravity(Vector3 $gravity): void
+    {
+        NativeEngine::call('physics3d_set_gravity', $gravity->x, $gravity->y, $gravity->z);
+    }
+
     private static function isSelfHit(?GameObject $ignoreGameObject, ?GameObject $candidate): bool
     {
         if (!$ignoreGameObject instanceof GameObject || !$candidate instanceof GameObject) {
