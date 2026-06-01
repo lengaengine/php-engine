@@ -80,6 +80,27 @@ final class Quaternion
         );
     }
 
+    /**
+     * Creates a rotation around an axis by an angle in degrees.
+     */
+    public static function fromAxisAngle(Vector3 $axis, float $angleDegrees): self
+    {
+        $normalizedAxis = $axis->normalized;
+        if ($normalizedAxis->sqrMagnitude <= self::EPSILON) {
+            return self::identity();
+        }
+
+        $halfAngleRadians = $angleDegrees * self::DEG2RAD * 0.5;
+        $sinHalfAngle = \sin($halfAngleRadians);
+
+        return new self(
+            $normalizedAxis->x * $sinHalfAngle,
+            $normalizedAxis->y * $sinHalfAngle,
+            $normalizedAxis->z * $sinHalfAngle,
+            \cos($halfAngleRadians),
+        );
+    }
+
     public function toEulerAngles(): Vector3
     {
         $q = $this->normalized;
