@@ -28,6 +28,32 @@ namespace {
             'gameObjectId' => $gameObjectId,
         ];
     }
+
+    /**
+     * @return array{name?: string, tag?: string, layer?: int, id?: int, activeSelf?: bool, activeInHierarchy?: bool, transformId?: int|null, sceneObjectId?: string}|false
+     */
+    function lenga_internal_game_object_lookup_by_id(int $gameObjectId): array|false
+    {
+        return $GLOBALS['lenga_component_lookup_inheritance_test_state']['gameObjects'][$gameObjectId] ?? false;
+    }
+
+    /**
+     * @return list<array{id: int, type: string, gameObjectId: int, sceneComponentId?: string}>
+     */
+    function lenga_internal_game_object_get_components_by_id(
+        int $gameObjectId,
+        ?string $nativeType = null,
+        ?string $scriptClass = null,
+    ): array {
+        $GLOBALS['lenga_component_lookup_inheritance_test_state']['componentListCalls'][] = [
+            'gameObjectId' => $gameObjectId,
+            'nativeType' => $nativeType,
+            'scriptClass' => $scriptClass,
+        ];
+
+        $key = $scriptClass ?? $nativeType ?? '*';
+        return $GLOBALS['lenga_component_lookup_inheritance_test_state']['componentLists'][$key] ?? [];
+    }
 }
 
 namespace Lenga\Engine\Core {
@@ -41,8 +67,11 @@ namespace Lenga\Engine\Core {
 }
 
 namespace Lenga\Engine\Tests\Fixtures {
+    use Lenga\Engine\Core\Behaviour;
     use Lenga\Engine\Core\Component;
     use Lenga\Engine\Core\GameObject;
+    use Lenga\Engine\Interfaces\ComponentInterface;
+    use Lenga\Engine\Interfaces\RendererInterface;
 
     final class RegisteredLookupComponent extends Component
     {
@@ -51,15 +80,25 @@ namespace Lenga\Engine\Tests\Fixtures {
             parent::__construct($gameObject, $componentId, 'RegisteredLookupComponent');
         }
     }
+
+    final class ComponentReferenceHydrationBehaviour extends Behaviour
+    {
+        public Component $component;
+        public ComponentInterface $componentInterface;
+        public RendererInterface $rendererInterface;
+    }
 }
 
 namespace Lenga\Engine\Tests\Core {
     use Lenga\Engine\Core\Component;
     use Lenga\Engine\Core\GameObject;
     use Lenga\Engine\Core\Renderer;
+    use Lenga\Engine\Core\SpriteRenderer;
     use Lenga\Engine\Core\TrailRenderer;
     use Lenga\Engine\Interfaces\ComponentInterface;
     use Lenga\Engine\Interfaces\RendererInterface;
+    use Lenga\Engine\Internal\BehaviourBridge;
+    use Lenga\Engine\Tests\Fixtures\ComponentReferenceHydrationBehaviour;
     use Lenga\Engine\Tests\Fixtures\RegisteredLookupComponent;
     use PHPUnit\Framework\Attributes\DataProvider;
     use PHPUnit\Framework\TestCase;
@@ -70,6 +109,9 @@ namespace Lenga\Engine\Tests\Core {
         {
             $GLOBALS['lenga_component_lookup_inheritance_test_state'] = [
                 'calls' => [],
+                'componentListCalls' => [],
+                'componentLists' => [],
+                'gameObjects' => [],
                 'nextComponentId' => 100,
                 'results' => [],
             ];
@@ -161,6 +203,48 @@ namespace Lenga\Engine\Tests\Core {
 
             self::assertInstanceOf(TrailRenderer::class, $component);
             self::assertSame('Component', $GLOBALS['lenga_component_lookup_inheritance_test_state']['calls'][0]['nativeType']);
+        }
+
+        public function testSerializedComponentReferencesHydrateConcreteAndInterfaceTypedProperties(): void
+        {
+            $GLOBALS['lenga_component_lookup_inheritance_test_state']['gameObjects'][42] = [
+                'id' => 42,
+                'name' => 'Emitter',
+                'sceneObjectId' => 'emitter',
+                'transformId' => 24,
+            ];
+            $GLOBALS['lenga_component_lookup_inheritance_test_state']['componentLists']['SpriteRenderer'] = [
+                [
+                    'id' => 201,
+                    'type' => 'SpriteRenderer',
+                    'gameObjectId' => 42,
+                    'sceneComponentId' => 'sprite-renderer',
+                ],
+            ];
+            $GLOBALS['lenga_component_lookup_inheritance_test_state']['componentLists']['Renderer'] =
+                $GLOBALS['lenga_component_lookup_inheritance_test_state']['componentLists']['SpriteRenderer'];
+
+            $behaviour = new ComponentReferenceHydrationBehaviour();
+            $reference = [
+                '__lengaRefKind' => 'Component',
+                'componentType' => 'SpriteRenderer',
+                'componentSceneId' => 'sprite-renderer',
+                'instanceId' => 42,
+            ];
+
+            BehaviourBridge::applyProperties($behaviour, [
+                'component' => $reference,
+                'componentInterface' => $reference,
+                'rendererInterface' => [
+                    ...$reference,
+                    'componentType' => 'Renderer',
+                ],
+            ]);
+
+            self::assertInstanceOf(SpriteRenderer::class, $behaviour->component);
+            self::assertInstanceOf(SpriteRenderer::class, $behaviour->componentInterface);
+            self::assertInstanceOf(SpriteRenderer::class, $behaviour->rendererInterface);
+            self::assertInstanceOf(RendererInterface::class, $behaviour->rendererInterface);
         }
 
         public function testRegisteredComponentWrapperSupportsFutureNonConventionalNamespaces(): void

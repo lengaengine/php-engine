@@ -11,6 +11,7 @@ use Lenga\Engine\Attributes\SerializeReference;
 use Lenga\Engine\Audio\AudioClip;
 use Lenga\Engine\Audio\AudioMixer;
 use Lenga\Engine\Interfaces\ComponentInterface;
+use Lenga\Engine\Interfaces\RendererInterface;
 use Lenga\Engine\UI\Canvas;
 use Lenga\Engine\UI\UIElement;
 use ReflectionClass;
@@ -24,11 +25,13 @@ use Throwable;
 use function class_exists;
 use function debug_backtrace;
 use function enum_exists;
+use function interface_exists;
 use function is_a;
 use function is_array;
 use function is_int;
 use function is_string;
 use function is_subclass_of;
+use function method_exists;
 use function property_exists;
 use function spl_object_id;
 use const DEBUG_BACKTRACE_IGNORE_ARGS;
@@ -361,7 +364,7 @@ abstract class Behaviour implements ComponentInterface
                 : $resolvedTypeName;
 
             if ($componentType === Transform::class || $componentType === 'Transform') {
-                return $gameObject->transform;
+                return null;
             }
 
             $componentSceneId = isset($value['componentSceneId']) && is_string($value['componentSceneId'])
@@ -378,7 +381,42 @@ abstract class Behaviour implements ComponentInterface
                 }
             }
 
-            return $gameObject->getComponent($componentType);
+            $component = $gameObject->getComponent($componentType);
+            return $component instanceof Component ? $component : null;
+        }
+
+        if (
+            $resolvedTypeName === ComponentInterface::class ||
+            $resolvedTypeName === RendererInterface::class ||
+            (interface_exists($resolvedTypeName) && is_subclass_of($resolvedTypeName, ComponentInterface::class))
+        ) {
+            $componentType = isset($value['componentType']) && is_string($value['componentType'])
+                ? $value['componentType']
+                : $resolvedTypeName;
+
+            if ($componentType === Transform::class || $componentType === 'Transform') {
+                return null;
+            }
+
+            $componentSceneId = isset($value['componentSceneId']) && is_string($value['componentSceneId'])
+                ? $value['componentSceneId']
+                : null;
+            if ($componentSceneId !== null && $componentSceneId !== '') {
+                foreach ($gameObject->getComponents($componentType) as $candidate) {
+                    if (
+                        $candidate instanceof $resolvedTypeName &&
+                        (
+                            !method_exists($candidate, 'getSceneComponentId') ||
+                            $candidate->getSceneComponentId() === $componentSceneId
+                        )
+                    ) {
+                        return $candidate;
+                    }
+                }
+            }
+
+            $component = $gameObject->getComponent($componentType);
+            return $component instanceof $resolvedTypeName ? $component : null;
         }
 
         return $value;
