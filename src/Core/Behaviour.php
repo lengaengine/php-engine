@@ -6,6 +6,7 @@ namespace Lenga\Engine\Core;
 
 use BackedEnum;
 use Generator;
+use Lenga\Engine\Attributes\ListOf;
 use Lenga\Engine\Attributes\RequireComponent;
 use Lenga\Engine\Attributes\SerializeReference;
 use Lenga\Engine\Audio\AudioClip;
@@ -289,7 +290,7 @@ abstract class Behaviour implements ComponentInterface
 
     private function resolveSerializedPropertyValue(ReflectionProperty $property, mixed $value): mixed
     {
-        if ($value instanceof Color || $value instanceof Vector2 || $value instanceof Vector3) {
+        if ($value instanceof Color || $value instanceof Vector2 || $value instanceof Vector3 || $value instanceof Vector4) {
             return $value;
         }
 
@@ -304,6 +305,18 @@ abstract class Behaviour implements ComponentInterface
 
         $resolvedTypeName = $this->resolvePropertyTypeName($type);
         if ($resolvedTypeName === null) {
+            return $value;
+        }
+
+        return $this->resolveSerializedReferenceValueForType($resolvedTypeName, $value);
+    }
+
+    /**
+     * @param array<string, mixed> $value
+     */
+    private function resolveSerializedReferenceValueForType(string $resolvedTypeName, array $value): mixed
+    {
+        if (!isset($value['__lengaRefKind']) || !is_string($value['__lengaRefKind'])) {
             return $value;
         }
 
@@ -434,6 +447,10 @@ abstract class Behaviour implements ComponentInterface
             return $value;
         }
 
+        if ($resolvedTypeName === 'array' && is_array($value)) {
+            return $this->resolveListValue($property, $value);
+        }
+
         if ($resolvedTypeName === AudioClip::class) {
             return AudioClip::fromSerializedReference($value);
         }
@@ -475,6 +492,95 @@ abstract class Behaviour implements ComponentInterface
                 (float) ($value['y'] ?? 0.0),
                 (float) ($value['z'] ?? 0.0),
             );
+        }
+
+        if ($resolvedTypeName === Vector4::class) {
+            return new Vector4(
+                (float) ($value['x'] ?? 0.0),
+                (float) ($value['y'] ?? 0.0),
+                (float) ($value['z'] ?? 0.0),
+                (float) ($value['w'] ?? 0.0),
+            );
+        }
+
+        return $value;
+    }
+
+    /**
+     * @param array<array-key, mixed> $value
+     * @return array<array-key, mixed>
+     */
+    private function resolveListValue(ReflectionProperty $property, array $value): array
+    {
+        $itemTypeName = $this->resolveListItemTypeName($property);
+        if ($itemTypeName === null || $itemTypeName === '') {
+            return $value;
+        }
+
+        foreach ($value as $key => $itemValue) {
+            $value[$key] = $this->resolveListItemValue($itemTypeName, $itemValue);
+        }
+
+        return $value;
+    }
+
+    private function resolveListItemValue(string $itemTypeName, mixed $value): mixed
+    {
+        $itemTypeName = ltrim($itemTypeName, '\\');
+        if ($itemTypeName === '') {
+            return $value;
+        }
+
+        if ($itemTypeName === AudioClip::class) {
+            return AudioClip::fromSerializedReference($value);
+        }
+
+        if ($itemTypeName === AudioMixer::class) {
+            return AudioMixer::fromSerializedReference($value);
+        }
+
+        if (enum_exists($itemTypeName)) {
+            return $this->resolveEnumValue($itemTypeName, $value);
+        }
+
+        if ($itemTypeName === Color::class) {
+            return is_array($value) ? Color::fromRGBAArray($value) : $value;
+        }
+
+        if (!is_array($value)) {
+            return $value;
+        }
+
+        if (isset($value['__lengaRefKind']) && is_string($value['__lengaRefKind'])) {
+            return $this->resolveSerializedReferenceValueForType($itemTypeName, $value);
+        }
+
+        if ($itemTypeName === Vector2::class) {
+            return new Vector2(
+                (float) ($value['x'] ?? 0.0),
+                (float) ($value['y'] ?? 0.0),
+            );
+        }
+
+        if ($itemTypeName === Vector3::class) {
+            return new Vector3(
+                (float) ($value['x'] ?? 0.0),
+                (float) ($value['y'] ?? 0.0),
+                (float) ($value['z'] ?? 0.0),
+            );
+        }
+
+        if ($itemTypeName === Vector4::class) {
+            return new Vector4(
+                (float) ($value['x'] ?? 0.0),
+                (float) ($value['y'] ?? 0.0),
+                (float) ($value['z'] ?? 0.0),
+                (float) ($value['w'] ?? 0.0),
+            );
+        }
+
+        if (class_exists($itemTypeName)) {
+            return $this->resolveManagedReferenceValue($itemTypeName, $value);
         }
 
         return $value;
@@ -553,6 +659,22 @@ abstract class Behaviour implements ComponentInterface
         }
 
         return false;
+    }
+
+    private function resolveListItemTypeName(ReflectionProperty $property): ?string
+    {
+        $attributes = $property->getAttributes(ListOf::class);
+        if ($attributes === []) {
+            return null;
+        }
+
+        $listOf = $attributes[0]->newInstance();
+        $itemTypeName = $listOf->listType;
+        if (!is_string($itemTypeName) || $itemTypeName === '') {
+            return null;
+        }
+
+        return ltrim($itemTypeName, '\\');
     }
 
     private function resolveManagedReferenceValue(string $declaredTypeName, mixed $value): mixed
