@@ -75,7 +75,7 @@ final class Input
     /**
      * Checks if the specified key is currently pressed.
      *
-     * @param int|string|KeyCode $key The key identifier or raylib key code.
+     * @param int|string|KeyCode $key The key identifier or raw key code.
      * @return bool True if the key is pressed, false otherwise.
      */
     public static function getKey(int|string|KeyCode $key): bool
@@ -86,7 +86,7 @@ final class Input
     /**
      * Checks if the specified key was pressed down this frame.
      *
-     * @param int|string|KeyCode $key The key identifier or raylib key code.
+     * @param int|string|KeyCode $key The key identifier or raw key code.
      * @return bool True if the key was pressed down this frame, false otherwise.
      */
     public static function getKeyDown(int|string|KeyCode $key): bool
@@ -97,7 +97,7 @@ final class Input
     /**
      * Checks if the specified key was released this frame.
      *
-     * @param int|string|KeyCode $key The key identifier or raylib key code.
+     * @param int|string|KeyCode $key The key identifier or raw key code.
      * @return bool True if the key was released this frame, false otherwise.
      */
     public static function getKeyUp(int|string|KeyCode $key): bool
@@ -192,7 +192,7 @@ final class Input
         return Touch::fromNativeData($touch);
     }
 
-    /** Raylib-style alias for `IsKeyPressed()`. */
+    /** Checks whether the key was pressed this frame. */
     public static function isKeyPressed(int|string|KeyCode $key): bool
     {
         $resolvedKey = self::resolveKeyCode($key);
@@ -203,7 +203,7 @@ final class Input
         return (bool) NativeEngine::call('input_get_key_down', $resolvedKey);
     }
 
-    /** Raylib-style alias for `IsKeyDown()`. */
+    /** Checks whether the key is currently held. */
     public static function isKeyDown(int|string|KeyCode $key): bool
     {
         $resolvedKey = self::resolveKeyCode($key);
@@ -214,7 +214,7 @@ final class Input
         return (bool) NativeEngine::call('input_get_key', $resolvedKey);
     }
 
-    /** Raylib-style alias for `IsKeyReleased()`. */
+    /** Checks whether the key was released this frame. */
     public static function isKeyReleased(int|string|KeyCode $key): bool
     {
         $resolvedKey = self::resolveKeyCode($key);
@@ -225,7 +225,7 @@ final class Input
         return (bool) NativeEngine::call('input_get_key_up', $resolvedKey);
     }
 
-    /** Raylib-style alias for `IsKeyUp()`. */
+    /** Checks whether the key is currently released. */
     public static function isKeyUp(int|string|KeyCode $key): bool
     {
         $resolvedKey = self::resolveKeyCode($key);
@@ -236,13 +236,13 @@ final class Input
         return (bool) NativeEngine::call('input_is_key_up', $resolvedKey);
     }
 
-    /** Mirrors raylib's `IsGamepadAvailable()`. */
+    /** Checks whether the given gamepad slot currently has a connected gamepad. */
     public static function isGamepadAvailable(int $gamepad): bool
     {
         return (bool) NativeEngine::call('input_is_gamepad_available', $gamepad);
     }
 
-    /** Mirrors raylib's `GetGamepadName()`. */
+    /** Returns the display name reported for the given gamepad slot, or an empty string. */
     public static function getGamepadName(int $gamepad): string
     {
         $name = NativeEngine::call('input_get_gamepad_name', $gamepad);
@@ -250,7 +250,7 @@ final class Input
         return is_string($name) ? $name : '';
     }
 
-    /** Mirrors raylib's `IsGamepadButtonPressed()`. */
+    /** Checks whether the given gamepad button was pressed this frame. */
     public static function isGamepadButtonPressed(int $gamepad, int|GamepadButton $button): bool
     {
         return (bool) NativeEngine::call('input_is_gamepad_button_pressed',
@@ -259,7 +259,7 @@ final class Input
         );
     }
 
-    /** Mirrors raylib's `IsGamepadButtonDown()`. */
+    /** Checks whether the given gamepad button is currently held. */
     public static function isGamepadButtonDown(int $gamepad, int|GamepadButton $button): bool
     {
         return (bool) NativeEngine::call('input_is_gamepad_button_down',
@@ -268,7 +268,7 @@ final class Input
         );
     }
 
-    /** Mirrors raylib's `IsGamepadButtonReleased()`. */
+    /** Checks whether the given gamepad button was released this frame. */
     public static function isGamepadButtonReleased(int $gamepad, int|GamepadButton $button): bool
     {
         return (bool) NativeEngine::call('input_is_gamepad_button_released',
@@ -277,7 +277,7 @@ final class Input
         );
     }
 
-    /** Mirrors raylib's `IsGamepadButtonUp()`. */
+    /** Checks whether the given gamepad button is currently released. */
     public static function isGamepadButtonUp(int $gamepad, int|GamepadButton $button): bool
     {
         return (bool) NativeEngine::call('input_is_gamepad_button_up',
@@ -286,7 +286,7 @@ final class Input
         );
     }
 
-    /** Mirrors raylib's `GetGamepadButtonPressed()`. */
+    /** Returns the most recent gamepad button pressed, or `GamepadButton::UNKNOWN`. */
     public static function getGamepadButtonPressed(): int
     {
         $button = NativeEngine::call('input_get_gamepad_button_pressed');
@@ -294,13 +294,13 @@ final class Input
         return is_numeric($button) ? (int) $button : GamepadButton::UNKNOWN->value;
     }
 
-    /** Mirrors raylib's `GetGamepadAxisCount()`. */
+    /** Returns the number of axes exposed by the given gamepad. */
     public static function getGamepadAxisCount(int $gamepad): int
     {
         return (int) NativeEngine::call('input_get_gamepad_axis_count', $gamepad);
     }
 
-    /** Mirrors raylib's `GetGamepadAxisMovement()`. */
+    /** Returns the current movement value for a gamepad axis. */
     public static function getGamepadAxisMovement(int $gamepad, int|GamepadAxis $axis): float
     {
         $movement = NativeEngine::call('input_get_gamepad_axis_movement',
@@ -311,7 +311,7 @@ final class Input
         return is_numeric($movement) ? (float) $movement : 0.0;
     }
 
-    /** Mirrors raylib's `SetGamepadMappings()`. */
+    /** Loads additional gamepad mapping definitions and returns the number accepted. */
     public static function setGamepadMappings(string $mappings): int
     {
         return (int) NativeEngine::call('input_set_gamepad_mappings', $mappings);
