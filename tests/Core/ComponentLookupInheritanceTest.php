@@ -229,7 +229,13 @@ namespace Lenga\Engine\Tests\Core {
                 '__lengaRefKind' => 'Component',
                 'componentType' => 'SpriteRenderer',
                 'componentSceneId' => 'sprite-renderer',
-                'instanceId' => 42,
+                'gameObject' => [
+                    '__lengaRefKind' => 'GameObject',
+                    'sceneObjectId' => '',
+                    'instanceId' => 42,
+                    'name' => 'Emitter',
+                ],
+                'instanceId' => 201,
             ];
 
             BehaviourBridge::applyProperties($behaviour, [

@@ -337,7 +337,7 @@ abstract class Behaviour implements ComponentInterface
                 : null;
         }
 
-        $gameObject = GameObject::fromSerializedReference($value);
+        $gameObject = $this->resolveSerializedReferenceGameObject($value);
         if ($gameObject === null) {
             return null;
         }
@@ -433,6 +433,23 @@ abstract class Behaviour implements ComponentInterface
         }
 
         return $value;
+    }
+
+    /**
+     * @param array<string, mixed> $value
+     */
+    private function resolveSerializedReferenceGameObject(array $value): ?GameObject
+    {
+        $referenceKind = $value['__lengaRefKind'] ?? null;
+        if (
+            \is_string($referenceKind) &&
+            ($referenceKind === 'Component' || $referenceKind === 'Behaviour' || $referenceKind === 'Transform') &&
+            \is_array($value['gameObject'] ?? null)
+        ) {
+            return GameObject::fromSerializedReference($value['gameObject']);
+        }
+
+        return GameObject::fromSerializedReference($value);
     }
 
     private function resolveStructuredValueType(ReflectionProperty $property, mixed $value): mixed
