@@ -27,6 +27,7 @@ final class BehaviourBridge
     public static function attachGameObject(Behaviour $behaviour, GameObject $gameObject): void
     {
         self::callInternal($behaviour, 'internalAttachGameObject', $gameObject);
+        self::callInternal($behaviour, 'internalEnsureRequiredComponents');
     }
 
     public static function attachComponentId(Behaviour $behaviour, int $componentId): void

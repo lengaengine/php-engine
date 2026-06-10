@@ -109,7 +109,6 @@ namespace Lenga\Engine\Tests\Core {
 
             BehaviourBridge::attachGameObject($behaviour, $gameObject);
             BehaviourBridge::attachComponentId($behaviour, 77);
-            BehaviourBridge::ensureRequiredComponents($behaviour);
 
             self::assertTrue($gameObject->hasComponent(CharacterController::class));
             self::assertSame(
@@ -132,7 +131,6 @@ namespace Lenga\Engine\Tests\Core {
 
             BehaviourBridge::attachGameObject($behaviour, $gameObject);
             BehaviourBridge::attachComponentId($behaviour, 77);
-            BehaviourBridge::ensureRequiredComponents($behaviour);
 
             self::assertSame(0, $behaviour->onEnableCalls);
             self::assertSame(0, $behaviour->updateCalls);
@@ -146,11 +144,8 @@ namespace Lenga\Engine\Tests\Core {
             $gameObject = new GameObject('Roller', instanceId: 42);
             $behaviour = new RequireMissingNativeComponentBehaviour();
 
-            BehaviourBridge::attachGameObject($behaviour, $gameObject);
-            BehaviourBridge::attachComponentId($behaviour, 77);
-
             try {
-                BehaviourBridge::ensureRequiredComponents($behaviour);
+                BehaviourBridge::attachGameObject($behaviour, $gameObject);
                 self::fail('Expected RequireComponent dependency resolution to fail.');
             } catch (RuntimeException $exception) {
                 self::assertStringContainsString('RequireComponent dependency resolution failed', $exception->getMessage());
