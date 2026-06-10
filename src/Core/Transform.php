@@ -560,6 +560,35 @@ final class Transform
         $this->rotate(0.0, 0.0, $degrees, $relativeToSelf);
     }
 
+    /**
+     * Rotates this transform around a world-space point and axis.
+     */
+    public function rotateAround(Vector3 $point, Vector3 $axis, float $angleDegrees): void
+    {
+        if ($this->nativeId !== null) {
+            NativeEngine::call('transform_rotate_around_by_id',
+                $this->nativeId,
+                $point->x,
+                $point->y,
+                $point->z,
+                $axis->x,
+                $axis->y,
+                $axis->z,
+                $angleDegrees,
+            );
+            return;
+        }
+
+        if ($axis->sqrMagnitude <= 0.000001) {
+            return;
+        }
+
+        $deltaRotation = Quaternion::fromAxisAngle($axis, $angleDegrees)->normalized;
+        $rotatedOffset = $deltaRotation->rotateVector(Vector3::difference($this->position, $point));
+        $this->position = Vector3::sum($point, $rotatedOffset);
+        $this->rotation = $deltaRotation->multiply($this->rotation)->normalized;
+    }
+
     public function lookAt(Vector3 $worldPosition): void
     {
         if ($this->nativeId !== null) {
@@ -580,6 +609,78 @@ final class Transform
         $pitch = rad2deg(asin(max(-1.0, min(1.0, $direction->y))));
         $yaw = rad2deg(atan2($direction->x, -$direction->z));
         $this->eulerAngles = new Vector3($pitch, $yaw, 0.0);
+    }
+
+    /**
+     * Converts a point from this transform's local space to world space.
+     */
+    public function transformPoint(Vector3 $localPoint): Vector3
+    {
+        if ($this->nativeId !== null) {
+            return $this->fetchVectorOperationFromNative('transform_transform_point_by_id', $localPoint);
+        }
+
+        return Vector3::sum($this->position, $this->transformVector($localPoint));
+    }
+
+    /**
+     * Converts a point from world space to this transform's local space.
+     */
+    public function inverseTransformPoint(Vector3 $worldPoint): Vector3
+    {
+        if ($this->nativeId !== null) {
+            return $this->fetchVectorOperationFromNative('transform_inverse_transform_point_by_id', $worldPoint);
+        }
+
+        return $this->inverseTransformVector(Vector3::difference($worldPoint, $this->position));
+    }
+
+    /**
+     * Converts a direction from this transform's local space to world space without applying scale or position.
+     */
+    public function transformDirection(Vector3 $localDirection): Vector3
+    {
+        if ($this->nativeId !== null) {
+            return $this->fetchVectorOperationFromNative('transform_transform_direction_by_id', $localDirection);
+        }
+
+        return $this->rotation->rotateVector($localDirection);
+    }
+
+    /**
+     * Converts a direction from world space to this transform's local space without applying scale or position.
+     */
+    public function inverseTransformDirection(Vector3 $worldDirection): Vector3
+    {
+        if ($this->nativeId !== null) {
+            return $this->fetchVectorOperationFromNative('transform_inverse_transform_direction_by_id', $worldDirection);
+        }
+
+        return $this->rotation->inverse()->rotateVector($worldDirection);
+    }
+
+    /**
+     * Converts a vector from this transform's local space to world space without applying position.
+     */
+    public function transformVector(Vector3 $localVector): Vector3
+    {
+        if ($this->nativeId !== null) {
+            return $this->fetchVectorOperationFromNative('transform_transform_vector_by_id', $localVector);
+        }
+
+        return $this->transformDirection(Vector3::product($localVector, $this->lossyScale));
+    }
+
+    /**
+     * Converts a vector from world space to this transform's local space without applying position.
+     */
+    public function inverseTransformVector(Vector3 $worldVector): Vector3
+    {
+        if ($this->nativeId !== null) {
+            return $this->fetchVectorOperationFromNative('transform_inverse_transform_vector_by_id', $worldVector);
+        }
+
+        return $this->divideByScale($this->inverseTransformDirection($worldVector), $this->lossyScale);
     }
 
     public function __serialize(): array
@@ -664,6 +765,15 @@ final class Transform
         return Vector3::product($this->parentValue->lossyScale, $this->localScaleValue);
     }
 
+    private function divideByScale(Vector3 $value, Vector3 $scale): Vector3
+    {
+        return new Vector3(
+            \abs($scale->x) > 0.000001 ? $value->x / $scale->x : $value->x,
+            \abs($scale->y) > 0.000001 ? $value->y / $scale->y : $value->y,
+            \abs($scale->z) > 0.000001 ? $value->z / $scale->z : $value->z,
+        );
+    }
+
     private function setWorldScaleFromFallback(Vector3 $value): void
     {
         if ($this->parentValue === null) {
@@ -687,6 +797,25 @@ final class Transform
 
         /** @var array{x?: float, y?: float, z?: float}|false $data */
         $data = NativeEngine::call($bindingName, $this->nativeId);
+        if (!\is_array($data)) {
+            return new Vector3();
+        }
+
+        return new Vector3(
+            (float) ($data['x'] ?? 0.0),
+            (float) ($data['y'] ?? 0.0),
+            (float) ($data['z'] ?? 0.0),
+        );
+    }
+
+    private function fetchVectorOperationFromNative(string $bindingName, Vector3 $value): Vector3
+    {
+        if ($this->nativeId === null) {
+            return new Vector3();
+        }
+
+        /** @var array{x?: float, y?: float, z?: float}|false $data */
+        $data = NativeEngine::call($bindingName, $this->nativeId, $value->x, $value->y, $value->z);
         if (!\is_array($data)) {
             return new Vector3();
         }

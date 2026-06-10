@@ -1,0 +1,35 @@
+# Normalize text files to LF across the package.
+* text=auto eol=lf
+
+# Common binary assets that should never be line-normalized.
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.bmp binary
+*.ico binary
+*.icns binary
+*.pdf binary
+*.fbx binary
+*.ttf binary
+*.otf binary
+*.woff binary
+*.woff2 binary
+*.eot binary
+*.mp3 binary
+*.wav binary
+*.ogg binary
+*.mp4 binary
+*.mov binary
+*.zip binary
+*.gz binary
+*.7z binary
+*.dll binary
+*.so binary
+*.dylib binary
+*.a binary
+*.lib binary
+*.obj binary
+*.o binary
+*.exe binary
+*.jar binary

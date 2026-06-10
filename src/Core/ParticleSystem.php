@@ -26,6 +26,76 @@ final class ParticleSystem extends Component
         }
     }
 
+    public string $dimension {
+        get {
+            return (string) ($this->getState()['dimension'] ?? '2D');
+        }
+
+        set(string $value) {
+            NativeEngine::call('particle_system_set_dimension', $this->componentId, $value);
+        }
+    }
+
+    public float $emissionRate {
+        get {
+            return (float) ($this->getState()['emissionRate'] ?? 0.0);
+        }
+
+        set(float $value) {
+            NativeEngine::call('particle_system_set_emission_rate', $this->componentId, $value);
+        }
+    }
+
+    public float $lifetime {
+        get {
+            return (float) ($this->getState()['lifetime'] ?? 0.0);
+        }
+
+        set(float $value) {
+            NativeEngine::call('particle_system_set_lifetime', $this->componentId, $value);
+        }
+    }
+
+    public float $startSpeed {
+        get {
+            return (float) ($this->getState()['startSpeed'] ?? 0.0);
+        }
+
+        set(float $value) {
+            NativeEngine::call('particle_system_set_start_speed', $this->componentId, $value);
+        }
+    }
+
+    public float $startSize {
+        get {
+            return (float) ($this->getState()['startSize'] ?? 0.0);
+        }
+
+        set(float $value) {
+            NativeEngine::call('particle_system_set_start_size', $this->componentId, $value);
+        }
+    }
+
+    public float $endSize {
+        get {
+            return (float) ($this->getState()['endSize'] ?? 0.0);
+        }
+
+        set(float $value) {
+            NativeEngine::call('particle_system_set_end_size', $this->componentId, $value);
+        }
+    }
+
+    public string $shapeType {
+        get {
+            return (string) ($this->getState()['shapeType'] ?? 'Cone2D');
+        }
+
+        set(string $value) {
+            NativeEngine::call('particle_system_set_shape_type', $this->componentId, $value);
+        }
+    }
+
     public string $sortingLayer {
         get {
             return (string) ($this->getState()['sortingLayer'] ?? 'Default');
@@ -49,6 +119,12 @@ final class ParticleSystem extends Component
     public string $texturePath {
         get {
             return (string) ($this->getState()['texturePath'] ?? '');
+        }
+    }
+
+    public string $profilePath {
+        get {
+            return (string) ($this->getState()['profilePath'] ?? '');
         }
     }
 
@@ -151,6 +227,21 @@ final class ParticleSystem extends Component
         NativeEngine::call('particle_system_play', $this->componentId);
     }
 
+    public function pause(): void
+    {
+        NativeEngine::call('particle_system_pause', $this->componentId);
+    }
+
+    public function restart(bool $keepSeed = false): void
+    {
+        NativeEngine::call('particle_system_restart', $this->componentId, $keepSeed);
+    }
+
+    public function simulate(float $seconds, bool $restart = false): void
+    {
+        NativeEngine::call('particle_system_simulate', $this->componentId, $seconds, $restart);
+    }
+
     public function stop(bool $clear = false): void
     {
         NativeEngine::call('particle_system_stop', $this->componentId, $clear);
@@ -161,8 +252,14 @@ final class ParticleSystem extends Component
         NativeEngine::call('particle_system_clear', $this->componentId);
     }
 
-    public function emit(int $count): void
+    /**
+     * Emits a burst immediately.
+     *
+     * @param array<string, mixed> $options Reserved for per-burst overrides such as position and velocity.
+     */
+    public function emit(int $count, array $options = []): void
     {
+        unset($options);
         NativeEngine::call('particle_system_emit', $this->componentId, $count);
     }
 
@@ -171,51 +268,48 @@ final class ParticleSystem extends Component
         return NativeEngine::call('particle_system_load_texture', $this->componentId, $texturePath);
     }
 
+    public function loadProfile(string $profilePath): bool
+    {
+        return NativeEngine::call('particle_system_load_profile', $this->componentId, $profilePath);
+    }
+
     /**
      * @return array{
      *     maxParticles?: int,
+     *     dimension?: string,
+     *     schemaVersion?: int,
      *     emissionRate?: float,
+     *     rateOverDistance?: float,
      *     lifetime?: float,
+     *     duration?: float,
+     *     simulationSpeed?: float,
      *     startSpeed?: float,
      *     startSize?: float,
      *     endSize?: float,
+     *     startRotation?: float,
+     *     angularVelocity?: float,
      *     startColor?: array{r?: int, g?: int, b?: int, a?: int},
      *     endColor?: array{r?: int, g?: int, b?: int, a?: int},
      *     gravity?: array{x?: float, y?: float},
      *     emissionAngle?: float,
      *     spreadAngle?: float,
+     *     shapeType?: string,
+     *     shapeRadius?: float,
+     *     shapeArc?: float,
      *     looping?: bool,
      *     playOnAwake?: bool,
      *     isPlaying?: bool,
+     *     isPaused?: bool,
      *     aliveParticleCount?: int,
      *     sortingLayer?: string,
      *     orderInLayer?: int,
-     *     texturePath?: string
+     *     texturePath?: string,
+     *     profilePath?: string
      * }
      */
     public function getState(): array
     {
-        /** @var array{
-         *     maxParticles?: int,
-         *     emissionRate?: float,
-         *     lifetime?: float,
-         *     startSpeed?: float,
-         *     startSize?: float,
-         *     endSize?: float,
-         *     startColor?: array{r?: int, g?: int, b?: int, a?: int},
-         *     endColor?: array{r?: int, g?: int, b?: int, a?: int},
-         *     gravity?: array{x?: float, y?: float},
-         *     emissionAngle?: float,
-         *     spreadAngle?: float,
-         *     looping?: bool,
-         *     playOnAwake?: bool,
-         *     isPlaying?: bool,
-         *     aliveParticleCount?: int,
-         *     sortingLayer?: string,
-         *     orderInLayer?: int,
-         *     texturePath?: string
-         * } $state
-         */
+        /** @var array<string, mixed> $state */
         $state = NativeEngine::call('particle_system_get_state', $this->componentId);
 
         return is_array($state) ? $state : [];
