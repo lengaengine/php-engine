@@ -13,6 +13,12 @@ final class Prefab
     {
     }
 
+    /**
+     * Instantiates a prefab asset into the active scene.
+     *
+     * The asset path should be the project-relative path shown in the Assets
+     * panel, for example `Assets/Prefabs/Projectile.prefab.json`.
+     */
     public static function instantiate(string $assetPath, ?string $name = null): GameObject
     {
         $scene = Scene::getActive();

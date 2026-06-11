@@ -34,10 +34,12 @@ final class GameObject
         string $sceneObjectId = '',
         string $tag = 'Untagged',
         int $layer = 0,
+        string $prefabAssetPath = '',
     ) {
         $this->nameValue = $name;
         $this->instanceId = $instanceId;
         $this->sceneObjectIdValue = $sceneObjectId;
+        $this->prefabAssetPathValue = $prefabAssetPath;
         $this->tagValue = $tag;
         $this->layerValue = $layer;
         $this->activeSelfValue = $activeSelf;
@@ -67,6 +69,7 @@ final class GameObject
 
     private ?int $instanceId = null;
     private string $sceneObjectIdValue = '';
+    private string $prefabAssetPathValue = '';
     private string $nameValue;
     private Transform $transformValue;
     private string $tagValue = 'Untagged';
@@ -130,6 +133,16 @@ final class GameObject
         }
     }
 
+    /**
+     * Relative prefab asset path when this object is an asset reference rather
+     * than a live scene object.
+     */
+    public string $prefabAssetPath {
+        get {
+            return $this->prefabAssetPathValue;
+        }
+    }
+
     public int $layer {
         get {
             if ($this->instanceId !== null) {
@@ -175,6 +188,14 @@ final class GameObject
 
     public function __serialize(): array
     {
+        if ($this->prefabAssetPathValue !== '') {
+            return [
+                '__lengaRefKind' => 'PrefabAsset',
+                'assetPath' => $this->prefabAssetPathValue,
+                'name' => $this->nameValue,
+            ];
+        }
+
         return [
             '__lengaRefKind' => 'GameObject',
             'sceneObjectId' => $this->sceneObjectIdValue,
@@ -189,6 +210,7 @@ final class GameObject
         if ($resolved !== null) {
             $this->instanceId = $resolved->instanceId;
             $this->sceneObjectIdValue = $resolved->sceneObjectIdValue;
+            $this->prefabAssetPathValue = $resolved->prefabAssetPathValue;
             $this->nameValue = $resolved->nameValue;
             $this->transformValue = $resolved->transformValue;
             $this->tagValue = $resolved->tagValue;
@@ -202,6 +224,9 @@ final class GameObject
         $this->instanceId = isset($data['instanceId']) && is_int($data['instanceId']) ? $data['instanceId'] : null;
         $this->sceneObjectIdValue = isset($data['sceneObjectId']) && is_string($data['sceneObjectId'])
             ? $data['sceneObjectId']
+            : '';
+        $this->prefabAssetPathValue = isset($data['assetPath']) && is_string($data['assetPath'])
+            ? $data['assetPath']
             : '';
         $this->nameValue = isset($data['name']) && is_string($data['name']) ? $data['name'] : 'GameObject';
         $this->tagValue = 'Untagged';
@@ -227,6 +252,10 @@ final class GameObject
 
         $this->activeSelfValue = $value;
         $this->activeInHierarchyValue = $value;
+        if ($this->prefabAssetPathValue !== '') {
+            return;
+        }
+
         NativeEngine::call('game_object_set_active', $this->nameValue, $value);
     }
 
@@ -598,10 +627,18 @@ final class GameObject
         return self::fromNativeLookupData($data);
     }
 
+    /**
+     * Creates a scene instance from another scene object or from an assigned
+     * prefab asset reference.
+     */
     public static function instantiate(self $original, ?string $name = null): self
     {
         $instanceId = $original->instanceId;
         if ($instanceId === null) {
+            if ($original->prefabAssetPathValue !== '') {
+                return Prefab::instantiate($original->prefabAssetPathValue, $name);
+            }
+
             throw new RuntimeException('Cannot instantiate a detached GameObject proxy.');
         }
 
@@ -612,6 +649,33 @@ final class GameObject
         }
 
         return self::fromNativeLookupData($data);
+    }
+
+    /**
+     * Creates a detached GameObject reference that points at a prefab asset.
+     *
+     * Use this for serialized fields that should hold a prefab source rather
+     * than a placed scene object.
+     */
+    public static function fromPrefabAssetPath(string $assetPath, ?string $name = null): self
+    {
+        $assetPath = \trim($assetPath);
+        if ($assetPath === '') {
+            throw new InvalidArgumentException('Prefab asset path cannot be empty.');
+        }
+
+        $displayName = $name;
+        if ($displayName === null || $displayName === '') {
+            $displayName = \basename($assetPath);
+            if (\str_ends_with($displayName, '.prefab.json')) {
+                $displayName = \substr($displayName, 0, -\strlen('.prefab.json'));
+            }
+        }
+
+        return new self(
+            $displayName !== '' ? $displayName : 'Prefab',
+            prefabAssetPath: $assetPath,
+        );
     }
 
     /**
@@ -641,8 +705,26 @@ final class GameObject
         return $gameObject;
     }
 
+    /**
+     * Resolves serialized GameObject and prefab asset references.
+     *
+     * @param array<string, mixed> $data
+     */
     public static function fromSerializedReference(array $data): ?self
     {
+        $referenceKind = isset($data['__lengaRefKind']) && is_string($data['__lengaRefKind'])
+            ? $data['__lengaRefKind']
+            : '';
+        $assetPath = isset($data['assetPath']) && is_string($data['assetPath'])
+            ? $data['assetPath']
+            : '';
+        if ($referenceKind === 'PrefabAsset' && $assetPath !== '') {
+            return self::fromPrefabAssetPath(
+                $assetPath,
+                isset($data['name']) && is_string($data['name']) ? $data['name'] : null,
+            );
+        }
+
         $sceneObjectId = isset($data['sceneObjectId']) && is_string($data['sceneObjectId'])
             ? $data['sceneObjectId']
             : '';
@@ -661,6 +743,44 @@ final class GameObject
         }
 
         return null;
+    }
+
+    /**
+     * Resolves a serialized component reference whose owner may be a prefab asset.
+     *
+     * Prefab component references are detached authoring-time proxies. Use their
+     * `gameObject` to instantiate the prefab source before calling runtime-only
+     * component methods.
+     *
+     * @param array<string, mixed> $data
+     */
+    public static function componentFromSerializedReference(array $data): object|null
+    {
+        $referenceKind = isset($data['__lengaRefKind']) && is_string($data['__lengaRefKind'])
+            ? $data['__lengaRefKind']
+            : '';
+        if (!\in_array($referenceKind, ['Component', 'Behaviour', 'Transform'], true)) {
+            return null;
+        }
+
+        $gameObjectData = \is_array($data['gameObject'] ?? null) ? $data['gameObject'] : [];
+        $gameObject = self::fromSerializedReference($gameObjectData);
+        if (!$gameObject instanceof self) {
+            return null;
+        }
+
+        if ($gameObject->prefabAssetPathValue === '') {
+            if ($referenceKind === 'Transform') {
+                return $gameObject->transform;
+            }
+
+            $componentType = isset($data['componentType']) && is_string($data['componentType'])
+                ? $data['componentType']
+                : (isset($data['className']) && is_string($data['className']) ? $data['className'] : '');
+            return $componentType !== '' ? $gameObject->getComponent($componentType) : null;
+        }
+
+        return $gameObject->createPrefabComponentReference($data);
     }
 
     /**
@@ -978,6 +1098,80 @@ final class GameObject
         }
 
         return null;
+    }
+
+    /**
+     * @param array<string, mixed> $data
+     */
+    private function createPrefabComponentReference(array $data): object|null
+    {
+        $referenceKind = isset($data['__lengaRefKind']) && is_string($data['__lengaRefKind'])
+            ? $data['__lengaRefKind']
+            : '';
+        if ($referenceKind === 'Transform') {
+            return $this->transformValue;
+        }
+
+        $componentId = isset($data['instanceId']) && is_int($data['instanceId'])
+            ? $data['instanceId']
+            : 0;
+        $componentSceneId = isset($data['componentSceneId']) && is_string($data['componentSceneId'])
+            ? $data['componentSceneId']
+            : null;
+
+        if ($referenceKind === 'Behaviour') {
+            $className = isset($data['className']) && is_string($data['className'])
+                ? ltrim($data['className'], '\\')
+                : '';
+            if ($className === '' || !class_exists($className) || !is_subclass_of($className, Behaviour::class)) {
+                return null;
+            }
+
+            /** @var Behaviour $behaviour */
+            $behaviour = new $className();
+            self::attachPrefabBehaviourReference($behaviour, $this, $componentId, $componentSceneId);
+            return $behaviour;
+        }
+
+        $componentType = isset($data['componentType']) && is_string($data['componentType'])
+            ? $data['componentType']
+            : '';
+        if ($componentType === '' || $componentType === 'Transform' || $componentType === Transform::class) {
+            return $this->transformValue;
+        }
+
+        $descriptor = self::normalizeComponentSpecifier($componentType);
+        $nativeType = $descriptor['nativeType'];
+        $component = $this->createComponentWrapper($nativeType, $componentId)
+            ?? new NativeComponent($this, $componentId, $nativeType);
+        if ($componentSceneId !== null && $componentSceneId !== '') {
+            self::attachSceneComponentId($component, $componentSceneId);
+        }
+
+        return $component;
+    }
+
+    private static function attachPrefabBehaviourReference(
+        Behaviour $behaviour,
+        self $gameObject,
+        int $componentId,
+        ?string $sceneComponentId,
+    ): void {
+        $bound = Closure::bind(
+            function () use ($gameObject, $componentId, $sceneComponentId): void {
+                $this->gameObjectValue = $gameObject;
+                $this->componentId = $componentId;
+                $this->sceneComponentId = $sceneComponentId;
+            },
+            $behaviour,
+            Behaviour::class,
+        );
+
+        if ($bound === null) {
+            throw new RuntimeException('Failed to bind prefab Behaviour reference.');
+        }
+
+        $bound();
     }
 
     /**

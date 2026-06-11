@@ -341,16 +341,30 @@ abstract class Behaviour implements ComponentInterface
         if ($gameObject === null) {
             return null;
         }
+        $prefabComponent = $gameObject->prefabAssetPath !== ''
+            ? GameObject::componentFromSerializedReference($value)
+            : null;
 
         if ($resolvedTypeName === GameObject::class) {
             return $gameObject;
         }
 
         if ($resolvedTypeName === Transform::class) {
+            if ($prefabComponent instanceof Transform) {
+                return $prefabComponent;
+            }
+
             return $gameObject->transform;
         }
 
         if ($resolvedTypeName === Behaviour::class || is_subclass_of($resolvedTypeName, Behaviour::class)) {
+            if (
+                $prefabComponent instanceof Behaviour &&
+                ($resolvedTypeName === Behaviour::class || $prefabComponent instanceof $resolvedTypeName)
+            ) {
+                return $prefabComponent;
+            }
+
             $componentClass = isset($value['className']) && is_string($value['className']) && $resolvedTypeName === Behaviour::class
                 ? $value['className']
                 : $resolvedTypeName;
@@ -372,6 +386,13 @@ abstract class Behaviour implements ComponentInterface
         }
 
         if ($resolvedTypeName === Component::class || is_subclass_of($resolvedTypeName, Component::class)) {
+            if (
+                $prefabComponent instanceof Component &&
+                ($resolvedTypeName === Component::class || $prefabComponent instanceof $resolvedTypeName)
+            ) {
+                return $prefabComponent;
+            }
+
             $componentType = isset($value['componentType']) && is_string($value['componentType']) && $resolvedTypeName === Component::class
                 ? $value['componentType']
                 : $resolvedTypeName;
@@ -403,6 +424,10 @@ abstract class Behaviour implements ComponentInterface
             $resolvedTypeName === RendererInterface::class ||
             (interface_exists($resolvedTypeName) && is_subclass_of($resolvedTypeName, ComponentInterface::class))
         ) {
+            if ($prefabComponent instanceof $resolvedTypeName) {
+                return $prefabComponent;
+            }
+
             $componentType = isset($value['componentType']) && is_string($value['componentType'])
                 ? $value['componentType']
                 : $resolvedTypeName;
