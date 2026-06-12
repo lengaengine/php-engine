@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Lenga\Engine\SceneManagement;
 
 use Lenga\Engine\Core\GameObject;
+use Lenga\Engine\Core\InstantiateOptions;
 use Lenga\Engine\Core\NativeEngine;
 use LogicException;
 use RuntimeException;
@@ -35,14 +36,17 @@ final class SceneManager
         self::loadScene($scenePath);
     }
 
-    public static function instantiatePrefab(string $assetPath, ?string $name = null): GameObject
+    public static function instantiatePrefab(
+        string $assetPath,
+        string|InstantiateOptions|array|null $options = null,
+    ): GameObject
     {
         $scene = self::getActiveScene();
         if ($scene === null) {
             throw new RuntimeException('Cannot instantiate a prefab without an active scene.');
         }
 
-        return $scene->instantiatePrefab($assetPath, $name);
+        return $scene->instantiatePrefab($assetPath, $options);
     }
 
     public static function createScene(string $name): Scene

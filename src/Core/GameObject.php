@@ -552,7 +552,12 @@ final class GameObject
 
     public function clone(?string $name = null): self
     {
-        return self::instantiate($this, $name);
+        $clone = self::instantiate($this, $name);
+        if (!$clone instanceof self) {
+            throw new RuntimeException('GameObject clone did not return a GameObject.');
+        }
+
+        return $clone;
     }
 
     public static function find(string $name): ?self
@@ -628,27 +633,189 @@ final class GameObject
     }
 
     /**
-     * Creates a scene instance from another scene object or from an assigned
-     * prefab asset reference.
+     * Creates a scene instance from a GameObject, component, behaviour, or
+     * assigned prefab asset reference.
+     *
+     * Component and behaviour sources clone their owning GameObject and return
+     * the matching component from the cloned instance.
      */
-    public static function instantiate(self $original, ?string $name = null): self
+    public static function instantiate(
+        object $original,
+        string|Vector3|Transform|GameObject|InstantiateOptions|array|null $positionOrParentOrName = null,
+        Vector3|Quaternion|bool|string|null $rotationOrWorldPositionStaysOrName = null,
+        Transform|GameObject|string|null $parentOrName = null,
+        ?string $name = null,
+    ): object {
+        $options = self::resolveInstantiateOptions(
+            $positionOrParentOrName,
+            $rotationOrWorldPositionStaysOrName,
+            $parentOrName,
+            $name,
+        );
+
+        if ($original instanceof self) {
+            return self::instantiateGameObjectSource($original, $options);
+        }
+
+        if ($original instanceof Transform || $original instanceof Component || $original instanceof Behaviour) {
+            return self::instantiateComponentSource($original, $options);
+        }
+
+        throw new InvalidArgumentException(
+            'GameObject::instantiate() expects a GameObject, Transform, Component, or Behaviour source.',
+        );
+    }
+
+    private static function instantiateGameObjectSource(self $original, InstantiateOptions $options): self
     {
         $instanceId = $original->instanceId;
         if ($instanceId === null) {
             if ($original->prefabAssetPathValue !== '') {
-                return Prefab::instantiate($original->prefabAssetPathValue, $name);
+                return Prefab::instantiate($original->prefabAssetPathValue, $options);
             }
 
             throw new RuntimeException('Cannot instantiate a detached GameObject proxy.');
         }
 
         /** @var array{name?: string, tag?: string, layer?: int, id?: int, activeSelf?: bool, activeInHierarchy?: bool, transformId?: int|null}|false $data */
-        $data = NativeEngine::call('game_object_instantiate_by_id', $instanceId, $name);
+        $data = NativeEngine::call('game_object_instantiate_by_id', $instanceId, $options->toNativeArray());
         if (!is_array($data)) {
             throw new RuntimeException("Failed to instantiate GameObject '{$original->name}'.");
         }
 
         return self::fromNativeLookupData($data);
+    }
+
+    private static function instantiateComponentSource(
+        Transform|Component|Behaviour $original,
+        InstantiateOptions $options,
+    ): object {
+        $sourceGameObject = $original->gameObject;
+        $instance = self::instantiateGameObjectSource($sourceGameObject, $options);
+        $component = self::resolveInstantiatedComponent($original, $instance);
+        if ($component === null) {
+            throw new RuntimeException(
+                "Failed to resolve instantiated component from cloned GameObject '{$instance->name}'.",
+            );
+        }
+
+        return $component;
+    }
+
+    private static function resolveInstantiateOptions(
+        mixed $positionOrParentOrName,
+        mixed $rotationOrWorldPositionStaysOrName,
+        mixed $parentOrName,
+        ?string $name,
+    ): InstantiateOptions {
+        if ($positionOrParentOrName instanceof InstantiateOptions) {
+            return $name !== null ? $positionOrParentOrName->withName($name) : $positionOrParentOrName;
+        }
+
+        if (is_array($positionOrParentOrName)) {
+            $options = InstantiateOptions::fromArray($positionOrParentOrName);
+            return $name !== null ? $options->withName($name) : $options;
+        }
+
+        if ($positionOrParentOrName instanceof Vector3) {
+            $rotation = null;
+            $resolvedName = $name;
+
+            if ($rotationOrWorldPositionStaysOrName instanceof Vector3 || $rotationOrWorldPositionStaysOrName instanceof Quaternion) {
+                $rotation = $rotationOrWorldPositionStaysOrName;
+            } elseif (is_string($rotationOrWorldPositionStaysOrName)) {
+                $resolvedName = $rotationOrWorldPositionStaysOrName;
+            } elseif ($rotationOrWorldPositionStaysOrName !== null) {
+                throw new InvalidArgumentException('Instantiate rotation must be a Vector3, Quaternion, string name, or null.');
+            }
+
+            $parent = null;
+            if ($parentOrName instanceof Transform || $parentOrName instanceof self) {
+                $parent = $parentOrName;
+            } elseif (is_string($parentOrName)) {
+                $resolvedName = $parentOrName;
+            } elseif ($parentOrName !== null) {
+                throw new InvalidArgumentException('Instantiate parent must be a GameObject, Transform, string name, or null.');
+            }
+
+            return InstantiateOptions::at(
+                $positionOrParentOrName,
+                $rotation,
+                $parent,
+                $resolvedName,
+            );
+        }
+
+        if ($positionOrParentOrName instanceof Transform || $positionOrParentOrName instanceof self) {
+            $worldPositionStays = false;
+            $resolvedName = $name;
+
+            if (is_bool($rotationOrWorldPositionStaysOrName)) {
+                $worldPositionStays = $rotationOrWorldPositionStaysOrName;
+            } elseif (is_string($rotationOrWorldPositionStaysOrName)) {
+                $resolvedName = $rotationOrWorldPositionStaysOrName;
+            } elseif ($rotationOrWorldPositionStaysOrName !== null) {
+                throw new InvalidArgumentException('Instantiate parent overload expects a bool worldPositionStays, string name, or null.');
+            }
+
+            if (is_string($parentOrName)) {
+                $resolvedName = $parentOrName;
+            } elseif ($parentOrName !== null) {
+                throw new InvalidArgumentException('Instantiate parent overload does not accept a fourth argument except a string name.');
+            }
+
+            return InstantiateOptions::under($positionOrParentOrName, $worldPositionStays, $resolvedName);
+        }
+
+        if (is_string($positionOrParentOrName) || $positionOrParentOrName === null) {
+            if ($rotationOrWorldPositionStaysOrName !== null || $parentOrName !== null) {
+                throw new InvalidArgumentException('Instantiate name overload only accepts a source and optional name.');
+            }
+
+            return new InstantiateOptions(name: $positionOrParentOrName ?? $name);
+        }
+
+        throw new InvalidArgumentException('Unsupported GameObject::instantiate() argument combination.');
+    }
+
+    private static function resolveInstantiatedComponent(
+        Transform|Component|Behaviour $source,
+        self $instance,
+    ): object|null {
+        if ($source instanceof Transform) {
+            return $instance->transform;
+        }
+
+        if ($source instanceof Behaviour) {
+            $sceneComponentId = $source->getSceneComponentId();
+            if ($sceneComponentId !== null && $sceneComponentId !== '') {
+                foreach ($instance->getComponents($source::class) as $candidate) {
+                    if (
+                        $candidate instanceof Behaviour &&
+                        $candidate->getSceneComponentId() === $sceneComponentId
+                    ) {
+                        return $candidate;
+                    }
+                }
+            }
+
+            return $instance->getComponent($source::class);
+        }
+
+        $componentType = $source->type;
+        $sceneComponentId = $source->getSceneComponentId();
+        if ($sceneComponentId !== null && $sceneComponentId !== '') {
+            foreach ($instance->getComponents($componentType) as $candidate) {
+                if (
+                    $candidate instanceof Component &&
+                    $candidate->getSceneComponentId() === $sceneComponentId
+                ) {
+                    return $candidate;
+                }
+            }
+        }
+
+        return $instance->getComponent($componentType);
     }
 
     /**

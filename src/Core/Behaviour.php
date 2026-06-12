@@ -181,6 +181,11 @@ abstract class Behaviour implements ComponentInterface
         return $this->componentId;
     }
 
+    public function getSceneComponentId(): ?string
+    {
+        return $this->sceneComponentId;
+    }
+
     private function internalAttachGameObject(GameObject $gameObject): void
     {
         $this->gameObjectValue = $gameObject;
