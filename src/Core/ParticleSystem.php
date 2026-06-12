@@ -309,6 +309,7 @@ final class ParticleSystem extends Component
      *     shapeRandomizeDirection?: float,
      *     shapeSpherizeDirection?: float,
      *     shapeRandomizePosition?: float,
+     *     renderMode?: string,
      *     looping?: bool,
      *     playOnAwake?: bool,
      *     isPlaying?: bool,
