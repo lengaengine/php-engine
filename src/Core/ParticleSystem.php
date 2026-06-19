@@ -287,6 +287,7 @@ final class ParticleSystem extends Component
      *     startSize?: float,
      *     endSize?: float,
      *     startRotation?: float,
+     *     flipRotation?: float,
      *     angularVelocity?: float,
      *     startColor?: array{r?: int, g?: int, b?: int, a?: int},
      *     endColor?: array{r?: int, g?: int, b?: int, a?: int},
