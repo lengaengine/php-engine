@@ -410,6 +410,43 @@ final class ParticleSystem extends Component
     }
 
     /**
+     * Returns this frame's batched particle collision events.
+     *
+     * Events are recorded only while the Collision module's
+     * "Send Collision Messages" option is enabled (or a Collision
+     * sub-emitter slot exists). Each event is an associative array with
+     * `particleId`, `point`, `normal`, `velocity` (approach velocity),
+     * `approachSpeed`, `colliderId`, and `colliderName`. The buffer is
+     * bounded and rebuilt every frame, so poll it once per update.
+     *
+     * @return list<array{particleId: int, point: array{x: float, y: float, z: float}, normal: array{x: float, y: float, z: float}, velocity: array{x: float, y: float, z: float}, approachSpeed: float, colliderId: string, colliderName: string}>
+     */
+    public function getCollisionEvents(): array
+    {
+        $events = NativeEngine::call('particle_system_get_collision_events', $this->componentId);
+
+        return is_array($events) ? $events : [];
+    }
+
+    /**
+     * Returns this frame's batched particle trigger events.
+     *
+     * Events are recorded for trigger conditions whose action is set to
+     * `Callback`. Each event carries `particleId`, `position`, `velocity`,
+     * `condition` (`Inside`, `Outside`, `Enter`, or `Exit`), and
+     * `colliderMask` (bits into the module's collider list). The buffer is
+     * bounded and rebuilt every frame.
+     *
+     * @return list<array{particleId: int, position: array{x: float, y: float, z: float}, velocity: array{x: float, y: float, z: float}, condition: string, colliderMask: int}>
+     */
+    public function getTriggerEvents(): array
+    {
+        $events = NativeEngine::call('particle_system_get_trigger_events', $this->componentId);
+
+        return is_array($events) ? $events : [];
+    }
+
+    /**
      * Fires the system's Manual sub-emitter slots for every live particle.
      *
      * Each Manual slot spawns its configured emit count into its target
