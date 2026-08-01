@@ -409,6 +409,21 @@ final class ParticleSystem extends Component
         NativeEngine::call('particle_system_emit', $this->componentId, $count);
     }
 
+    /**
+     * Fires the system's Manual sub-emitter slots for every live particle.
+     *
+     * Each Manual slot spawns its configured emit count into its target
+     * system at each particle's position, applying the slot's inheritance
+     * flags and emit probability.
+     *
+     * @param int $slotIndex Index of one sub-emitter slot, or -1 to fire
+     *                       every Manual slot.
+     */
+    public function triggerSubEmitter(int $slotIndex = -1): void
+    {
+        NativeEngine::call('particle_system_trigger_sub_emitter', $this->componentId, $slotIndex);
+    }
+
     public function loadTexture(string $texturePath): bool
     {
         return NativeEngine::call('particle_system_load_texture', $this->componentId, $texturePath);
