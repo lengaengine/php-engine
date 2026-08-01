@@ -26,6 +26,152 @@ final class ParticleSystem extends Component
         }
     }
 
+    /**
+     * Simulation space: 'Local', 'World', or 'Custom'. Custom simulates in
+     * the Transform of the scene object referenced by
+     * {@see self::$customSimulationSpaceId} and falls back to Local while
+     * that reference cannot be resolved.
+     */
+    public string $simulationSpace {
+        get {
+            return (string) ($this->getState()['simulationSpace'] ?? 'World');
+        }
+
+        set(string $value) {
+            NativeEngine::call('particle_system_set_simulation_space', $this->componentId, $value);
+        }
+    }
+
+    /**
+     * Scene object id whose Transform defines the Custom simulation space.
+     */
+    public string $customSimulationSpaceId {
+        get {
+            return (string) ($this->getState()['customSimulationSpaceId'] ?? '');
+        }
+
+        set(string $value) {
+            NativeEngine::call('particle_system_set_custom_simulation_space', $this->componentId, $value);
+        }
+    }
+
+    /**
+     * Simulation clock: 'Scaled' follows the global time scale, 'Unscaled'
+     * keeps simulating through pauses and slow motion.
+     */
+    public string $deltaTime {
+        get {
+            return (string) ($this->getState()['deltaTime'] ?? 'Scaled');
+        }
+
+        set(string $value) {
+            NativeEngine::call('particle_system_set_delta_time', $this->componentId, $value);
+        }
+    }
+
+    /**
+     * How Transform scale affects the effect: 'Hierarchy', 'Local', or
+     * 'Shape' (scale only affects spawn positions).
+     */
+    public string $scalingMode {
+        get {
+            return (string) ($this->getState()['scalingMode'] ?? 'Hierarchy');
+        }
+
+        set(string $value) {
+            NativeEngine::call('particle_system_set_scaling_mode', $this->componentId, $value);
+        }
+    }
+
+    /**
+     * Emitter velocity source used by distance emission, Lifetime by Emitter
+     * Speed, and Inherit Velocity: 'Transform' or 'Rigidbody'.
+     */
+    public string $emitterVelocityMode {
+        get {
+            return (string) ($this->getState()['emitterVelocityMode'] ?? 'Transform');
+        }
+
+        set(string $value) {
+            NativeEngine::call('particle_system_set_emitter_velocity_mode', $this->componentId, $value);
+        }
+    }
+
+    /**
+     * Lifecycle action once a stopped system has no live particles: 'None',
+     * 'Disable', or 'Destroy'.
+     */
+    public string $stopAction {
+        get {
+            return (string) ($this->getState()['stopAction'] ?? 'None');
+        }
+
+        set(string $value) {
+            NativeEngine::call('particle_system_set_stop_action', $this->componentId, $value);
+        }
+    }
+
+    /**
+     * Ring buffer keep-alive behavior: 'Disabled', 'PauseUntilReplaced', or
+     * 'LoopUntilReplaced'.
+     */
+    public string $ringBufferMode {
+        get {
+            return (string) ($this->getState()['ringBufferMode'] ?? 'Disabled');
+        }
+
+        set(string $value) {
+            NativeEngine::call('particle_system_set_ring_buffer_mode', $this->componentId, $value);
+        }
+    }
+
+    /**
+     * Normalized (0..1) start of the loop range used by
+     * 'LoopUntilReplaced'.
+     */
+    public float $ringBufferLoopRangeMin {
+        get {
+            return (float) ($this->getState()['ringBufferLoopRangeMin'] ?? 0.0);
+        }
+
+        set(float $value) {
+            NativeEngine::call('particle_system_set_ring_buffer_loop_range_min', $this->componentId, $value);
+        }
+    }
+
+    /**
+     * Normalized (0..1) end of the loop range used by 'LoopUntilReplaced'.
+     */
+    public float $ringBufferLoopRangeMax {
+        get {
+            return (float) ($this->getState()['ringBufferLoopRangeMax'] ?? 1.0);
+        }
+
+        set(float $value) {
+            NativeEngine::call('particle_system_set_ring_buffer_loop_range_max', $this->componentId, $value);
+        }
+    }
+
+    /**
+     * Wall-clock cost of the most recent simulation step in milliseconds.
+     * Aggregate profiling snapshot; there is never per-particle bridge
+     * traffic.
+     */
+    public float $simulationTimeMs {
+        get {
+            return (float) ($this->getState()['simulationTimeMs'] ?? 0.0);
+        }
+    }
+
+    /**
+     * Render commands submitted by the most recent render pass.
+     */
+    public int $renderSubmissions {
+        get {
+            return (int) ($this->getState()['renderSubmissions'] ?? 0);
+        }
+    }
+
     public string $dimension {
         get {
             return (string) ($this->getState()['dimension'] ?? '2D');
