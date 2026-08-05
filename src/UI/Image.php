@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace Lenga\Engine\UI;
 
+use Lenga\Engine\Core\Color;
 use Lenga\Engine\Core\NativeEngine;
+use Lenga\Engine\Internal\ColorBridge;
 
 final class Image extends UIElement
 {
@@ -19,23 +21,35 @@ final class Image extends UIElement
     }
 
     /**
-     * @return array{r:int, g:int, b:int, a:int}
+     * The tint applied to this image.
+     */
+    public Color $color {
+        get => ColorBridge::fromState($this->getState()['color'] ?? null, Color::white());
+
+        set(Color $value) {
+            $color = $value->toRGBA();
+            NativeEngine::call('ui_image_set_color', $this->getId(), $color['r'], $color['g'], $color['b'], $color['a']);
+        }
+    }
+
+    /**
+     * Gets the image tint as byte-channel RGBA values.
+     *
+     * @return array{r: int, g: int, b: int, a: int}
      */
     public function getColor(): array
     {
-        /** @var array{r?: int, g?: int, b?: int, a?: int} $value */
-        $value = $this->getState()['color'] ?? [];
-
-        return [
-            'r' => (int) ($value['r'] ?? 255),
-            'g' => (int) ($value['g'] ?? 255),
-            'b' => (int) ($value['b'] ?? 255),
-            'a' => (int) ($value['a'] ?? 255),
-        ];
+        return $this->color->toRGBA();
     }
 
-    public function setColor(int $red, int $green, int $blue, int $alpha = 255): void
+    /**
+     * Sets the image tint.
+     *
+     * @param Color|array{r?: int|float, g?: int|float, b?: int|float, a?: int|float, 0?: int|float, 1?: int|float, 2?: int|float, 3?: int|float}|int $red
+     */
+    public function setColor(Color|array|int $red, ?int $green = null, ?int $blue = null, int $alpha = 255): void
     {
-        NativeEngine::call('ui_image_set_color', $this->getId(), $red, $green, $blue, $alpha);
+        $color = ColorBridge::toNative($red, $green, $blue, $alpha);
+        NativeEngine::call('ui_image_set_color', $this->getId(), $color['r'], $color['g'], $color['b'], $color['a']);
     }
 }

@@ -5,6 +5,9 @@ declare(strict_types=1);
 namespace Lenga\Engine\Core;
 
 use Lenga\Engine\Exceptions\LengaRuntimeUnavailableException;
+use LogicException;
+use function call_user_func_array;
+use function function_exists;
 
 final class NativeEngine
 {
@@ -23,14 +26,14 @@ final class NativeEngine
 
     public static function hasFunction(string $bindingName): bool
     {
-        return \function_exists(self::nativeFunctionName($bindingName));
+        return function_exists(self::nativeFunctionName($bindingName));
     }
 
     public static function requireAvailable(?string $bindingName = null): void
     {
         $bindingName ??= self::AVAILABILITY_PROBE;
         $functionName = self::nativeFunctionName($bindingName);
-        if (\function_exists($functionName)) {
+        if (function_exists($functionName)) {
             return;
         }
 
@@ -41,7 +44,7 @@ final class NativeEngine
     {
         self::requireAvailable($bindingName);
 
-        return \call_user_func_array(self::nativeFunctionName($bindingName), $arguments);
+        return call_user_func_array(self::nativeFunctionName($bindingName), $arguments);
     }
 
     private static function nativeFunctionName(string $bindingName): string
@@ -59,7 +62,7 @@ final class NativeEngine
             || str_contains($bindingName, '\\')
             || str_contains($bindingName, '::')
         ) {
-            throw new \LogicException('Native bridge calls must use logical binding names.');
+            throw new LogicException('Native bridge calls must use logical binding names.');
         }
     }
 

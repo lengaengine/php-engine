@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Lenga\Engine\Internal;
 
+use Closure;
 use Lenga\Engine\Core\Behaviour;
 use Lenga\Engine\Core\GameObject;
 
@@ -15,7 +16,7 @@ use Lenga\Engine\Core\GameObject;
 final class BehaviourBridge
 {
     /**
-     * @var array<string, \Closure>
+     * @var array<string, Closure>
      */
     private static array $internalCalls = [];
 
@@ -26,6 +27,7 @@ final class BehaviourBridge
     public static function attachGameObject(Behaviour $behaviour, GameObject $gameObject): void
     {
         self::callInternal($behaviour, 'internalAttachGameObject', $gameObject);
+        self::callInternal($behaviour, 'internalEnsureRequiredComponents');
     }
 
     public static function attachComponentId(Behaviour $behaviour, int $componentId): void
@@ -36,6 +38,11 @@ final class BehaviourBridge
     public static function attachSceneComponentId(Behaviour $behaviour, string $sceneComponentId): void
     {
         self::callInternal($behaviour, 'internalAttachSceneComponentId', $sceneComponentId);
+    }
+
+    public static function ensureRequiredComponents(Behaviour $behaviour): void
+    {
+        self::callInternal($behaviour, 'internalEnsureRequiredComponents');
     }
 
     /**
@@ -63,7 +70,7 @@ final class BehaviourBridge
 
     private static function callInternal(Behaviour $behaviour, string $methodName, mixed ...$arguments): mixed
     {
-        $call = self::$internalCalls[$methodName] ??= \Closure::bind(
+        $call = self::$internalCalls[$methodName] ??= Closure::bind(
             static function (Behaviour $target, mixed ...$arguments) use ($methodName): mixed {
                 return $target->{$methodName}(...$arguments);
             },

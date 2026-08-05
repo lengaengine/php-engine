@@ -15,6 +15,8 @@ final class Collision3D
         private ?Vector3 $normalValue = null,
         private float $separationValue = 0.0,
         private bool $isTriggerValue = false,
+        private ?GameObject $selfGameObjectValue = null,
+        private ?Component $selfColliderValue = null,
     ) {
     }
 
@@ -30,12 +32,30 @@ final class Collision3D
         }
     }
 
+    public ?GameObject $selfGameObject {
+        get {
+            return $this->selfGameObjectValue;
+        }
+    }
+
+    public ?Component $selfCollider {
+        get {
+            return $this->selfColliderValue;
+        }
+    }
+
+    /**
+     * @deprecated Use $gameObject instead. This property is retained for backward compatibility and will be removed in 0.9.0.
+     */
     public ?GameObject $otherGameObject {
         get {
             return $this->otherGameObjectValue;
         }
     }
 
+    /**
+     * @deprecated Use $collider instead. This property is retained for backward compatibility and will be removed in 0.9.0.
+     */
     public ?Component $otherCollider {
         get {
             return $this->otherColliderValue;
@@ -68,6 +88,8 @@ final class Collision3D
 
     /**
      * @param array{
+     *     selfGameObject?: array<string, mixed>,
+     *     selfCollider?: mixed,
      *     gameObject?: array<string, mixed>,
      *     collider?: mixed,
      *     otherGameObject?: array<string, mixed>,
@@ -80,6 +102,10 @@ final class Collision3D
      */
     public static function fromNativeData(array $data): self
     {
+        $selfGameObject = \is_array($data['selfGameObject'] ?? null)
+            ? GameObject::fromNativeLookupData($data['selfGameObject'])
+            : null;
+
         $gameObject = \is_array($data['gameObject'] ?? null)
             ? GameObject::fromNativeLookupData($data['gameObject'])
             : null;
@@ -88,6 +114,7 @@ final class Collision3D
             ? GameObject::fromNativeLookupData($data['otherGameObject'])
             : null;
 
+        $selfCollider = GameObject::wrapNativeComponentLookupData($data['selfCollider'] ?? null);
         $collider = GameObject::wrapNativeComponentLookupData($data['collider'] ?? null);
         $otherCollider = GameObject::wrapNativeComponentLookupData($data['otherCollider'] ?? null);
 
@@ -100,12 +127,16 @@ final class Collision3D
             self::vectorFromArray($data['normal'] ?? null),
             (float) ($data['separation'] ?? 0.0),
             (bool) ($data['isTrigger'] ?? false),
+            $selfGameObject,
+            $selfCollider instanceof Component ? $selfCollider : null,
         );
     }
 
     public function __serialize(): array
     {
         return [
+            'selfGameObject' => $this->selfGameObjectValue?->__serialize(),
+            'selfCollider' => $this->selfColliderValue?->__serialize(),
             'gameObject' => $this->gameObjectValue?->__serialize(),
             'collider' => $this->colliderValue?->__serialize(),
             'otherGameObject' => $this->otherGameObjectValue?->__serialize(),
@@ -119,12 +150,16 @@ final class Collision3D
 
     public function __unserialize(array $data): void
     {
+        $this->selfGameObjectValue = \is_array($data['selfGameObject'] ?? null)
+            ? GameObject::fromSerializedReference($data['selfGameObject'])
+            : null;
         $this->gameObjectValue = \is_array($data['gameObject'] ?? null)
             ? GameObject::fromSerializedReference($data['gameObject'])
             : null;
         $this->otherGameObjectValue = \is_array($data['otherGameObject'] ?? null)
             ? GameObject::fromSerializedReference($data['otherGameObject'])
             : null;
+        $this->selfColliderValue = self::componentFromSerializedData($data['selfCollider'] ?? null);
         $this->colliderValue = self::componentFromSerializedData($data['collider'] ?? null);
         $this->otherColliderValue = self::componentFromSerializedData($data['otherCollider'] ?? null);
         $this->pointValue = self::vectorFromArray($data['point'] ?? null);

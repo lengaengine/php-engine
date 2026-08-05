@@ -5,8 +5,10 @@ declare(strict_types=1);
 namespace Lenga\Engine\SceneManagement;
 
 use Lenga\Engine\Core\GameObject;
+use Lenga\Engine\Core\InstantiateOptions;
 use Lenga\Engine\Core\NativeEngine;
 use Lenga\Engine\UI\Canvas;
+use RuntimeException;
 
 final class Scene
 {
@@ -40,7 +42,7 @@ final class Scene
         /** @var array{id?: int, name?: string}|false $data */
         $data = NativeEngine::call('scene_create_canvas', $name);
         if (!\is_array($data)) {
-            throw new \RuntimeException("Failed to create Canvas '{$name}' in the active scene.");
+            throw new RuntimeException("Failed to create Canvas '{$name}' in the active scene.");
         }
 
         return Canvas::fromNativeLookupData($data);
@@ -104,17 +106,30 @@ final class Scene
         return \count($this->getBackdropLayers());
     }
 
-    public function instantiateGameObject(GameObject $original, ?string $name = null): GameObject
+    public function instantiateGameObject(
+        GameObject $original,
+        string|InstantiateOptions|array|null $options = null,
+    ): GameObject
     {
-        return GameObject::instantiate($original, $name);
+        $instance = GameObject::instantiate($original, $options);
+        if (!$instance instanceof GameObject) {
+            throw new RuntimeException('Scene::instantiateGameObject() did not return a GameObject.');
+        }
+
+        return $instance;
     }
 
-    public function instantiatePrefab(string $assetPath, ?string $name = null): GameObject
+    public function instantiatePrefab(
+        string $assetPath,
+        string|InstantiateOptions|array|null $options = null,
+    ): GameObject
     {
+        $resolvedOptions = self::normalizeInstantiateOptions($options);
+
         /** @var array{name?: string, tag?: string, layer?: int, id?: int, activeSelf?: bool, activeInHierarchy?: bool, transformId?: int|null}|false $data */
-        $data = NativeEngine::call('scene_instantiate_prefab', $assetPath, $name);
+        $data = NativeEngine::call('scene_instantiate_prefab', $assetPath, $resolvedOptions->toNativeArray());
         if (!\is_array($data)) {
-            throw new \RuntimeException("Failed to instantiate prefab '{$assetPath}'.");
+            throw new RuntimeException("Failed to instantiate prefab '{$assetPath}'.");
         }
 
         return GameObject::fromNativeLookupData($data);
@@ -123,5 +138,18 @@ final class Scene
     public function findGameObject(string $name): ?GameObject
     {
         return GameObject::find($name);
+    }
+
+    private static function normalizeInstantiateOptions(string|InstantiateOptions|array|null $options): InstantiateOptions
+    {
+        if ($options instanceof InstantiateOptions) {
+            return $options;
+        }
+
+        if (\is_array($options)) {
+            return InstantiateOptions::fromArray($options);
+        }
+
+        return new InstantiateOptions(name: $options);
     }
 }

@@ -13,7 +13,7 @@ final class VectorTypesTest extends TestCase
 {
     public function testVector2CanConvertToVector4(): void
     {
-        $vector = (new Vector2(1.0, 2.0))->toVector4(3.0, 4.0);
+        $vector = new Vector4(1.0, 2.0, 3.0, 4.0);
 
         self::assertSame(1.0, $vector->x);
         self::assertSame(2.0, $vector->y);

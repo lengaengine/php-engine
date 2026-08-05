@@ -5,7 +5,10 @@ declare(strict_types=1);
 namespace Lenga\Engine\SceneManagement;
 
 use Lenga\Engine\Core\GameObject;
+use Lenga\Engine\Core\InstantiateOptions;
 use Lenga\Engine\Core\NativeEngine;
+use LogicException;
+use RuntimeException;
 
 final class SceneManager
 {
@@ -17,8 +20,8 @@ final class SceneManager
     public static function loadScene(string $sceneNameOrPath): void
     {
         if (!self::tryLoadScene($sceneNameOrPath)) {
-            throw new \RuntimeException(
-                "Failed to load scene '{$sceneNameOrPath}'. Make sure it exists and is enabled in Build Settings.",
+            throw new RuntimeException(
+                "Failed to load scene '$sceneNameOrPath'. Make sure it exists and is enabled in Build Settings.",
             );
         }
     }
@@ -33,26 +36,29 @@ final class SceneManager
         self::loadScene($scenePath);
     }
 
-    public static function instantiatePrefab(string $assetPath, ?string $name = null): GameObject
+    public static function instantiatePrefab(
+        string $assetPath,
+        string|InstantiateOptions|array|null $options = null,
+    ): GameObject
     {
         $scene = self::getActiveScene();
         if ($scene === null) {
-            throw new \RuntimeException('Cannot instantiate a prefab without an active scene.');
+            throw new RuntimeException('Cannot instantiate a prefab without an active scene.');
         }
 
-        return $scene->instantiatePrefab($assetPath, $name);
+        return $scene->instantiatePrefab($assetPath, $options);
     }
 
     public static function createScene(string $name): Scene
     {
-        throw new \LogicException(
+        throw new LogicException(
             "SceneManager::createScene('{$name}') is not supported by the embedded runtime yet.",
         );
     }
 
     public static function setActiveScene(Scene $scene): void
     {
-        throw new \LogicException(
+        throw new LogicException(
             "SceneManager::setActiveScene() is not supported by the embedded runtime yet.",
         );
     }

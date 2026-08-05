@@ -4,7 +4,10 @@ declare(strict_types=1);
 
 namespace Lenga\Engine\UI;
 
+use Lenga\Engine\Core\Color;
 use Lenga\Engine\Core\NativeEngine;
+use Lenga\Engine\Internal\ColorBridge;
+use function max;
 
 /**
  * UI button element with configurable label, colors, interaction state, and typography.
@@ -118,81 +121,102 @@ final class Button extends UIElement
     }
 
     /**
-     * Gets the current text color.
+     * The button label color.
+     */
+    public Color $textColor {
+        get => ColorBridge::fromState($this->getState()['textColor'] ?? null, Color::white());
+
+        set(Color $value) {
+            $color = $value->toRGBA();
+            NativeEngine::call('ui_button_set_text_color', $this->getId(), $color['r'], $color['g'], $color['b'], $color['a']);
+        }
+    }
+
+    /**
+     * Gets the current text color as byte-channel RGBA values.
      *
-     * @return array{r:int, g:int, b:int, a:int}
+     * @return array{r: int, g: int, b: int, a: int}
      */
     public function getTextColor(): array
     {
-        /** @var array{r?: int, g?: int, b?: int, a?: int} $value */
-        $value = $this->getState()['textColor'] ?? [];
-
-        return [
-            'r' => (int) ($value['r'] ?? 255),
-            'g' => (int) ($value['g'] ?? 255),
-            'b' => (int) ($value['b'] ?? 255),
-            'a' => (int) ($value['a'] ?? 255),
-        ];
+        return $this->textColor->toRGBA();
     }
 
     /**
      * Sets the text color.
+     *
+     * @param Color|array{r?: int|float, g?: int|float, b?: int|float, a?: int|float, 0?: int|float, 1?: int|float, 2?: int|float, 3?: int|float}|int $red
      */
-    public function setTextColor(int $red, int $green, int $blue, int $alpha = 255): void
+    public function setTextColor(Color|array|int $red, ?int $green = null, ?int $blue = null, int $alpha = 255): void
     {
-        NativeEngine::call('ui_button_set_text_color', $this->getId(), $red, $green, $blue, $alpha);
+        $color = ColorBridge::toNative($red, $green, $blue, $alpha);
+        NativeEngine::call('ui_button_set_text_color', $this->getId(), $color['r'], $color['g'], $color['b'], $color['a']);
     }
 
     /**
-     * Gets the default (idle) background color.
+     * The default background color.
+     */
+    public Color $backgroundColor {
+        get => ColorBridge::fromState($this->getState()['backgroundColor'] ?? null, Color::fromRGBA(36, 78, 130));
+
+        set(Color $value) {
+            $color = $value->toRGBA();
+            NativeEngine::call('ui_button_set_background_color', $this->getId(), $color['r'], $color['g'], $color['b'], $color['a']);
+        }
+    }
+
+    /**
+     * Gets the default (idle) background color as byte-channel RGBA values.
      *
-     * @return array{r:int, g:int, b:int, a:int}
+     * @return array{r: int, g: int, b: int, a: int}
      */
     public function getBackgroundColor(): array
     {
-        /** @var array{r?: int, g?: int, b?: int, a?: int} $value */
-        $value = $this->getState()['backgroundColor'] ?? [];
-
-        return [
-            'r' => (int) ($value['r'] ?? 36),
-            'g' => (int) ($value['g'] ?? 78),
-            'b' => (int) ($value['b'] ?? 130),
-            'a' => (int) ($value['a'] ?? 255),
-        ];
+        return $this->backgroundColor->toRGBA();
     }
 
     /**
      * Sets the default (idle) background color.
+     *
+     * @param Color|array{r?: int|float, g?: int|float, b?: int|float, a?: int|float, 0?: int|float, 1?: int|float, 2?: int|float, 3?: int|float}|int $red
      */
-    public function setBackgroundColor(int $red, int $green, int $blue, int $alpha = 255): void
+    public function setBackgroundColor(Color|array|int $red, ?int $green = null, ?int $blue = null, int $alpha = 255): void
     {
-        NativeEngine::call('ui_button_set_background_color', $this->getId(), $red, $green, $blue, $alpha);
+        $color = ColorBridge::toNative($red, $green, $blue, $alpha);
+        NativeEngine::call('ui_button_set_background_color', $this->getId(), $color['r'], $color['g'], $color['b'], $color['a']);
     }
 
     /**
-     * Gets the button outline color.
+     * The button outline color.
+     */
+    public Color $outlineColor {
+        get => ColorBridge::fromState($this->getState()['outlineColor'] ?? null, Color::white());
+
+        set(Color $value) {
+            $color = $value->toRGBA();
+            NativeEngine::call('ui_button_set_outline_color', $this->getId(), $color['r'], $color['g'], $color['b'], $color['a']);
+        }
+    }
+
+    /**
+     * Gets the button outline color as byte-channel RGBA values.
      *
-     * @return array{r:int, g:int, b:int, a:int}
+     * @return array{r: int, g: int, b: int, a: int}
      */
     public function getOutlineColor(): array
     {
-        /** @var array{r?: int, g?: int, b?: int, a?: int} $value */
-        $value = $this->getState()['outlineColor'] ?? [];
-
-        return [
-            'r' => (int) ($value['r'] ?? 255),
-            'g' => (int) ($value['g'] ?? 255),
-            'b' => (int) ($value['b'] ?? 255),
-            'a' => (int) ($value['a'] ?? 255),
-        ];
+        return $this->outlineColor->toRGBA();
     }
 
     /**
      * Sets the button outline color.
+     *
+     * @param Color|array{r?: int|float, g?: int|float, b?: int|float, a?: int|float, 0?: int|float, 1?: int|float, 2?: int|float, 3?: int|float}|int $red
      */
-    public function setOutlineColor(int $red, int $green, int $blue, int $alpha = 255): void
+    public function setOutlineColor(Color|array|int $red, ?int $green = null, ?int $blue = null, int $alpha = 255): void
     {
-        NativeEngine::call('ui_button_set_outline_color', $this->getId(), $red, $green, $blue, $alpha);
+        $color = ColorBridge::toNative($red, $green, $blue, $alpha);
+        NativeEngine::call('ui_button_set_outline_color', $this->getId(), $color['r'], $color['g'], $color['b'], $color['a']);
     }
 
     /**
@@ -204,7 +228,7 @@ final class Button extends UIElement
         }
 
         set(float $value) {
-            NativeEngine::call('ui_button_set_outline_width', $this->getId(), \max(0.0, $value));
+            NativeEngine::call('ui_button_set_outline_width', $this->getId(), max(0.0, $value));
         }
     }
 
@@ -267,90 +291,101 @@ final class Button extends UIElement
     }
 
     /**
-     * Gets the background color used while hovered.
+     * The background color used while hovered.
+     */
+    public Color $hoverColor {
+        get => ColorBridge::fromState($this->getState()['hoverColor'] ?? null, Color::fromRGBA(48, 102, 168));
+
+        set(Color $value) {
+            $color = $value->toRGBA();
+            NativeEngine::call('ui_button_set_hover_color', $this->getId(), $color['r'], $color['g'], $color['b'], $color['a']);
+        }
+    }
+
+    /**
+     * Gets the background color used while hovered as byte-channel RGBA values.
      *
-     * @return array{r:int, g:int, b:int, a:int}
+     * @return array{r: int, g: int, b: int, a: int}
      */
     public function getHoverColor(): array
     {
-        /** @var array{r?: int, g?: int, b?: int, a?: int} $value */
-        $value = $this->getState()['hoverColor'] ?? [];
-
-        return [
-            'r' => (int) ($value['r'] ?? 48),
-            'g' => (int) ($value['g'] ?? 102),
-            'b' => (int) ($value['b'] ?? 168),
-            'a' => (int) ($value['a'] ?? 255),
-        ];
+        return $this->hoverColor->toRGBA();
     }
 
     /**
      * Sets the background color used while hovered.
      *
-     * @param int $red
-     * @param int $green
-     * @param int $blue
-     * @param int $alpha
+     * @param Color|array{r?: int|float, g?: int|float, b?: int|float, a?: int|float, 0?: int|float, 1?: int|float, 2?: int|float, 3?: int|float}|int $red
      */
-    public function setHoverColor(int $red, int $green, int $blue, int $alpha = 255): void
+    public function setHoverColor(Color|array|int $red, ?int $green = null, ?int $blue = null, int $alpha = 255): void
     {
-        NativeEngine::call('ui_button_set_hover_color', $this->getId(), $red, $green, $blue, $alpha);
+        $color = ColorBridge::toNative($red, $green, $blue, $alpha);
+        NativeEngine::call('ui_button_set_hover_color', $this->getId(), $color['r'], $color['g'], $color['b'], $color['a']);
     }
 
     /**
-     * Gets the background color used while pressed.
+     * The background color used while pressed.
+     */
+    public Color $pressedColor {
+        get => ColorBridge::fromState($this->getState()['pressedColor'] ?? null, Color::fromRGBA(24, 58, 97));
+
+        set(Color $value) {
+            $color = $value->toRGBA();
+            NativeEngine::call('ui_button_set_pressed_color', $this->getId(), $color['r'], $color['g'], $color['b'], $color['a']);
+        }
+    }
+
+    /**
+     * Gets the background color used while pressed as byte-channel RGBA values.
      *
-     * @return array{r:int, g:int, b:int, a:int}
+     * @return array{r: int, g: int, b: int, a: int}
      */
     public function getPressedColor(): array
     {
-        /** @var array{r?: int, g?: int, b?: int, a?: int} $value */
-        $value = $this->getState()['pressedColor'] ?? [];
-
-        return [
-            'r' => (int) ($value['r'] ?? 24),
-            'g' => (int) ($value['g'] ?? 58),
-            'b' => (int) ($value['b'] ?? 97),
-            'a' => (int) ($value['a'] ?? 255),
-        ];
+        return $this->pressedColor->toRGBA();
     }
 
     /**
      * Sets the background color used while pressed.
      *
-     * @param int $red
-     * @param int $green
-     * @param int $blue
-     * @param int $alpha
+     * @param Color|array{r?: int|float, g?: int|float, b?: int|float, a?: int|float, 0?: int|float, 1?: int|float, 2?: int|float, 3?: int|float}|int $red
      */
-    public function setPressedColor(int $red, int $green, int $blue, int $alpha = 255): void
+    public function setPressedColor(Color|array|int $red, ?int $green = null, ?int $blue = null, int $alpha = 255): void
     {
-        NativeEngine::call('ui_button_set_pressed_color', $this->getId(), $red, $green, $blue, $alpha);
+        $color = ColorBridge::toNative($red, $green, $blue, $alpha);
+        NativeEngine::call('ui_button_set_pressed_color', $this->getId(), $color['r'], $color['g'], $color['b'], $color['a']);
     }
 
     /**
-     * Gets the background color used while not interactable.
+     * The background color used while not interactable.
+     */
+    public Color $disabledColor {
+        get => ColorBridge::fromState($this->getState()['disabledColor'] ?? null, Color::fromRGBA(56, 66, 82, 180));
+
+        set(Color $value) {
+            $color = $value->toRGBA();
+            NativeEngine::call('ui_button_set_disabled_color', $this->getId(), $color['r'], $color['g'], $color['b'], $color['a']);
+        }
+    }
+
+    /**
+     * Gets the background color used while not interactable as byte-channel RGBA values.
      *
-     * @return array{r:int, g:int, b:int, a:int}
+     * @return array{r: int, g: int, b: int, a: int}
      */
     public function getDisabledColor(): array
     {
-        /** @var array{r?: int, g?: int, b?: int, a?: int} $value */
-        $value = $this->getState()['disabledColor'] ?? [];
-
-        return [
-            'r' => (int) ($value['r'] ?? 56),
-            'g' => (int) ($value['g'] ?? 66),
-            'b' => (int) ($value['b'] ?? 82),
-            'a' => (int) ($value['a'] ?? 180),
-        ];
+        return $this->disabledColor->toRGBA();
     }
 
     /**
      * Sets the background color used while not interactable.
+     *
+     * @param Color|array{r?: int|float, g?: int|float, b?: int|float, a?: int|float, 0?: int|float, 1?: int|float, 2?: int|float, 3?: int|float}|int $red
      */
-    public function setDisabledColor(int $red, int $green, int $blue, int $alpha = 255): void
+    public function setDisabledColor(Color|array|int $red, ?int $green = null, ?int $blue = null, int $alpha = 255): void
     {
-        NativeEngine::call('ui_button_set_disabled_color', $this->getId(), $red, $green, $blue, $alpha);
+        $color = ColorBridge::toNative($red, $green, $blue, $alpha);
+        NativeEngine::call('ui_button_set_disabled_color', $this->getId(), $color['r'], $color['g'], $color['b'], $color['a']);
     }
 }

@@ -72,6 +72,19 @@ abstract class Component implements ComponentInterface
             : null;
 
         if ($gameObject !== null) {
+            if ($gameObject->prefabAssetPath !== '') {
+                $resolvedPrefabComponent = GameObject::componentFromSerializedReference($data);
+                if ($resolvedPrefabComponent instanceof self) {
+                    $this->gameObjectValue = $resolvedPrefabComponent->gameObject;
+                    $this->componentId = $resolvedPrefabComponent->getInstanceId();
+                    $this->componentType = $resolvedPrefabComponent->type;
+                    $this->sceneComponentId = \method_exists($resolvedPrefabComponent, 'getSceneComponentId')
+                        ? $resolvedPrefabComponent->getSceneComponentId()
+                        : $componentSceneId;
+                    return;
+                }
+            }
+
             $resolved = null;
             if ($componentType === 'Transform') {
                 $resolved = $gameObject->transform;

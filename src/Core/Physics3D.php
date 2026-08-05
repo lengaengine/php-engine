@@ -12,6 +12,22 @@ final class Physics3D
     {
     }
 
+    public static function getGravity(): Vector3
+    {
+        /** @var array{x?: float|int, y?: float|int, z?: float|int}|false $gravity */
+        $gravity = NativeEngine::call('physics3d_get_gravity');
+        if (!\is_array($gravity)) {
+            return new Vector3();
+        }
+
+        return Vector3::fromArray($gravity);
+    }
+
+    public static function setGravity(Vector3 $gravity): void
+    {
+        NativeEngine::call('physics3d_set_gravity', $gravity->x, $gravity->y, $gravity->z);
+    }
+
     private static function isSelfHit(?GameObject $ignoreGameObject, ?GameObject $candidate): bool
     {
         if (!$ignoreGameObject instanceof GameObject || !$candidate instanceof GameObject) {
@@ -95,7 +111,7 @@ final class Physics3D
     }
 
     /**
-     * @deprecated Use CharacterController::move() for Unity-style kinematic movement.
+     * @deprecated Use CharacterController::move() for kinematic movement.
      */
     public static function moveAndSlideSphere(
         Vector3 $position,
@@ -198,7 +214,7 @@ final class Physics3D
     }
 
     /**
-     * @deprecated Use CharacterController::move() for Unity-style kinematic movement.
+     * @deprecated Use CharacterController::move() for kinematic movement.
      */
     public static function moveAndSlideCapsule(
         Vector3 $position,

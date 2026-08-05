@@ -4,7 +4,11 @@ declare(strict_types=1);
 
 namespace Lenga\Engine\Tests\Core;
 
+use FilesystemIterator;
 use PHPUnit\Framework\TestCase;
+use RecursiveDirectoryIterator;
+use RecursiveIteratorIterator;
+use SplFileInfo;
 
 final class InternalApiBoundaryTest extends TestCase
 {
@@ -26,7 +30,7 @@ final class InternalApiBoundaryTest extends TestCase
             }
 
             if (preg_match($pattern, $contents) === 1) {
-                $violations[] = substr($file->getPathname(), strlen($sourceRoot) + 1);
+                $violations[] = $this->relativeSourcePath($file, $sourceRoot);
             }
         }
 
@@ -45,7 +49,7 @@ final class InternalApiBoundaryTest extends TestCase
             }
 
             foreach ($this->findDirectInternalNativeCalls($contents) as $functionName) {
-                $violations[] = substr($file->getPathname(), strlen($sourceRoot) + 1) . ':' . $functionName;
+                $violations[] = $this->relativeSourcePath($file, $sourceRoot) . ':' . $functionName;
             }
         }
 
@@ -62,7 +66,7 @@ final class InternalApiBoundaryTest extends TestCase
         $violations = [];
 
         foreach ($this->sourceFiles($sourceRoot) as $file) {
-            $relativePath = substr($file->getPathname(), strlen($sourceRoot) + 1);
+            $relativePath = $this->relativeSourcePath($file, $sourceRoot);
             if ($relativePath === 'Core/NativeEngine.php') {
                 continue;
             }
@@ -88,17 +92,22 @@ final class InternalApiBoundaryTest extends TestCase
         return $sourceRoot;
     }
 
+    private function relativeSourcePath(SplFileInfo $file, string $sourceRoot): string
+    {
+        return str_replace('\\', '/', substr($file->getPathname(), strlen($sourceRoot) + 1));
+    }
+
     /**
-     * @return iterable<\SplFileInfo>
+     * @return iterable<SplFileInfo>
      */
     private function sourceFiles(string $sourceRoot): iterable
     {
-        $iterator = new \RecursiveIteratorIterator(
-            new \RecursiveDirectoryIterator($sourceRoot, \FilesystemIterator::SKIP_DOTS)
+        $iterator = new RecursiveIteratorIterator(
+            new RecursiveDirectoryIterator($sourceRoot, FilesystemIterator::SKIP_DOTS)
         );
 
         foreach ($iterator as $file) {
-            if (!$file instanceof \SplFileInfo || $file->getExtension() !== 'php') {
+            if (!$file instanceof SplFileInfo || $file->getExtension() !== 'php') {
                 continue;
             }
 

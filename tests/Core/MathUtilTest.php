@@ -12,7 +12,7 @@ use PHPUnit\Framework\TestCase;
  * Unit tests for the MathUtil class.
  *
  * Covers every static property and method to validate parity with
- * Unity's Mathf behaviour.
+ * Math helper behaviour.
  */
 final class MathUtilTest extends TestCase
 {

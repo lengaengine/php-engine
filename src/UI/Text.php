@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace Lenga\Engine\UI;
 
+use Lenga\Engine\Core\Color;
 use Lenga\Engine\Core\NativeEngine;
+use Lenga\Engine\Internal\ColorBridge;
 
 final class Text extends UIElement
 {
@@ -69,40 +71,54 @@ final class Text extends UIElement
     }
 
     /**
-     * @return array{r:int, g:int, b:int, a:int}
+     * The text fill color.
      */
-    public function getColor(): array
-    {
-        /** @var array{r?: int, g?: int, b?: int, a?: int} $value */
-        $value = $this->getState()['color'] ?? [];
+    public Color $color {
+        get => ColorBridge::fromState($this->getState()['color'] ?? null, Color::white());
 
-        return [
-            'r' => (int) ($value['r'] ?? 255),
-            'g' => (int) ($value['g'] ?? 255),
-            'b' => (int) ($value['b'] ?? 255),
-            'a' => (int) ($value['a'] ?? 255),
-        ];
-    }
-
-    public function setColor(int $red, int $green, int $blue, int $alpha = 255): void
-    {
-        NativeEngine::call('ui_text_set_color', $this->getId(), $red, $green, $blue, $alpha);
+        set(Color $value) {
+            $color = $value->toRGBA();
+            NativeEngine::call('ui_text_set_color', $this->getId(), $color['r'], $color['g'], $color['b'], $color['a']);
+        }
     }
 
     /**
-     * @return array{r:int, g:int, b:int, a:int}
+     * Gets the text fill color as byte-channel RGBA values.
+     *
+     * @return array{r: int, g: int, b: int, a: int}
+     */
+    public function getColor(): array
+    {
+        return $this->color->toRGBA();
+    }
+
+    /**
+     * Sets the text fill color.
+     *
+     * @param Color|array{r?: int|float, g?: int|float, b?: int|float, a?: int|float, 0?: int|float, 1?: int|float, 2?: int|float, 3?: int|float}|int $red
+     */
+    public function setColor(Color|array|int $red, ?int $green = null, ?int $blue = null, int $alpha = 255): void
+    {
+        $color = ColorBridge::toNative($red, $green, $blue, $alpha);
+        NativeEngine::call('ui_text_set_color', $this->getId(), $color['r'], $color['g'], $color['b'], $color['a']);
+    }
+
+    /**
+     * Gets the text outline color as a Color value.
+     */
+    public function getOutlineTint(): Color
+    {
+        return ColorBridge::fromState($this->getState()['outlineColor'] ?? null, Color::black());
+    }
+
+    /**
+     * Gets the text outline color as byte-channel RGBA values.
+     *
+     * @return array{r: int, g: int, b: int, a: int}
      */
     public function getOutlineColor(): array
     {
-        /** @var array{r?: int, g?: int, b?: int, a?: int} $value */
-        $value = $this->getState()['outlineColor'] ?? [];
-
-        return [
-            'r' => (int) ($value['r'] ?? 0),
-            'g' => (int) ($value['g'] ?? 0),
-            'b' => (int) ($value['b'] ?? 0),
-            'a' => (int) ($value['a'] ?? 255),
-        ];
+        return $this->getOutlineTint()->toRGBA();
     }
 
     /**

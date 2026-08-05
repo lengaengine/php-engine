@@ -12,6 +12,25 @@ final class Physics2D
     {
     }
 
+    public static function getGravity(): Vector2
+    {
+        /** @var array{x?: float|int, y?: float|int}|false $gravity */
+        $gravity = NativeEngine::call('physics2d_get_gravity');
+        if (!\is_array($gravity)) {
+            return new Vector2();
+        }
+
+        return new Vector2(
+            (float) ($gravity['x'] ?? 0.0),
+            (float) ($gravity['y'] ?? 0.0),
+        );
+    }
+
+    public static function setGravity(Vector2 $gravity): void
+    {
+        NativeEngine::call('physics2d_set_gravity', $gravity->x, $gravity->y);
+    }
+
     /**
      * @param array<int, mixed> $results
      * @return list<RaycastHit2D>

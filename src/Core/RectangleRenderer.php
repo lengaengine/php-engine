@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace Lenga\Engine\Core;
 
-final class RectangleRenderer extends Component
+use function is_array;
+
+final class RectangleRenderer extends Renderer
 {
     public function __construct(GameObject $gameObject, int $componentId)
     {
@@ -57,41 +59,12 @@ final class RectangleRenderer extends Component
     }
 
     /**
-     * @return array{r:int, g:int, b:int, a:int}
-     */
-    public function getColor(): array
-    {
-        /** @var array{color?: array{r?: int, g?: int, b?: int, a?: int}} $state */
-        $state = $this->getState();
-        $color = $state['color'] ?? [];
-
-        return [
-            'r' => (int) ($color['r'] ?? 255),
-            'g' => (int) ($color['g'] ?? 255),
-            'b' => (int) ($color['b'] ?? 255),
-            'a' => (int) ($color['a'] ?? 255),
-        ];
-    }
-
-    public function setColor(int $red, int $green, int $blue, int $alpha = 255): void
-    {
-        NativeEngine::call('rectangle_renderer_set_color',
-            $this->componentId,
-            $red,
-            $green,
-            $blue,
-            $alpha,
-        );
-    }
-
-    /**
      * @return array{
      *     width?: float,
      *     height?: float,
      *     sortingLayer?: string,
      *     orderInLayer?: int,
-     *     enabled?: bool,
-     *     color?: array{r?: int, g?: int, b?: int, a?: int}
+     *     enabled?: bool
      * }
      */
     private function getState(): array
@@ -101,12 +74,11 @@ final class RectangleRenderer extends Component
          *     height?: float,
          *     sortingLayer?: string,
          *     orderInLayer?: int,
-         *     enabled?: bool,
-         *     color?: array{r?: int, g?: int, b?: int, a?: int}
+         *     enabled?: bool
          * } $state
          */
         $state = NativeEngine::call('rectangle_renderer_get_state', $this->componentId);
 
-        return $state;
+        return is_array($state) ? $state : [];
     }
 }

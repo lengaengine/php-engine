@@ -7,6 +7,7 @@ namespace Lenga\Engine\Tests\Core;
 use Lenga\Engine\Core\NativeEngine;
 use Lenga\Engine\Exceptions\LengaRuntimeUnavailableException;
 use Lenga\Engine\SceneManagement\Scene;
+use LogicException;
 use PHPUnit\Framework\TestCase;
 
 final class NativeRuntimeBoundaryTest extends TestCase
@@ -23,7 +24,7 @@ final class NativeRuntimeBoundaryTest extends TestCase
 
     public function testNativeEngineRejectsPhysicalNativeNames(): void
     {
-        $this->expectException(\LogicException::class);
+        $this->expectException(LogicException::class);
         $this->expectExceptionMessage('logical binding names');
 
         NativeEngine::call('lenga' . '_internal_scene_get_active');

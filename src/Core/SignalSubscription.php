@@ -4,12 +4,14 @@ declare(strict_types=1);
 
 namespace Lenga\Engine\Core;
 
+use Closure;
+
 final class SignalSubscription
 {
-    private ?\Closure $disposeCallback;
+    private ?Closure $disposeCallback;
     private bool $disposed = false;
 
-    public function __construct(\Closure $disposeCallback)
+    public function __construct(Closure $disposeCallback)
     {
         $this->disposeCallback = $disposeCallback;
     }
@@ -24,7 +26,7 @@ final class SignalSubscription
         $disposeCallback = $this->disposeCallback;
         $this->disposeCallback = null;
 
-        if ($disposeCallback instanceof \Closure) {
+        if ($disposeCallback instanceof Closure) {
             $disposeCallback();
         }
     }

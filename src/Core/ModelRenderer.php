@@ -6,8 +6,9 @@ namespace Lenga\Engine\Core;
 
 use Lenga\Engine\Attributes\Min;
 use Lenga\Engine\Attributes\Range;
+use function is_array;
 
-final class ModelRenderer extends Component
+final class ModelRenderer extends Renderer
 {
     public function __construct(GameObject $gameObject, int $componentId)
     {
@@ -31,16 +32,6 @@ final class ModelRenderer extends Component
 
         set(string $value) {
             NativeEngine::call('model_renderer_set_animation_path', $this->componentId, $value);
-        }
-    }
-
-    public string $materialPath {
-        get {
-            return (string) ($this->getState()['materialPath'] ?? '');
-        }
-
-        set(string $value) {
-            NativeEngine::call('model_renderer_set_material_path', $this->componentId, $value);
         }
     }
 
@@ -119,7 +110,7 @@ final class ModelRenderer extends Component
     {
         /** @var list<string>|mixed $names */
         $names = $this->getState()['animationNames'] ?? [];
-        return \is_array($names) ? array_values(array_map(static fn ($value) => (string) $value, $names)) : [];
+        return is_array($names) ? array_values(array_map(static fn ($value) => (string) $value, $names)) : [];
     }
 
     public function isPlaying(): bool
@@ -138,31 +129,8 @@ final class ModelRenderer extends Component
     }
 
     /**
-     * @return array{r:int, g:int, b:int, a:int}
-     */
-    public function getColor(): array
-    {
-        /** @var array{color?: array{r?: int, g?: int, b?: int, a?: int}} $state */
-        $state = $this->getState();
-        $color = $state['color'] ?? [];
-
-        return [
-            'r' => (int) ($color['r'] ?? 255),
-            'g' => (int) ($color['g'] ?? 255),
-            'b' => (int) ($color['b'] ?? 255),
-            'a' => (int) ($color['a'] ?? 255),
-        ];
-    }
-
-    public function setColor(int $red, int $green, int $blue, int $alpha = 255): void
-    {
-        NativeEngine::call('model_renderer_set_color', $this->componentId, $red, $green, $blue, $alpha);
-    }
-
-    /**
      * @return array{
      *     modelPath?: string,
-     *     materialPath?: string,
      *     animationPath?: string,
      *     animationIndex?: int,
      *     animationCount?: int,
@@ -172,7 +140,6 @@ final class ModelRenderer extends Component
      *     speed?: float,
      *     playbackFps?: float,
      *     isPlaying?: bool,
-     *     color?: array{r?: int, g?: int, b?: int, a?: int},
      *     enabled?: bool
      * }
      */
@@ -180,7 +147,6 @@ final class ModelRenderer extends Component
     {
         /** @var array{
          *     modelPath?: string,
-         *     materialPath?: string,
          *     animationPath?: string,
          *     animationIndex?: int,
          *     animationCount?: int,
@@ -190,12 +156,11 @@ final class ModelRenderer extends Component
          *     speed?: float,
          *     playbackFps?: float,
          *     isPlaying?: bool,
-         *     color?: array{r?: int, g?: int, b?: int, a?: int},
          *     enabled?: bool
          * } $state
          */
         $state = NativeEngine::call('model_renderer_get_state', $this->componentId);
 
-        return \is_array($state) ? $state : [];
+        return is_array($state) ? $state : [];
     }
 }

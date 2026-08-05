@@ -4,12 +4,16 @@ declare(strict_types=1);
 
 namespace Lenga\Engine\Tweening;
 
+use Lenga\Engine\Core\Color;
 use Lenga\Engine\Core\Transform;
 use Lenga\Engine\Core\Vector2;
 use Lenga\Engine\Core\Vector3;
 use Lenga\Engine\Internal\Bindings;
 use Lenga\Engine\UI\RectTransform;
 use Lenga\Engine\UI\UIElement;
+use LogicException;
+use function max;
+use function min;
 
 final class Tween
 {
@@ -354,11 +358,11 @@ final class Tween
     }
 
     /**
-     * @param array{r?: int|float, g?: int|float, b?: int|float, a?: int|float, 0?: int|float, 1?: int|float, 2?: int|float, 3?: int|float} $to
+     * @param Color|array{r?: int|float, g?: int|float, b?: int|float, a?: int|float, 0?: int|float, 1?: int|float, 2?: int|float, 3?: int|float} $to
      */
     public static function uiColorTo(
         UIElement $target,
-        array $to,
+        Color|array $to,
         float $duration,
         ?TweenOptions $options = null,
         string $property = 'color',
@@ -383,11 +387,11 @@ final class Tween
     }
 
     /**
-     * @param array{r?: int|float, g?: int|float, b?: int|float, a?: int|float, 0?: int|float, 1?: int|float, 2?: int|float, 3?: int|float} $to
+     * @param Color|array{r?: int|float, g?: int|float, b?: int|float, a?: int|float, 0?: int|float, 1?: int|float, 2?: int|float, 3?: int|float} $to
      */
     public static function uiTextColorTo(
         UIElement $target,
-        array $to,
+        Color|array $to,
         float $duration,
         ?TweenOptions $options = null,
     ): TweenHandle {
@@ -395,11 +399,11 @@ final class Tween
     }
 
     /**
-     * @param array{r?: int|float, g?: int|float, b?: int|float, a?: int|float, 0?: int|float, 1?: int|float, 2?: int|float, 3?: int|float} $to
+     * @param Color|array{r?: int|float, g?: int|float, b?: int|float, a?: int|float, 0?: int|float, 1?: int|float, 2?: int|float, 3?: int|float} $to
      */
     public static function uiBackgroundColorTo(
         UIElement $target,
-        array $to,
+        Color|array $to,
         float $duration,
         ?TweenOptions $options = null,
     ): TweenHandle {
@@ -407,11 +411,11 @@ final class Tween
     }
 
     /**
-     * @param array{r?: int|float, g?: int|float, b?: int|float, a?: int|float, 0?: int|float, 1?: int|float, 2?: int|float, 3?: int|float} $to
+     * @param Color|array{r?: int|float, g?: int|float, b?: int|float, a?: int|float, 0?: int|float, 1?: int|float, 2?: int|float, 3?: int|float} $to
      */
     public static function uiFillColorTo(
         UIElement $target,
-        array $to,
+        Color|array $to,
         float $duration,
         ?TweenOptions $options = null,
     ): TweenHandle {
@@ -419,11 +423,11 @@ final class Tween
     }
 
     /**
-     * @param array{r?: int|float, g?: int|float, b?: int|float, a?: int|float, 0?: int|float, 1?: int|float, 2?: int|float, 3?: int|float} $to
+     * @param Color|array{r?: int|float, g?: int|float, b?: int|float, a?: int|float, 0?: int|float, 1?: int|float, 2?: int|float, 3?: int|float} $to
      */
     public static function uiHandleColorTo(
         UIElement $target,
-        array $to,
+        Color|array $to,
         float $duration,
         ?TweenOptions $options = null,
     ): TweenHandle {
@@ -431,11 +435,11 @@ final class Tween
     }
 
     /**
-     * @param array{r?: int|float, g?: int|float, b?: int|float, a?: int|float, 0?: int|float, 1?: int|float, 2?: int|float, 3?: int|float} $to
+     * @param Color|array{r?: int|float, g?: int|float, b?: int|float, a?: int|float, 0?: int|float, 1?: int|float, 2?: int|float, 3?: int|float} $to
      */
     public static function uiOutlineColorTo(
         UIElement $target,
-        array $to,
+        Color|array $to,
         float $duration,
         ?TweenOptions $options = null,
     ): TweenHandle {
@@ -443,11 +447,11 @@ final class Tween
     }
 
     /**
-     * @param array{r?: int|float, g?: int|float, b?: int|float, a?: int|float, 0?: int|float, 1?: int|float, 2?: int|float, 3?: int|float} $to
+     * @param Color|array{r?: int|float, g?: int|float, b?: int|float, a?: int|float, 0?: int|float, 1?: int|float, 2?: int|float, 3?: int|float} $to
      */
     public static function uiHoverColorTo(
         UIElement $target,
-        array $to,
+        Color|array $to,
         float $duration,
         ?TweenOptions $options = null,
     ): TweenHandle {
@@ -455,11 +459,11 @@ final class Tween
     }
 
     /**
-     * @param array{r?: int|float, g?: int|float, b?: int|float, a?: int|float, 0?: int|float, 1?: int|float, 2?: int|float, 3?: int|float} $to
+     * @param Color|array{r?: int|float, g?: int|float, b?: int|float, a?: int|float, 0?: int|float, 1?: int|float, 2?: int|float, 3?: int|float} $to
      */
     public static function uiPressedColorTo(
         UIElement $target,
-        array $to,
+        Color|array $to,
         float $duration,
         ?TweenOptions $options = null,
     ): TweenHandle {
@@ -467,11 +471,11 @@ final class Tween
     }
 
     /**
-     * @param array{r?: int|float, g?: int|float, b?: int|float, a?: int|float, 0?: int|float, 1?: int|float, 2?: int|float, 3?: int|float} $to
+     * @param Color|array{r?: int|float, g?: int|float, b?: int|float, a?: int|float, 0?: int|float, 1?: int|float, 2?: int|float, 3?: int|float} $to
      */
     public static function uiDisabledColorTo(
         UIElement $target,
-        array $to,
+        Color|array $to,
         float $duration,
         ?TweenOptions $options = null,
     ): TweenHandle {
@@ -479,11 +483,11 @@ final class Tween
     }
 
     /**
-     * @param array{r?: int|float, g?: int|float, b?: int|float, a?: int|float, 0?: int|float, 1?: int|float, 2?: int|float, 3?: int|float} $to
+     * @param Color|array{r?: int|float, g?: int|float, b?: int|float, a?: int|float, 0?: int|float, 1?: int|float, 2?: int|float, 3?: int|float} $to
      */
     public static function uiCheckmarkColorTo(
         UIElement $target,
-        array $to,
+        Color|array $to,
         float $duration,
         ?TweenOptions $options = null,
     ): TweenHandle {
@@ -494,7 +498,7 @@ final class Tween
     {
         $transformId = $transform->getNativeId();
         if ($transformId === null) {
-            throw new \LogicException('Tweening requires a native Transform instance.');
+            throw new LogicException('Tweening requires a native Transform instance.');
         }
 
         return $transformId;
@@ -506,21 +510,32 @@ final class Tween
     }
 
     /**
-     * @param array{r?: int|float, g?: int|float, b?: int|float, a?: int|float, 0?: int|float, 1?: int|float, 2?: int|float, 3?: int|float} $color
+     * @param Color|array{r?: int|float, g?: int|float, b?: int|float, a?: int|float, 0?: int|float, 1?: int|float, 2?: int|float, 3?: int|float} $color
      * @return array{0: float, 1: float, 2: float, 3: float}
      */
-    private static function normalizeColor(array $color): array
+    private static function normalizeColor(Color|array $color): array
     {
+        if ($color instanceof Color) {
+            $channels = $color->toRGBA();
+
+            return [
+                (float) $channels['r'],
+                (float) $channels['g'],
+                (float) $channels['b'],
+                (float) $channels['a'],
+            ];
+        }
+
         $red = $color['r'] ?? $color[0] ?? 255;
         $green = $color['g'] ?? $color[1] ?? 255;
         $blue = $color['b'] ?? $color[2] ?? 255;
         $alpha = $color['a'] ?? $color[3] ?? 255;
 
         return [
-            (float) \max(0, \min(255, $red)),
-            (float) \max(0, \min(255, $green)),
-            (float) \max(0, \min(255, $blue)),
-            (float) \max(0, \min(255, $alpha)),
+            (float) max(0, min(255, $red)),
+            (float) max(0, min(255, $green)),
+            (float) max(0, min(255, $blue)),
+            (float) max(0, min(255, $alpha)),
         ];
     }
 }

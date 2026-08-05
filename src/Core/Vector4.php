@@ -9,7 +9,7 @@ use OutOfBoundsException;
 
 final class Vector4 implements ArrayAccess
 {
-    private const EPSILON = 0.000001;
+    private const float EPSILON = 0.000001;
 
     /** X-axis component. */
     public float $x {
@@ -455,4 +455,3 @@ final class Vector4 implements ArrayAccess
         $this->offsetSet($offset, 0.0);
     }
 }
-

@@ -4,7 +4,25 @@ declare(strict_types=1);
 
 namespace Lenga\Engine\Core;
 
+use Closure;
+use InvalidArgumentException;
+use Lenga\Engine\Interfaces\ComponentInterface;
+use Lenga\Engine\Interfaces\RendererInterface;
 use Lenga\Engine\SceneManagement\Scene;
+use ReflectionClass;
+use ReflectionException;
+use RuntimeException;
+use function array_map;
+use function array_values;
+use function class_exists;
+use function count;
+use function is_array;
+use function is_int;
+use function is_object;
+use function is_string;
+use function is_subclass_of;
+use function interface_exists;
+use function ltrim;
 
 final class GameObject
 {
@@ -16,10 +34,12 @@ final class GameObject
         string $sceneObjectId = '',
         string $tag = 'Untagged',
         int $layer = 0,
+        string $prefabAssetPath = '',
     ) {
         $this->nameValue = $name;
         $this->instanceId = $instanceId;
         $this->sceneObjectIdValue = $sceneObjectId;
+        $this->prefabAssetPathValue = $prefabAssetPath;
         $this->tagValue = $tag;
         $this->layerValue = $layer;
         $this->activeSelfValue = $activeSelf;
@@ -31,7 +51,7 @@ final class GameObject
     private function attachTransformToSelf(?int $gameObjectId = null): void
     {
         $gameObject = $this;
-        $bound = \Closure::bind(
+        $bound = Closure::bind(
             function () use ($gameObject, $gameObjectId): void {
                 $this->gameObjectValue = $gameObject;
                 $this->gameObjectId = $gameObjectId ?? $gameObject->getInstanceId();
@@ -41,7 +61,7 @@ final class GameObject
         );
 
         if ($bound === null) {
-            throw new \RuntimeException('Failed to bind Transform to GameObject.');
+            throw new RuntimeException('Failed to bind Transform to GameObject.');
         }
 
         $bound();
@@ -49,12 +69,21 @@ final class GameObject
 
     private ?int $instanceId = null;
     private string $sceneObjectIdValue = '';
+    private string $prefabAssetPathValue = '';
     private string $nameValue;
     private Transform $transformValue;
     private string $tagValue = 'Untagged';
     private int $layerValue = 0;
     private bool $activeSelfValue = true;
     private bool $activeInHierarchyValue = true;
+    /**
+     * @var array<string, class-string<Component>>
+     */
+    private static array $registeredComponentWrapperClasses = [];
+    /**
+     * @var array<class-string<Component>, string>
+     */
+    private static array $registeredComponentNativeTypesByClass = [];
 
     public string $name {
         get {
@@ -104,6 +133,16 @@ final class GameObject
         }
     }
 
+    /**
+     * Relative prefab asset path when this object is an asset reference rather
+     * than a live scene object.
+     */
+    public string $prefabAssetPath {
+        get {
+            return $this->prefabAssetPathValue;
+        }
+    }
+
     public int $layer {
         get {
             if ($this->instanceId !== null) {
@@ -149,6 +188,14 @@ final class GameObject
 
     public function __serialize(): array
     {
+        if ($this->prefabAssetPathValue !== '') {
+            return [
+                '__lengaRefKind' => 'PrefabAsset',
+                'assetPath' => $this->prefabAssetPathValue,
+                'name' => $this->nameValue,
+            ];
+        }
+
         return [
             '__lengaRefKind' => 'GameObject',
             'sceneObjectId' => $this->sceneObjectIdValue,
@@ -163,6 +210,7 @@ final class GameObject
         if ($resolved !== null) {
             $this->instanceId = $resolved->instanceId;
             $this->sceneObjectIdValue = $resolved->sceneObjectIdValue;
+            $this->prefabAssetPathValue = $resolved->prefabAssetPathValue;
             $this->nameValue = $resolved->nameValue;
             $this->transformValue = $resolved->transformValue;
             $this->tagValue = $resolved->tagValue;
@@ -173,11 +221,14 @@ final class GameObject
             return;
         }
 
-        $this->instanceId = isset($data['instanceId']) && \is_int($data['instanceId']) ? $data['instanceId'] : null;
-        $this->sceneObjectIdValue = isset($data['sceneObjectId']) && \is_string($data['sceneObjectId'])
+        $this->instanceId = isset($data['instanceId']) && is_int($data['instanceId']) ? $data['instanceId'] : null;
+        $this->sceneObjectIdValue = isset($data['sceneObjectId']) && is_string($data['sceneObjectId'])
             ? $data['sceneObjectId']
             : '';
-        $this->nameValue = isset($data['name']) && \is_string($data['name']) ? $data['name'] : 'GameObject';
+        $this->prefabAssetPathValue = isset($data['assetPath']) && is_string($data['assetPath'])
+            ? $data['assetPath']
+            : '';
+        $this->nameValue = isset($data['name']) && is_string($data['name']) ? $data['name'] : 'GameObject';
         $this->tagValue = 'Untagged';
         $this->layerValue = 0;
         $this->activeSelfValue = true;
@@ -201,6 +252,10 @@ final class GameObject
 
         $this->activeSelfValue = $value;
         $this->activeInHierarchyValue = $value;
+        if ($this->prefabAssetPathValue !== '') {
+            return;
+        }
+
         NativeEngine::call('game_object_set_active', $this->nameValue, $value);
     }
 
@@ -228,7 +283,7 @@ final class GameObject
         /** @var array{name?: string}|false $data */
         $data = NativeEngine::call('game_object_get_scene_by_id', $this->instanceId);
 
-        return \is_array($data) ? Scene::fromNativeData($data) : null;
+        return is_array($data) ? Scene::fromNativeData($data) : null;
     }
 
     public function getParent(): ?self
@@ -240,7 +295,7 @@ final class GameObject
         /** @var array{name?: string, tag?: string, layer?: int, id?: int, activeSelf?: bool, activeInHierarchy?: bool, transformId?: int|null}|false $data */
         $data = NativeEngine::call('game_object_get_parent_by_id', $this->instanceId);
 
-        return \is_array($data) ? self::fromNativeLookupData($data) : null;
+        return is_array($data) ? self::fromNativeLookupData($data) : null;
     }
 
     /**
@@ -254,7 +309,7 @@ final class GameObject
 
         /** @var list<array{name?: string, tag?: string, layer?: int, id?: int, activeSelf?: bool, activeInHierarchy?: bool, transformId?: int|null}>|false $data */
         $data = NativeEngine::call('game_object_get_children_by_id', $this->instanceId);
-        if (!\is_array($data)) {
+        if (!is_array($data)) {
             return [];
         }
 
@@ -266,7 +321,7 @@ final class GameObject
 
     public function childCount(): int
     {
-        return \count($this->getChildren());
+        return count($this->getChildren());
     }
 
     public function setParent(?self $parent, bool $worldPositionStays = true): bool
@@ -306,6 +361,17 @@ final class GameObject
         );
     }
 
+    /**
+     * Attempts to resolve a component attached to this object.
+     *
+     * Pass a concrete component class, such as `Rigidbody2D::class`, for IDEs
+     * and static analysers to infer the specific component wrapper type.
+     *
+     * @template TComponent of object
+     * @param class-string<TComponent>|non-empty-string $type
+     * @param TComponent|null $component
+     * @param-out TComponent|null $component
+     */
     public function tryGetComponent(string $type, ?object &$component = null): bool
     {
         $component = $this->getComponent($type);
@@ -313,6 +379,18 @@ final class GameObject
         return $component !== null;
     }
 
+    /**
+     * Resolves the first component of the requested type attached to this object.
+     *
+     * Prefer passing concrete class names, for example `Rigidbody2D::class`, so
+     * editor tooling can infer `Rigidbody2D|null` instead of an implementation
+     * detail union. Native component names such as `"Rigidbody2D"` remain
+     * supported for dynamic runtime code.
+     *
+     * @template TComponent of object
+     * @param class-string<TComponent>|non-empty-string $type
+     * @return TComponent|null
+     */
     public function getComponent(string $type): object|null
     {
         if ($this->instanceId === null) {
@@ -336,7 +414,11 @@ final class GameObject
     }
 
     /**
-     * @return list<object>
+     * Resolves all matching components attached to this object.
+     *
+     * @template TComponent of object
+     * @param class-string<TComponent>|non-empty-string|null $type
+     * @return ($type is null ? list<object> : list<TComponent>)
      */
     public function getComponents(?string $type = null): array
     {
@@ -367,7 +449,11 @@ final class GameObject
     }
 
     /**
-     * @return list<object>
+     * Resolves matching components on this object and its descendants.
+     *
+     * @template TComponent of object
+     * @param class-string<TComponent>|non-empty-string|null $type
+     * @return ($type is null ? list<object> : list<TComponent>)
      */
     public function getComponentsInChildren(?string $type = null, bool $includeInactive = false): array
     {
@@ -377,6 +463,13 @@ final class GameObject
         return $results;
     }
 
+    /**
+     * Resolves the first matching component on this object or its descendants.
+     *
+     * @template TComponent of object
+     * @param class-string<TComponent>|non-empty-string $type
+     * @return TComponent|null
+     */
     public function getComponentInChildren(string $type, bool $includeInactive = false): object|null
     {
         $components = $this->getComponentsInChildren($type, $includeInactive);
@@ -385,7 +478,11 @@ final class GameObject
     }
 
     /**
-     * @return list<object>
+     * Resolves matching components on this object and its ancestors.
+     *
+     * @template TComponent of object
+     * @param class-string<TComponent>|non-empty-string|null $type
+     * @return ($type is null ? list<object> : list<TComponent>)
      */
     public function getComponentsInParent(?string $type = null, bool $includeInactive = false): array
     {
@@ -405,6 +502,13 @@ final class GameObject
         return $results;
     }
 
+    /**
+     * Resolves the first matching component on this object or its ancestors.
+     *
+     * @template TComponent of object
+     * @param class-string<TComponent>|non-empty-string $type
+     * @return TComponent|null
+     */
     public function getComponentInParent(string $type, bool $includeInactive = false): object|null
     {
         $components = $this->getComponentsInParent($type, $includeInactive);
@@ -412,15 +516,22 @@ final class GameObject
         return $components[0] ?? null;
     }
 
+    /**
+     * Adds a component to this object and returns the concrete wrapper.
+     *
+     * @template TComponent of object
+     * @param class-string<TComponent>|non-empty-string $type
+     * @return TComponent
+     */
     public function addComponent(string $type): object
     {
         if ($this->instanceId === null) {
-            throw new \RuntimeException('Cannot add components to a detached GameObject proxy.');
+            throw new RuntimeException('Cannot add components to a detached GameObject proxy.');
         }
 
         $descriptor = self::normalizeComponentSpecifier($type);
         if ($descriptor['nativeType'] === 'Behaviour' && $descriptor['scriptClass'] === null) {
-            throw new \InvalidArgumentException(
+            throw new InvalidArgumentException(
                 'Adding a Behaviour requires a concrete script class, for example PlayerController::class.',
             );
         }
@@ -433,7 +544,7 @@ final class GameObject
 
         $wrapped = $this->wrapNativeComponentResult($nativeResult);
         if ($wrapped === null) {
-            throw new \RuntimeException("Failed to add component '{$type}' to '{$this->name}'.");
+            throw new RuntimeException("Failed to add component '{$type}' to '{$this->name}'.");
         }
 
         return $wrapped;
@@ -441,14 +552,19 @@ final class GameObject
 
     public function clone(?string $name = null): self
     {
-        return self::instantiate($this, $name);
+        $clone = self::instantiate($this, $name);
+        if (!$clone instanceof self) {
+            throw new RuntimeException('GameObject clone did not return a GameObject.');
+        }
+
+        return $clone;
     }
 
     public static function find(string $name): ?self
     {
         /** @var array{name?: string, tag?: string, layer?: int, id?: int, activeSelf?: bool, activeInHierarchy?: bool, transformId?: int|null}|false $data */
         $data = NativeEngine::call('game_object_find_by_name', $name);
-        if (!\is_array($data)) {
+        if (!is_array($data)) {
             return null;
         }
 
@@ -459,7 +575,7 @@ final class GameObject
     {
         /** @var array{name?: string, tag?: string, layer?: int, id?: int, activeSelf?: bool, activeInHierarchy?: bool, transformId?: int|null, sceneObjectId?: string}|false $data */
         $data = NativeEngine::call('game_object_find_by_scene_id', $sceneObjectId);
-        if (!\is_array($data)) {
+        if (!is_array($data)) {
             return null;
         }
 
@@ -470,7 +586,7 @@ final class GameObject
     {
         /** @var array{name?: string, tag?: string, layer?: int, id?: int, activeSelf?: bool, activeInHierarchy?: bool, transformId?: int|null, sceneObjectId?: string}|false $data */
         $data = NativeEngine::call('game_object_lookup_by_id', $instanceId);
-        if (!\is_array($data)) {
+        if (!is_array($data)) {
             return null;
         }
 
@@ -481,7 +597,7 @@ final class GameObject
     {
         /** @var array{name?: string, tag?: string, layer?: int, id?: int, activeSelf?: bool, activeInHierarchy?: bool, transformId?: int|null}|false $data */
         $data = NativeEngine::call('game_object_find_with_tag', $tag);
-        if (!\is_array($data)) {
+        if (!is_array($data)) {
             return null;
         }
 
@@ -495,7 +611,7 @@ final class GameObject
     {
         /** @var list<array{name?: string, tag?: string, layer?: int, id?: int, activeSelf?: bool, activeInHierarchy?: bool, transformId?: int|null}>|false $results */
         $results = NativeEngine::call('game_object_find_game_objects_with_tag', $tag);
-        if (!\is_array($results)) {
+        if (!is_array($results)) {
             return [];
         }
 
@@ -509,27 +625,224 @@ final class GameObject
     {
         /** @var array{name?: string, tag?: string, layer?: int, id?: int, activeSelf?: bool, activeInHierarchy?: bool, transformId?: int|null}|false $data */
         $data = NativeEngine::call('scene_create_game_object', $name);
-        if (!\is_array($data)) {
-            throw new \RuntimeException("Failed to create GameObject '{$name}' in the active scene.");
+        if (!is_array($data)) {
+            throw new RuntimeException("Failed to create GameObject '{$name}' in the active scene.");
         }
 
         return self::fromNativeLookupData($data);
     }
 
-    public static function instantiate(self $original, ?string $name = null): self
+    /**
+     * Creates a scene instance from a GameObject, component, behaviour, or
+     * assigned prefab asset reference.
+     *
+     * Component and behaviour sources clone their owning GameObject and return
+     * the matching component from the cloned instance.
+     */
+    public static function instantiate(
+        object $original,
+        string|Vector3|Transform|GameObject|InstantiateOptions|array|null $positionOrParentOrName = null,
+        Vector3|Quaternion|bool|string|null $rotationOrWorldPositionStaysOrName = null,
+        Transform|GameObject|string|null $parentOrName = null,
+        ?string $name = null,
+    ): object {
+        $options = self::resolveInstantiateOptions(
+            $positionOrParentOrName,
+            $rotationOrWorldPositionStaysOrName,
+            $parentOrName,
+            $name,
+        );
+
+        if ($original instanceof self) {
+            return self::instantiateGameObjectSource($original, $options);
+        }
+
+        if ($original instanceof Transform || $original instanceof Component || $original instanceof Behaviour) {
+            return self::instantiateComponentSource($original, $options);
+        }
+
+        throw new InvalidArgumentException(
+            'GameObject::instantiate() expects a GameObject, Transform, Component, or Behaviour source.',
+        );
+    }
+
+    private static function instantiateGameObjectSource(self $original, InstantiateOptions $options): self
     {
         $instanceId = $original->instanceId;
         if ($instanceId === null) {
-            throw new \RuntimeException('Cannot instantiate a detached GameObject proxy.');
+            if ($original->prefabAssetPathValue !== '') {
+                return Prefab::instantiate($original->prefabAssetPathValue, $options);
+            }
+
+            throw new RuntimeException('Cannot instantiate a detached GameObject proxy.');
         }
 
         /** @var array{name?: string, tag?: string, layer?: int, id?: int, activeSelf?: bool, activeInHierarchy?: bool, transformId?: int|null}|false $data */
-        $data = NativeEngine::call('game_object_instantiate_by_id', $instanceId, $name);
-        if (!\is_array($data)) {
-            throw new \RuntimeException("Failed to instantiate GameObject '{$original->name}'.");
+        $data = NativeEngine::call('game_object_instantiate_by_id', $instanceId, $options->toNativeArray());
+        if (!is_array($data)) {
+            throw new RuntimeException("Failed to instantiate GameObject '{$original->name}'.");
         }
 
         return self::fromNativeLookupData($data);
+    }
+
+    private static function instantiateComponentSource(
+        Transform|Component|Behaviour $original,
+        InstantiateOptions $options,
+    ): object {
+        $sourceGameObject = $original->gameObject;
+        $instance = self::instantiateGameObjectSource($sourceGameObject, $options);
+        $component = self::resolveInstantiatedComponent($original, $instance);
+        if ($component === null) {
+            throw new RuntimeException(
+                "Failed to resolve instantiated component from cloned GameObject '{$instance->name}'.",
+            );
+        }
+
+        return $component;
+    }
+
+    private static function resolveInstantiateOptions(
+        mixed $positionOrParentOrName,
+        mixed $rotationOrWorldPositionStaysOrName,
+        mixed $parentOrName,
+        ?string $name,
+    ): InstantiateOptions {
+        if ($positionOrParentOrName instanceof InstantiateOptions) {
+            return $name !== null ? $positionOrParentOrName->withName($name) : $positionOrParentOrName;
+        }
+
+        if (is_array($positionOrParentOrName)) {
+            $options = InstantiateOptions::fromArray($positionOrParentOrName);
+            return $name !== null ? $options->withName($name) : $options;
+        }
+
+        if ($positionOrParentOrName instanceof Vector3) {
+            $rotation = null;
+            $resolvedName = $name;
+
+            if ($rotationOrWorldPositionStaysOrName instanceof Vector3 || $rotationOrWorldPositionStaysOrName instanceof Quaternion) {
+                $rotation = $rotationOrWorldPositionStaysOrName;
+            } elseif (is_string($rotationOrWorldPositionStaysOrName)) {
+                $resolvedName = $rotationOrWorldPositionStaysOrName;
+            } elseif ($rotationOrWorldPositionStaysOrName !== null) {
+                throw new InvalidArgumentException('Instantiate rotation must be a Vector3, Quaternion, string name, or null.');
+            }
+
+            $parent = null;
+            if ($parentOrName instanceof Transform || $parentOrName instanceof self) {
+                $parent = $parentOrName;
+            } elseif (is_string($parentOrName)) {
+                $resolvedName = $parentOrName;
+            } elseif ($parentOrName !== null) {
+                throw new InvalidArgumentException('Instantiate parent must be a GameObject, Transform, string name, or null.');
+            }
+
+            return InstantiateOptions::at(
+                $positionOrParentOrName,
+                $rotation,
+                $parent,
+                $resolvedName,
+            );
+        }
+
+        if ($positionOrParentOrName instanceof Transform || $positionOrParentOrName instanceof self) {
+            $worldPositionStays = false;
+            $resolvedName = $name;
+
+            if (is_bool($rotationOrWorldPositionStaysOrName)) {
+                $worldPositionStays = $rotationOrWorldPositionStaysOrName;
+            } elseif (is_string($rotationOrWorldPositionStaysOrName)) {
+                $resolvedName = $rotationOrWorldPositionStaysOrName;
+            } elseif ($rotationOrWorldPositionStaysOrName !== null) {
+                throw new InvalidArgumentException('Instantiate parent overload expects a bool worldPositionStays, string name, or null.');
+            }
+
+            if (is_string($parentOrName)) {
+                $resolvedName = $parentOrName;
+            } elseif ($parentOrName !== null) {
+                throw new InvalidArgumentException('Instantiate parent overload does not accept a fourth argument except a string name.');
+            }
+
+            return InstantiateOptions::under($positionOrParentOrName, $worldPositionStays, $resolvedName);
+        }
+
+        if (is_string($positionOrParentOrName) || $positionOrParentOrName === null) {
+            if ($rotationOrWorldPositionStaysOrName !== null || $parentOrName !== null) {
+                throw new InvalidArgumentException('Instantiate name overload only accepts a source and optional name.');
+            }
+
+            return new InstantiateOptions(name: $positionOrParentOrName ?? $name);
+        }
+
+        throw new InvalidArgumentException('Unsupported GameObject::instantiate() argument combination.');
+    }
+
+    private static function resolveInstantiatedComponent(
+        Transform|Component|Behaviour $source,
+        self $instance,
+    ): object|null {
+        if ($source instanceof Transform) {
+            return $instance->transform;
+        }
+
+        if ($source instanceof Behaviour) {
+            $sceneComponentId = $source->getSceneComponentId();
+            if ($sceneComponentId !== null && $sceneComponentId !== '') {
+                foreach ($instance->getComponents($source::class) as $candidate) {
+                    if (
+                        $candidate instanceof Behaviour &&
+                        $candidate->getSceneComponentId() === $sceneComponentId
+                    ) {
+                        return $candidate;
+                    }
+                }
+            }
+
+            return $instance->getComponent($source::class);
+        }
+
+        $componentType = $source->type;
+        $sceneComponentId = $source->getSceneComponentId();
+        if ($sceneComponentId !== null && $sceneComponentId !== '') {
+            foreach ($instance->getComponents($componentType) as $candidate) {
+                if (
+                    $candidate instanceof Component &&
+                    $candidate->getSceneComponentId() === $sceneComponentId
+                ) {
+                    return $candidate;
+                }
+            }
+        }
+
+        return $instance->getComponent($componentType);
+    }
+
+    /**
+     * Creates a detached GameObject reference that points at a prefab asset.
+     *
+     * Use this for serialized fields that should hold a prefab source rather
+     * than a placed scene object.
+     */
+    public static function fromPrefabAssetPath(string $assetPath, ?string $name = null): self
+    {
+        $assetPath = \trim($assetPath);
+        if ($assetPath === '') {
+            throw new InvalidArgumentException('Prefab asset path cannot be empty.');
+        }
+
+        $displayName = $name;
+        if ($displayName === null || $displayName === '') {
+            $displayName = \basename($assetPath);
+            if (\str_ends_with($displayName, '.prefab.json')) {
+                $displayName = \substr($displayName, 0, -\strlen('.prefab.json'));
+            }
+        }
+
+        return new self(
+            $displayName !== '' ? $displayName : 'Prefab',
+            prefabAssetPath: $assetPath,
+        );
     }
 
     /**
@@ -537,11 +850,11 @@ final class GameObject
      */
     public static function fromNativeLookupData(array $data, ?Transform $transform = null): self
     {
-        $transformId = isset($data['transformId']) && \is_int($data['transformId'])
+        $transformId = isset($data['transformId']) && is_int($data['transformId'])
             ? $data['transformId']
             : null;
 
-        $instanceId = isset($data['id']) && \is_int($data['id'])
+        $instanceId = isset($data['id']) && is_int($data['id'])
             ? $data['id']
             : null;
 
@@ -559,9 +872,27 @@ final class GameObject
         return $gameObject;
     }
 
+    /**
+     * Resolves serialized GameObject and prefab asset references.
+     *
+     * @param array<string, mixed> $data
+     */
     public static function fromSerializedReference(array $data): ?self
     {
-        $sceneObjectId = isset($data['sceneObjectId']) && \is_string($data['sceneObjectId'])
+        $referenceKind = isset($data['__lengaRefKind']) && is_string($data['__lengaRefKind'])
+            ? $data['__lengaRefKind']
+            : '';
+        $assetPath = isset($data['assetPath']) && is_string($data['assetPath'])
+            ? $data['assetPath']
+            : '';
+        if ($referenceKind === 'PrefabAsset' && $assetPath !== '') {
+            return self::fromPrefabAssetPath(
+                $assetPath,
+                isset($data['name']) && is_string($data['name']) ? $data['name'] : null,
+            );
+        }
+
+        $sceneObjectId = isset($data['sceneObjectId']) && is_string($data['sceneObjectId'])
             ? $data['sceneObjectId']
             : '';
         if ($sceneObjectId !== '') {
@@ -571,7 +902,7 @@ final class GameObject
             }
         }
 
-        $instanceId = isset($data['instanceId']) && \is_int($data['instanceId'])
+        $instanceId = isset($data['instanceId']) && is_int($data['instanceId'])
             ? $data['instanceId']
             : null;
         if ($instanceId !== null) {
@@ -581,24 +912,109 @@ final class GameObject
         return null;
     }
 
+    /**
+     * Resolves a serialized component reference whose owner may be a prefab asset.
+     *
+     * Prefab component references are detached authoring-time proxies. Use their
+     * `gameObject` to instantiate the prefab source before calling runtime-only
+     * component methods.
+     *
+     * @param array<string, mixed> $data
+     */
+    public static function componentFromSerializedReference(array $data): object|null
+    {
+        $referenceKind = isset($data['__lengaRefKind']) && is_string($data['__lengaRefKind'])
+            ? $data['__lengaRefKind']
+            : '';
+        if (!\in_array($referenceKind, ['Component', 'Behaviour', 'Transform'], true)) {
+            return null;
+        }
+
+        $gameObjectData = \is_array($data['gameObject'] ?? null) ? $data['gameObject'] : [];
+        $gameObject = self::fromSerializedReference($gameObjectData);
+        if (!$gameObject instanceof self) {
+            return null;
+        }
+
+        if ($gameObject->prefabAssetPathValue === '') {
+            if ($referenceKind === 'Transform') {
+                return $gameObject->transform;
+            }
+
+            $componentType = isset($data['componentType']) && is_string($data['componentType'])
+                ? $data['componentType']
+                : (isset($data['className']) && is_string($data['className']) ? $data['className'] : '');
+            return $componentType !== '' ? $gameObject->getComponent($componentType) : null;
+        }
+
+        return $gameObject->createPrefabComponentReference($data);
+    }
+
+    /**
+     * Registers a PHP wrapper class for a native component type.
+     *
+     * Most engine components are discovered by convention from their native
+     * type, for example `Rigidbody2D` maps to `Lenga\Engine\Core\Rigidbody2D`.
+     * This hook keeps non-conventional wrapper namespaces dynamic without
+     * adding more branches to GameObject itself.
+     *
+     * @param class-string<Component> $componentClass
+     */
+    public static function registerComponentWrapper(string $nativeType, string $componentClass): void
+    {
+        $nativeType = \trim($nativeType);
+        $componentClass = ltrim($componentClass, '\\');
+
+        if ($nativeType === '') {
+            throw new InvalidArgumentException('Component native type cannot be empty.');
+        }
+
+        if (
+            !class_exists($componentClass) ||
+            !is_subclass_of($componentClass, Component::class)
+        ) {
+            throw new InvalidArgumentException(
+                "Component wrapper '{$componentClass}' must be a concrete subclass of Component.",
+            );
+        }
+
+        try {
+            $reflection = new ReflectionClass($componentClass);
+        } catch (ReflectionException $exception) {
+            throw new InvalidArgumentException(
+                "Component wrapper '{$componentClass}' could not be reflected.",
+                previous: $exception,
+            );
+        }
+
+        if ($reflection->isAbstract()) {
+            throw new InvalidArgumentException(
+                "Component wrapper '{$componentClass}' must be concrete.",
+            );
+        }
+
+        self::$registeredComponentWrapperClasses[$nativeType] = $componentClass;
+        self::$registeredComponentNativeTypesByClass[$componentClass] = $nativeType;
+    }
+
     public static function wrapNativeComponentLookupData(mixed $nativeResult): object|null
     {
         if ($nativeResult === false || $nativeResult === null) {
             return null;
         }
 
-        if (\is_object($nativeResult)) {
+        if (is_object($nativeResult)) {
             return $nativeResult;
         }
 
-        if (!\is_array($nativeResult)) {
+        if (!is_array($nativeResult)) {
             return null;
         }
 
         $gameObject = null;
-        if (\is_array($nativeResult['gameObject'] ?? null)) {
+        if (is_array($nativeResult['gameObject'] ?? null)) {
             $gameObject = self::fromNativeLookupData($nativeResult['gameObject']);
-        } elseif (isset($nativeResult['gameObjectId']) && \is_int($nativeResult['gameObjectId'])) {
+        } elseif (isset($nativeResult['gameObjectId']) && is_int($nativeResult['gameObjectId'])) {
             $gameObject = self::lookupByInstanceId($nativeResult['gameObjectId']);
         }
 
@@ -614,7 +1030,7 @@ final class GameObject
      */
     public static function wrapNativeComponentLookupResults(mixed $nativeResult): array
     {
-        if (!\is_array($nativeResult)) {
+        if (!is_array($nativeResult)) {
             return [];
         }
 
@@ -638,30 +1054,8 @@ final class GameObject
 
         return match ($type) {
             Transform::class, 'Transform' => ['nativeType' => 'Transform', 'scriptClass' => null],
-            Camera::class, 'Camera' => ['nativeType' => 'Camera', 'scriptClass' => null],
-            Rigidbody2D::class, 'Rigidbody2D' => ['nativeType' => 'Rigidbody2D', 'scriptClass' => null],
-            PlatformEffector2D::class, 'PlatformEffector2D' => ['nativeType' => 'PlatformEffector2D', 'scriptClass' => null],
-            AreaEffector2D::class, 'AreaEffector2D' => ['nativeType' => 'AreaEffector2D', 'scriptClass' => null],
-            PointEffector2D::class, 'PointEffector2D' => ['nativeType' => 'PointEffector2D', 'scriptClass' => null],
-            SurfaceEffector2D::class, 'SurfaceEffector2D' => ['nativeType' => 'SurfaceEffector2D', 'scriptClass' => null],
-            BuoyancyEffector2D::class, 'BuoyancyEffector2D' => ['nativeType' => 'BuoyancyEffector2D', 'scriptClass' => null],
-            BoxCollider2D::class, 'BoxCollider2D' => ['nativeType' => 'BoxCollider2D', 'scriptClass' => null],
-            CircleCollider2D::class, 'CircleCollider2D' => ['nativeType' => 'CircleCollider2D', 'scriptClass' => null],
-            BoxCollider3D::class, 'BoxCollider3D' => ['nativeType' => 'BoxCollider3D', 'scriptClass' => null],
-            CapsuleCollider3D::class, 'CapsuleCollider3D' => ['nativeType' => 'CapsuleCollider3D', 'scriptClass' => null],
-            CharacterController::class, 'CharacterController' => ['nativeType' => 'CharacterController', 'scriptClass' => null],
-            SphereCollider3D::class, 'SphereCollider3D' => ['nativeType' => 'SphereCollider3D', 'scriptClass' => null],
-            AudioSource::class, 'AudioSource' => ['nativeType' => 'AudioSource', 'scriptClass' => null],
-            SpriteAnimation::class, 'SpriteAnimation' => ['nativeType' => 'SpriteAnimation', 'scriptClass' => null],
-            RectangleRenderer::class, 'RectangleRenderer' => ['nativeType' => 'RectangleRenderer', 'scriptClass' => null],
-            SpriteRenderer::class, 'SpriteRenderer' => ['nativeType' => 'SpriteRenderer', 'scriptClass' => null],
-            ParticleSystem::class, 'ParticleSystem' => ['nativeType' => 'ParticleSystem', 'scriptClass' => null],
-            CubeRenderer::class, 'CubeRenderer' => ['nativeType' => 'CubeRenderer', 'scriptClass' => null],
-            SphereRenderer::class, 'SphereRenderer' => ['nativeType' => 'SphereRenderer', 'scriptClass' => null],
-            CylinderRenderer::class, 'CylinderRenderer' => ['nativeType' => 'CylinderRenderer', 'scriptClass' => null],
-            PlaneRenderer::class, 'PlaneRenderer' => ['nativeType' => 'PlaneRenderer', 'scriptClass' => null],
-            MeshRenderer::class, 'MeshRenderer' => ['nativeType' => 'MeshRenderer', 'scriptClass' => null],
-            ModelRenderer::class, 'ModelRenderer' => ['nativeType' => 'ModelRenderer', 'scriptClass' => null],
+            Component::class, ComponentInterface::class, 'Component' => ['nativeType' => 'Component', 'scriptClass' => null],
+            Renderer::class, RendererInterface::class, 'Renderer' => ['nativeType' => 'Renderer', 'scriptClass' => null],
             Behaviour::class, 'Behaviour' => ['nativeType' => 'Behaviour', 'scriptClass' => null],
             default => self::normalizeDynamicComponentSpecifier($type),
         };
@@ -672,8 +1066,34 @@ final class GameObject
      */
     private static function normalizeDynamicComponentSpecifier(string $type): array
     {
-        if (\class_exists($type) && \is_subclass_of($type, Behaviour::class)) {
+        if (class_exists($type) && is_subclass_of($type, Behaviour::class)) {
             return ['nativeType' => 'Behaviour', 'scriptClass' => $type];
+        }
+
+        if (class_exists($type) && is_subclass_of($type, Component::class)) {
+            $nativeType = self::$registeredComponentNativeTypesByClass[$type]
+                ?? self::resolveNativeComponentTypeFromClass($type);
+            if ($nativeType !== null) {
+                return ['nativeType' => $nativeType, 'scriptClass' => null];
+            }
+        }
+
+        if (class_exists($type) && is_subclass_of($type, Renderer::class)) {
+            return ['nativeType' => 'Renderer', 'scriptClass' => null];
+        }
+
+        if (class_exists($type) && is_subclass_of($type, Component::class)) {
+            return ['nativeType' => 'Component', 'scriptClass' => null];
+        }
+
+        if (interface_exists($type)) {
+            if (is_subclass_of($type, RendererInterface::class)) {
+                return ['nativeType' => 'Renderer', 'scriptClass' => null];
+            }
+
+            if (is_subclass_of($type, ComponentInterface::class)) {
+                return ['nativeType' => 'Component', 'scriptClass' => null];
+            }
         }
 
         return ['nativeType' => $type, 'scriptClass' => null];
@@ -702,7 +1122,7 @@ final class GameObject
      */
     private function wrapNativeComponentResults(mixed $nativeResult): array
     {
-        if (!\is_array($nativeResult)) {
+        if (!is_array($nativeResult)) {
             return [];
         }
 
@@ -723,24 +1143,24 @@ final class GameObject
             return null;
         }
 
-        if (\is_object($nativeResult)) {
+        if (is_object($nativeResult)) {
             return $nativeResult;
         }
 
-        if (!\is_array($nativeResult)) {
+        if (!is_array($nativeResult)) {
             return null;
         }
 
-        $componentId = isset($nativeResult['id']) && \is_int($nativeResult['id'])
+        $componentId = isset($nativeResult['id']) && is_int($nativeResult['id'])
             ? $nativeResult['id']
             : null;
         $componentType = (string) ($nativeResult['type'] ?? 'Component');
 
         if ($componentType === 'Transform') {
-            $transformId = isset($nativeResult['transformId']) && \is_int($nativeResult['transformId'])
+            $transformId = isset($nativeResult['transformId']) && is_int($nativeResult['transformId'])
                 ? $nativeResult['transformId']
                 : null;
-            $gameObjectId = isset($nativeResult['gameObjectId']) && \is_int($nativeResult['gameObjectId'])
+            $gameObjectId = isset($nativeResult['gameObjectId']) && is_int($nativeResult['gameObjectId'])
                 ? $nativeResult['gameObjectId']
                 : $this->instanceId;
 
@@ -759,39 +1179,12 @@ final class GameObject
             return null;
         }
 
-        $component = match ($componentType) {
-            'Camera' => new Camera($this, $componentId),
-            'Rigidbody2D' => new Rigidbody2D($this, $componentId),
-            'PlatformEffector2D' => new PlatformEffector2D($this, $componentId),
-            'AreaEffector2D' => new AreaEffector2D($this, $componentId),
-            'PointEffector2D' => new PointEffector2D($this, $componentId),
-            'SurfaceEffector2D' => new SurfaceEffector2D($this, $componentId),
-            'BuoyancyEffector2D' => new BuoyancyEffector2D($this, $componentId),
-            'BoxCollider2D' => new BoxCollider2D($this, $componentId),
-            'CircleCollider2D' => new CircleCollider2D($this, $componentId),
-            'BoxCollider3D' => new BoxCollider3D($this, $componentId),
-            'CapsuleCollider3D' => new CapsuleCollider3D($this, $componentId),
-            'CharacterController' => new CharacterController($this, $componentId),
-            'SphereCollider3D' => new SphereCollider3D($this, $componentId),
-            'AudioSource' => new AudioSource($this, $componentId),
-            'DirectionalLight' => new DirectionalLight($this, $componentId),
-            'PointLight' => new PointLight($this, $componentId),
-            'SpriteAnimation' => new SpriteAnimation($this, $componentId),
-            'RectangleRenderer' => new RectangleRenderer($this, $componentId),
-            'SpriteRenderer' => new SpriteRenderer($this, $componentId),
-            'ParticleSystem' => new ParticleSystem($this, $componentId),
-            'CubeRenderer' => new CubeRenderer($this, $componentId),
-            'SphereRenderer' => new SphereRenderer($this, $componentId),
-            'CylinderRenderer' => new CylinderRenderer($this, $componentId),
-            'PlaneRenderer' => new PlaneRenderer($this, $componentId),
-            'MeshRenderer' => new MeshRenderer($this, $componentId),
-            'ModelRenderer' => new ModelRenderer($this, $componentId),
-            default => new NativeComponent($this, $componentId, $componentType),
-        };
+        $component = $this->createComponentWrapper($componentType, $componentId)
+            ?? new NativeComponent($this, $componentId, $componentType);
 
         if (
             isset($nativeResult['sceneComponentId']) &&
-            \is_string($nativeResult['sceneComponentId']) &&
+            is_string($nativeResult['sceneComponentId']) &&
             $component instanceof Component
         ) {
             self::attachSceneComponentId($component, $nativeResult['sceneComponentId']);
@@ -800,9 +1193,183 @@ final class GameObject
         return $component;
     }
 
+    /**
+     * @param class-string $type
+     */
+    private static function resolveNativeComponentTypeFromClass(string $type): ?string
+    {
+        try {
+            $reflection = new ReflectionClass($type);
+        } catch (ReflectionException) {
+            return null;
+        }
+
+        if ($reflection->isAbstract()) {
+            return null;
+        }
+
+        $nativeTypeConstant = $reflection->getReflectionConstant('NATIVE_TYPE');
+        if ($nativeTypeConstant !== false && $nativeTypeConstant->isPublic()) {
+            $nativeType = $nativeTypeConstant->getValue();
+            if (is_string($nativeType) && $nativeType !== '') {
+                return $nativeType;
+            }
+        }
+
+        $namespace = $reflection->getNamespaceName();
+        if ($namespace === __NAMESPACE__ || $namespace === 'Lenga\\Engine\\Audio') {
+            return $reflection->getShortName();
+        }
+
+        return null;
+    }
+
+    private function createComponentWrapper(string $componentType, int $componentId): ?Component
+    {
+        $componentClass = $this->resolveComponentWrapperClass($componentType);
+        if ($componentClass === null) {
+            return null;
+        }
+
+        return $this->instantiateComponentWrapper($componentClass, $componentId, $componentType);
+    }
+
+    /**
+     * @return class-string<Component>|null
+     */
+    private static function resolveComponentWrapperClass(string $componentType): ?string
+    {
+        if (isset(self::$registeredComponentWrapperClasses[$componentType])) {
+            return self::$registeredComponentWrapperClasses[$componentType];
+        }
+
+        $candidateClasses = [
+            __NAMESPACE__ . '\\' . $componentType,
+            'Lenga\\Engine\\Audio\\' . $componentType,
+        ];
+
+        foreach ($candidateClasses as $candidateClass) {
+            if (!class_exists($candidateClass) || !is_subclass_of($candidateClass, Component::class)) {
+                continue;
+            }
+
+            try {
+                $reflection = new ReflectionClass($candidateClass);
+            } catch (ReflectionException) {
+                continue;
+            }
+
+            if (!$reflection->isAbstract()) {
+                return $candidateClass;
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * @param array<string, mixed> $data
+     */
+    private function createPrefabComponentReference(array $data): object|null
+    {
+        $referenceKind = isset($data['__lengaRefKind']) && is_string($data['__lengaRefKind'])
+            ? $data['__lengaRefKind']
+            : '';
+        if ($referenceKind === 'Transform') {
+            return $this->transformValue;
+        }
+
+        $componentId = isset($data['instanceId']) && is_int($data['instanceId'])
+            ? $data['instanceId']
+            : 0;
+        $componentSceneId = isset($data['componentSceneId']) && is_string($data['componentSceneId'])
+            ? $data['componentSceneId']
+            : null;
+
+        if ($referenceKind === 'Behaviour') {
+            $className = isset($data['className']) && is_string($data['className'])
+                ? ltrim($data['className'], '\\')
+                : '';
+            if ($className === '' || !class_exists($className) || !is_subclass_of($className, Behaviour::class)) {
+                return null;
+            }
+
+            /** @var Behaviour $behaviour */
+            $behaviour = new $className();
+            self::attachPrefabBehaviourReference($behaviour, $this, $componentId, $componentSceneId);
+            return $behaviour;
+        }
+
+        $componentType = isset($data['componentType']) && is_string($data['componentType'])
+            ? $data['componentType']
+            : '';
+        if ($componentType === '' || $componentType === 'Transform' || $componentType === Transform::class) {
+            return $this->transformValue;
+        }
+
+        $descriptor = self::normalizeComponentSpecifier($componentType);
+        $nativeType = $descriptor['nativeType'];
+        $component = $this->createComponentWrapper($nativeType, $componentId)
+            ?? new NativeComponent($this, $componentId, $nativeType);
+        if ($componentSceneId !== null && $componentSceneId !== '') {
+            self::attachSceneComponentId($component, $componentSceneId);
+        }
+
+        return $component;
+    }
+
+    private static function attachPrefabBehaviourReference(
+        Behaviour $behaviour,
+        self $gameObject,
+        int $componentId,
+        ?string $sceneComponentId,
+    ): void {
+        $bound = Closure::bind(
+            function () use ($gameObject, $componentId, $sceneComponentId): void {
+                $this->gameObjectValue = $gameObject;
+                $this->componentId = $componentId;
+                $this->sceneComponentId = $sceneComponentId;
+            },
+            $behaviour,
+            Behaviour::class,
+        );
+
+        if ($bound === null) {
+            throw new RuntimeException('Failed to bind prefab Behaviour reference.');
+        }
+
+        $bound();
+    }
+
+    /**
+     * @param class-string<Component> $componentClass
+     */
+    private function instantiateComponentWrapper(string $componentClass, int $componentId, string $componentType): ?Component
+    {
+        try {
+            $reflection = new ReflectionClass($componentClass);
+        } catch (ReflectionException) {
+            return null;
+        }
+
+        $constructor = $reflection->getConstructor();
+        $requiredParameters = $constructor?->getNumberOfRequiredParameters() ?? 0;
+        $totalParameters = $constructor?->getNumberOfParameters() ?? 0;
+
+        if ($requiredParameters <= 2 && $totalParameters >= 2) {
+            return new $componentClass($this, $componentId);
+        }
+
+        if ($requiredParameters <= 3 && $totalParameters >= 3) {
+            return new $componentClass($this, $componentId, $componentType);
+        }
+
+        return null;
+    }
+
     private static function attachSceneComponentId(Component $component, string $sceneComponentId): void
     {
-        $bound = \Closure::bind(
+        $bound = Closure::bind(
             function () use ($sceneComponentId): void {
                 $this->sceneComponentId = $sceneComponentId;
             },
@@ -811,7 +1378,7 @@ final class GameObject
         );
 
         if ($bound === null) {
-            throw new \RuntimeException('Failed to bind scene component id.');
+            throw new RuntimeException('Failed to bind scene component id.');
         }
 
         $bound();
