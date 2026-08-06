@@ -1,0 +1,42 @@
+name: Sync Samples On Release
+
+on:
+  release:
+    types:
+      - published
+      - prereleased
+
+permissions:
+  contents: read
+
+jobs:
+  sync-samples:
+    runs-on: ubuntu-latest
+    env:
+      RELEASE_TAG: ${{ github.event.release.tag_name }}
+      SAMPLES_REPOSITORY: ${{ vars.LENGA_SAMPLES_REPOSITORY || 'lengaengine/example-games' }}
+      SAMPLES_REPOSITORY_TOKEN: ${{ secrets.SAMPLES_REPOSITORY_TOKEN }}
+    steps:
+      - name: Dispatch released version to samples when configured
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          if [[ -z "$SAMPLES_REPOSITORY_TOKEN" ]]; then
+            echo '::notice::Skipping sample synchronization because SAMPLES_REPOSITORY_TOKEN is not configured.'
+            exit 0
+          fi
+
+          VERSION="${RELEASE_TAG#v}"
+          if [[ ! "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?$ ]]; then
+            echo "::warning::Skipping sample synchronization because '$RELEASE_TAG' is not a supported semantic version."
+            exit 0
+          fi
+
+          if ! GH_TOKEN="$SAMPLES_REPOSITORY_TOKEN" gh api \
+            --method POST \
+            "repos/$SAMPLES_REPOSITORY/dispatches" \
+            --raw-field event_type=engine-released \
+            --raw-field "client_payload[version]=$VERSION"; then
+            echo "::warning::Could not notify $SAMPLES_REPOSITORY. The engine release remains valid."
+          fi
