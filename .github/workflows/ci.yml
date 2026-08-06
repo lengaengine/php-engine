@@ -56,4 +56,4 @@ jobs:
           fi
 
       - name: Run PHP API tests
-        run: vendor/bin/phpunit --colors=never
+        run: composer test -- --colors=never
