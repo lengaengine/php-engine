@@ -42,3 +42,34 @@ jobs:
             echo "VERSION mismatch: tag is '$VERSION_TAG' but VERSION contains '$FILE_VERSION'." >&2
             exit 1
           fi
+
+  notify-samples:
+    if: ${{ github.event_name == 'release' }}
+    needs: verify-release-version
+    runs-on: ubuntu-latest
+    env:
+      RELEASE_TAG: ${{ github.event.release.tag_name }}
+      SAMPLES_REPOSITORY: ${{ vars.LENGA_SAMPLES_REPOSITORY || 'lengaengine/example-games' }}
+      SAMPLES_REPOSITORY_TOKEN: ${{ secrets.SAMPLES_REPOSITORY_TOKEN }}
+    steps:
+      - name: Dispatch released version to samples
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          if [[ -z "$SAMPLES_REPOSITORY_TOKEN" ]]; then
+            echo 'SAMPLES_REPOSITORY_TOKEN is required to synchronize public samples.' >&2
+            exit 1
+          fi
+
+          VERSION="${RELEASE_TAG#v}"
+          if [[ ! "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?$ ]]; then
+            echo "Release tag '$RELEASE_TAG' is not a supported semantic version." >&2
+            exit 1
+          fi
+
+          GH_TOKEN="$SAMPLES_REPOSITORY_TOKEN" gh api \
+            --method POST \
+            "repos/$SAMPLES_REPOSITORY/dispatches" \
+            --raw-field event_type=engine-released \
+            --raw-field "client_payload[version]=$VERSION"
