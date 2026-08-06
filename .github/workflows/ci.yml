@@ -1,0 +1,59 @@
+name: PHP API CI
+
+on:
+  pull_request:
+  push:
+    branches:
+      - develop
+      - main
+    tags:
+      - '*'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out PHP API
+        uses: actions/checkout@v4
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.5'
+          extensions: dom, json, libxml, mbstring, tokenizer, xml, xmlwriter
+          tools: composer:v2
+          coverage: none
+
+      - name: Cache Composer downloads
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/composer/files
+          key: composer-${{ runner.os }}-${{ hashFiles('composer.lock', 'composer.json') }}
+          restore-keys: |
+            composer-${{ runner.os }}-
+
+      - name: Install dependencies
+        run: composer install --no-interaction --prefer-dist --no-progress
+
+      - name: Validate package metadata and autoloading
+        run: |
+          composer validate --strict --no-check-publish
+          composer dump-autoload --optimize --strict-psr --no-interaction
+
+      - name: Verify release tag metadata
+        if: startsWith(github.ref, 'refs/tags/')
+        shell: bash
+        run: |
+          set -euo pipefail
+          VERSION_VALUE=$(tr -d '\r\n' < VERSION)
+          if [[ "${GITHUB_REF_NAME#v}" != "$VERSION_VALUE" ]]; then
+            echo "Tag '$GITHUB_REF_NAME' does not match VERSION '$VERSION_VALUE'." >&2
+            exit 1
+          fi
+
+      - name: Run PHP API tests
+        run: vendor/bin/phpunit --colors=never
