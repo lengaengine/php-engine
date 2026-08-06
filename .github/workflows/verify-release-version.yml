@@ -49,7 +49,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       RELEASE_TAG: ${{ github.event.release.tag_name }}
-      SAMPLES_REPOSITORY: ${{ vars.LENGA_SAMPLES_REPOSITORY || 'lengaengine/samples' }}
+      SAMPLES_REPOSITORY: ${{ vars.LENGA_SAMPLES_REPOSITORY || 'lengaengine/example-games' }}
       SAMPLES_REPOSITORY_TOKEN: ${{ secrets.SAMPLES_REPOSITORY_TOKEN }}
     steps:
       - name: Dispatch released version to samples
