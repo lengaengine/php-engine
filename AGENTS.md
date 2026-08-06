@@ -11,6 +11,14 @@ These rules apply to `lenga/engine` package code and tests. They are version-con
 - Prefer `use` imports over fully qualified class names. Keep fully qualified names only when there is a clear reason, such as global built-ins, unavoidable name collisions, or intentionally explicit runtime references.
 - Keep files LF/Unix line endings. Do not introduce CRLF line endings.
 
+## Remote Branch Policy
+
+- Keep feature, fix, release-preparation, agent, and other topic branches local by default. Never push a non-`develop` branch to GitHub or another remote unless the user explicitly instructs you to push that named branch.
+- The normal sharing workflow is to finish or merge local work into local `develop`, then push only `develop` to the remote `develop` branch. Do not push `main` directly unless the user explicitly instructs it.
+- A request to implement, commit, continue, prepare a release, or create a branch is not permission to publish a topic branch. Do not infer remote-push permission from the broader task.
+- Before every push, verify the current branch and use an explicit `develop:develop` refspec for the normal workflow. Never rely on a bare `git push` when it could publish another branch.
+- If the user explicitly authorizes a remote topic branch, remove that remote branch after it is merged or closed unless the user asks to preserve it.
+
 ## Native Runtime Boundary
 
 - Do not ship `EngineHeader.php` or any PHP declarations for native bridge functions.
