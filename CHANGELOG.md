@@ -4,6 +4,14 @@ All notable changes to `lenga/engine` will be documented in this file.
 
 ## Unreleased
 
+## 0.9.1 - 2026-08-07
+
+### Fixed
+
+- Aligned the PHP-side 2D physics compatibility contract with Lenga's positive-Y-down coordinate system and restored the default gravity vector to `(0, 980, 0)`.
+
+## 0.9.0 - 2026-08-06
+
 ### Added
 
 - Added `Lenga\Engine\Core\Random`, a gameplay-oriented random helper with an explicit pseudo-random engine and pure-PHP fallback for Web export compatibility.
