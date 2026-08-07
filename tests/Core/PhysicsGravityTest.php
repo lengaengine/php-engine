@@ -46,7 +46,7 @@ namespace Lenga\Engine\Tests\Core {
         protected function setUp(): void
         {
             $GLOBALS['lenga_physics_gravity_test_state'] = [
-                'gravity2D' => ['x' => 0.0, 'y' => -9.8],
+                'gravity2D' => ['x' => 0.0, 'y' => 980.0],
                 'gravity3D' => ['x' => 0.0, 'y' => -9.8, 'z' => 0.0],
             ];
         }
