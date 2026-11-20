@@ -4,6 +4,10 @@ All notable changes to `lenga/engine` will be documented in this file.
 
 ## Unreleased
 
+### Removed
+
+- Removed `Scene::getBackdropLayers()`, `Scene::getBackdropLayer()`, `Scene::getBackdropLayerCount()` and the `BackdropLayer` class. The engine no longer has backdrop layers: since scene format 3 each saved layer is a sprite in the scene, a GameObject named "Backdrop N" under the main camera or the Backdrops root. Scripts that read or moved backdrop layers stop working; move those GameObjects instead.
+
 ### Changed
 
 - `AudioMixer::transitionToPreset()` now sweeps the cutoff of low-pass and high-pass effects over the transition time, alongside channel volume, pitch and pan. Other effect settings still switch when the transition starts. The method's description lists which values blend.
