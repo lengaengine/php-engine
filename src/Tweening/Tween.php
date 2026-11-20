@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Lenga\Engine\Tweening;
 
 use Lenga\Engine\Core\Color;
+use Lenga\Engine\Core\SpriteRenderer;
 use Lenga\Engine\Core\Transform;
 use Lenga\Engine\Core\Vector2;
 use Lenga\Engine\Core\Vector3;
@@ -355,6 +356,36 @@ final class Tween
         ?TweenOptions $options = null,
     ): TweenHandle {
         return self::uiPropertyTo($target, 'outlineWidth', $to, $duration, $options);
+    }
+
+    /**
+     * Tweens a sprite's colour, which tints its image: fade it out with a
+     * transparent colour, or tint it red for a hit and back to white.
+     *
+     * @param Color|array{r?: int|float, g?: int|float, b?: int|float, a?: int|float, 0?: int|float, 1?: int|float, 2?: int|float, 3?: int|float} $to
+     */
+    public static function spriteColorTo(
+        SpriteRenderer $target,
+        Color|array $to,
+        float $duration,
+        ?TweenOptions $options = null,
+    ): TweenHandle {
+        $options ??= TweenOptions::make();
+        [$red, $green, $blue, $alpha] = self::normalizeColor($to);
+        $id = Bindings::tweenSpriteColorTo(
+            $target->getInstanceId(),
+            $red,
+            $green,
+            $blue,
+            $alpha,
+            $duration,
+            $options->delay,
+            $options->easingFunction->value,
+            $options->useUnscaledTime,
+            $options->relative,
+        );
+
+        return new TweenHandle($id);
     }
 
     /**
