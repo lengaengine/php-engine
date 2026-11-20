@@ -14,6 +14,8 @@ All notable changes to `lenga/engine` will be documented in this file.
 
 ### Added
 
+- `SpriteRenderer::$drawMode` (`SpriteDrawMode::Simple` or `SpriteDrawMode::Tiled`) and `SpriteRenderer::$tileSize`. A Tiled sprite repeats its image across its size, one tile every `tileSize` world units.
+- `Tween::spriteColorTo()`, which tweens a sprite's colour.
 - Listed the classes renamed between Lenga lines in `composer.json`, under `extra.lenga.renames`. The editor reads the list when it upgrades a project and rewrites the project's scripts to the new names. A class that moves or changes its name gets an entry under the line that renames it.
 
 ## 0.9.1 - 2026-08-07
