@@ -4,6 +4,10 @@ All notable changes to `lenga/engine` will be documented in this file.
 
 ## Unreleased
 
+### Changed
+
+- `AudioMixer::transitionToPreset()` now sweeps the cutoff of low-pass and high-pass effects over the transition time, alongside channel volume, pitch and pan. Other effect settings still switch when the transition starts. The method's description lists which values blend.
+
 ### Added
 
 - Listed the classes renamed between Lenga lines in `composer.json`, under `extra.lenga.renames`. The editor reads the list when it upgrades a project and rewrites the project's scripts to the new names. A class that moves or changes its name gets an entry under the line that renames it.
