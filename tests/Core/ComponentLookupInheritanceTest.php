@@ -298,6 +298,7 @@ namespace Lenga\Engine\Tests\Core {
             yield 'BoxCollider3D' => [\Lenga\Engine\Core\BoxCollider3D::class, 'BoxCollider3D'];
             yield 'BuoyancyEffector2D' => [\Lenga\Engine\Core\BuoyancyEffector2D::class, 'BuoyancyEffector2D'];
             yield 'Camera' => [\Lenga\Engine\Core\Camera::class, 'Camera'];
+            yield 'CameraRig' => [\Lenga\Engine\Core\CameraRig::class, 'CameraRig'];
             yield 'CapsuleCollider3D' => [\Lenga\Engine\Core\CapsuleCollider3D::class, 'CapsuleCollider3D'];
             yield 'CapsuleRenderer' => [\Lenga\Engine\Core\CapsuleRenderer::class, 'CapsuleRenderer'];
             yield 'CharacterController' => [\Lenga\Engine\Core\CharacterController::class, 'CharacterController'];
