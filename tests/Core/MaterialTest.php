@@ -19,6 +19,8 @@ use Lenga\Engine\Enumerations\MaterialUvSet;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 use function array_column;
+use function dirname;
+use function file_get_contents;
 use function log;
 
 final class MaterialTest extends TestCase
@@ -487,6 +489,60 @@ final class MaterialTest extends TestCase
         self::assertInstanceOf(Material::class, $roundTripped);
         self::assertSame('Assets/Materials/Ground.material.json', $roundTripped->assetPath);
         self::assertSame(self::groundMaterial()->toAssetDocument(), $roundTripped->toAssetDocument());
+    }
+
+    /**
+     * The fixture is serialize() output of the Material class at php-engine
+     * 6d6b79d, the last commit before Surface Options and Emission.
+     */
+    public function testMaterialUnserializesDataFromThePreviousVersion(): void
+    {
+        $materials = unserialize(
+            (string) file_get_contents(dirname(__DIR__) . '/Fixtures/material-6d6b79d.serialized'),
+            ['allowed_classes' => [Material::class]],
+        );
+
+        self::assertIsArray($materials);
+        $ground = $materials['cutoutEmissive'];
+        self::assertInstanceOf(Material::class, $ground);
+        self::assertSame('Assets/Materials/Ground.material.json', $ground->assetPath);
+        self::assertSame('Ground', $ground->name);
+        self::assertSame(MaterialShaderMode::Unlit, $ground->shader);
+        self::assertSame(MaterialSurfaceType::Opaque, $ground->surfaceType);
+        self::assertTrue($ground->alphaClipping);
+        self::assertSame(0.5, $ground->alphaClipThreshold);
+        self::assertSame('Assets/Shaders/Default.shader.json', $ground->shaderAssetPath);
+        self::assertSame(['r' => 10, 'g' => 20, 'b' => 30, 'a' => 40], $ground->baseColor->toRGBA());
+        self::assertSame('Assets/Images/ground.png', $ground->albedo);
+        self::assertSame(0.25, $ground->metallic);
+        self::assertSame(0.75, $ground->smoothness);
+        self::assertSame('Assets/Images/ground-ao.png', $ground->occlusion);
+        self::assertTrue($ground->emissionEnabled);
+        self::assertSame(['r' => 10, 'g' => 20, 'b' => 30, 'a' => 255], $ground->emissionColor->color->toRGBA());
+        self::assertEqualsWithDelta(log(1.5, 2), $ground->emissionColor->intensity, 1e-12);
+        self::assertSame('Assets/Images/ground.png', $ground->emissionMap);
+        self::assertSame([2.0, 3.0], [$ground->tiling->x, $ground->tiling->y]);
+        self::assertSame('Assets/Images/detail-normal.png', $ground->detailNormalMap);
+        self::assertSame([0.75, 0.125], [$ground->secondaryOffset->x, $ground->secondaryOffset->y]);
+        self::assertSame(MaterialUvSet::UV1, $ground->secondaryUvSet);
+
+        $inline = $materials['fadeInline'];
+        self::assertInstanceOf(Material::class, $inline);
+        self::assertNull($inline->assetPath);
+        self::assertSame(MaterialSurfaceType::Transparent, $inline->surfaceType);
+        self::assertSame(MaterialBlendingMode::Alpha, $inline->blendingMode);
+        self::assertFalse($inline->emissionEnabled);
+        self::assertSame(['r' => 200, 'g' => 100, 'b' => 50, 'a' => 128], $inline->baseColor->toRGBA());
+    }
+
+    public function testMaterialRejectsAnUnknownSerializationVersion(): void
+    {
+        $this->expectException(InvalidArgumentException::class);
+
+        unserialize(
+            'O:26:"Lenga\\Engine\\Core\\Material":1:{s:7:"version";i:9;}',
+            ['allowed_classes' => [Material::class]],
+        );
     }
 
     public function testMaterialRequiresNonEmptyAssetPath(): void

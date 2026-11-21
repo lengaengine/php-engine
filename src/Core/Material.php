@@ -43,6 +43,12 @@ final class Material implements Stringable
     public const int ASSET_DOCUMENT_VERSION = 2;
 
     /**
+     * The version of the data {@see __serialize()} writes. Data without a
+     * version was written before 0.10 and holds the fields flat.
+     */
+    private const int SERIALIZATION_VERSION = 2;
+
+    /**
      * The Alpha Clipping threshold of a new material.
      */
     public const float DEFAULT_ALPHA_CLIP_THRESHOLD = 0.5;
@@ -501,11 +507,12 @@ final class Material implements Stringable
     /**
      * Serializes the material as its asset path and its material file document.
      *
-     * @return array{assetPath: ?string, document: array<string, mixed>}
+     * @return array{version: int, assetPath: ?string, document: array<string, mixed>}
      */
     public function __serialize(): array
     {
         return [
+            'version' => self::SERIALIZATION_VERSION,
             'assetPath' => $this->assetPath,
             'document' => $this->toAssetDocument(),
         ];
@@ -514,12 +521,63 @@ final class Material implements Stringable
     /**
      * Restores the material from {@see __serialize()} data.
      *
+     * Data serialized before 0.10 has no version and holds the fields as the
+     * constructor takes them. Its renderingMode and emission convert as the
+     * deprecated {@see $renderingMode} and {@see $emission} convert them.
+     *
      * @param array<string, mixed> $data
+     *
+     * @throws InvalidArgumentException When the data has a version this class does not write.
      */
     public function __unserialize(array $data): void
     {
+        $version = $data['version'] ?? null;
+        if ($version === null) {
+            $this->readPreviousSerialization($data);
+
+            return;
+        }
+
+        if ($version !== self::SERIALIZATION_VERSION) {
+            throw new InvalidArgumentException("Unsupported material serialization version '{$version}'.");
+        }
+
         $this->assetPathValue = self::normalizeNullablePath($data['assetPath'] ?? null);
         $this->readAssetDocument(is_array($data['document'] ?? null) ? $data['document'] : []);
+    }
+
+    /**
+     * Restores data serialized before 0.10. Its keys are the constructor's
+     * parameters, so the constructor converts it with the rules it applies
+     * to scripts that pass those parameters.
+     *
+     * @param array<string, mixed> $data
+     */
+    private function readPreviousSerialization(array $data): void
+    {
+        $this->__construct(
+            assetPath: self::normalizeNullablePath($data['assetPath'] ?? null),
+            name: (string) ($data['name'] ?? 'Material'),
+            shader: (string) ($data['shader'] ?? MaterialShaderMode::Lit->value),
+            renderingMode: (string) ($data['renderingMode'] ?? self::RENDERING_OPAQUE),
+            shaderAssetPath: self::normalizeNullablePath($data['shaderAssetPath'] ?? null),
+            baseColor: Color::fromRGBAArray(is_array($data['baseColor'] ?? null) ? $data['baseColor'] : []),
+            albedo: self::normalizeNullablePath($data['albedo'] ?? null),
+            metallic: (float) ($data['metallic'] ?? 0.0),
+            smoothness: (float) ($data['smoothness'] ?? 0.5),
+            normalMap: self::normalizeNullablePath($data['normalMap'] ?? null),
+            heightMap: self::normalizeNullablePath($data['heightMap'] ?? null),
+            occlusion: self::normalizeNullablePath($data['occlusion'] ?? null),
+            emission: (float) ($data['emission'] ?? 0.0),
+            detailMask: self::normalizeNullablePath($data['detailMask'] ?? null),
+            tiling: self::readVector2($data['tiling'] ?? null, new Vector2(1.0, 1.0)),
+            offset: self::readVector2($data['offset'] ?? null, new Vector2(0.0, 0.0)),
+            detailAlbedo: self::normalizeNullablePath($data['detailAlbedo'] ?? null),
+            detailNormalMap: self::normalizeNullablePath($data['detailNormalMap'] ?? null),
+            secondaryTiling: self::readVector2($data['secondaryTiling'] ?? null, new Vector2(1.0, 1.0)),
+            secondaryOffset: self::readVector2($data['secondaryOffset'] ?? null, new Vector2(0.0, 0.0)),
+            secondaryUvSet: (string) ($data['secondaryUvSet'] ?? MaterialUvSet::UV0->value),
+        );
     }
 
     /**
