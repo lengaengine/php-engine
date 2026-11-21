@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Lenga\Engine\Core;
 
+use Lenga\Engine\Attributes\HideInInspector;
 use Lenga\Engine\Interfaces\ComponentInterface;
 
 abstract class Component implements ComponentInterface
@@ -16,18 +17,21 @@ abstract class Component implements ComponentInterface
     ) {
     }
 
+    #[HideInInspector]
     public GameObject $gameObject {
         get {
             return $this->gameObjectValue;
         }
     }
 
+    #[HideInInspector]
     public string $type {
         get {
             return $this->componentType;
         }
     }
 
+    #[HideInInspector]
     public bool $enabled {
         get {
             return NativeEngine::call('component_get_enabled', $this->componentId);
