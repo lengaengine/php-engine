@@ -8,6 +8,10 @@ use InvalidArgumentException;
 use Lenga\Engine\Core\Color;
 use Lenga\Engine\Core\Material;
 use Lenga\Engine\Core\Vector2;
+use Lenga\Engine\Enumerations\MaterialShaderMode;
+use Lenga\Engine\Enumerations\MaterialUvSet;
+use TypeError;
+use function array_column;
 use PHPUnit\Framework\TestCase;
 
 final class MaterialTest extends TestCase
@@ -18,7 +22,8 @@ final class MaterialTest extends TestCase
 
         self::assertNull($material->assetPath);
         self::assertSame('Material', $material->name);
-        self::assertSame(Material::SHADER_LIT, $material->shader);
+        self::assertSame(MaterialShaderMode::Lit, $material->shader);
+        self::assertSame(MaterialUvSet::UV0, $material->secondaryUvSet);
         self::assertSame(Material::RENDERING_OPAQUE, $material->renderingMode);
         self::assertSame(['r' => 255, 'g' => 255, 'b' => 255, 'a' => 255], $material->baseColor->toRGBA());
         self::assertSame(0.0, $material->metallic);
@@ -79,7 +84,7 @@ final class MaterialTest extends TestCase
         $material = new Material(
             assetPath: 'Assets/Materials/Ground.material.json',
             name: 'Ground',
-            shader: Material::SHADER_UNLIT,
+            shader: MaterialShaderMode::Unlit,
             renderingMode: Material::RENDERING_TRANSPARENT,
             shaderAssetPath: 'Assets/Shaders/Default.shader.json',
             baseColor: Color::fromRGBA(10, 20, 30, 40),
@@ -97,27 +102,41 @@ final class MaterialTest extends TestCase
             detailNormalMap: 'Assets/Images/detail-normal.png',
             secondaryTiling: new Vector2(4.0, 5.0),
             secondaryOffset: new Vector2(0.75, 0.125),
-            secondaryUvSet: Material::UV1,
+            secondaryUvSet: MaterialUvSet::UV1,
         );
 
         $roundTripped = unserialize(serialize($material), ['allowed_classes' => [Material::class, Color::class, Vector2::class]]);
 
         self::assertInstanceOf(Material::class, $roundTripped);
         self::assertSame('Ground', $roundTripped->name);
-        self::assertSame(Material::SHADER_UNLIT, $roundTripped->shader);
+        self::assertSame(MaterialShaderMode::Unlit, $roundTripped->shader);
         self::assertSame(Material::RENDERING_TRANSPARENT, $roundTripped->renderingMode);
         self::assertSame('Assets/Images/ground.png', $roundTripped->albedo);
         self::assertSame(['r' => 10, 'g' => 20, 'b' => 30, 'a' => 40], $roundTripped->baseColor->toRGBA());
         self::assertSame(2.0, $roundTripped->tiling->x);
         self::assertSame(3.0, $roundTripped->tiling->y);
-        self::assertSame(Material::UV1, $roundTripped->secondaryUvSet);
+        self::assertSame(MaterialUvSet::UV1, $roundTripped->secondaryUvSet);
     }
 
-    public function testMaterialRejectsInvalidEnums(): void
+    public function testShaderAndUvSetEnumsUseTheMaterialFileNames(): void
     {
-        $this->expectException(InvalidArgumentException::class);
+        self::assertSame(['Lit', 'Unlit'], array_column(MaterialShaderMode::cases(), 'value'));
+        self::assertSame(['UV0', 'UV1'], array_column(MaterialUvSet::cases(), 'value'));
+    }
 
-        new Material(shader: 'UnknownShader');
+    public function testDeprecatedShaderAndUvSetConstantsNameTheEnumCases(): void
+    {
+        self::assertSame(MaterialShaderMode::Lit, Material::SHADER_LIT);
+        self::assertSame(MaterialShaderMode::Unlit, Material::SHADER_UNLIT);
+        self::assertSame(MaterialUvSet::UV0, Material::UV0);
+        self::assertSame(MaterialUvSet::UV1, Material::UV1);
+    }
+
+    public function testMaterialRejectsAShaderNameString(): void
+    {
+        $this->expectException(TypeError::class);
+
+        new Material(shader: 'Unlit');
     }
 
     public function testMaterialRequiresNonEmptyAssetPath(): void

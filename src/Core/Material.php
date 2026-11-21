@@ -6,6 +6,8 @@ namespace Lenga\Engine\Core;
 
 use Closure;
 use InvalidArgumentException;
+use Lenga\Engine\Enumerations\MaterialShaderMode;
+use Lenga\Engine\Enumerations\MaterialUvSet;
 use Stringable;
 use function in_array;
 use function is_array;
@@ -20,14 +22,29 @@ use function trim;
  */
 final class Material implements Stringable
 {
-    public const string SHADER_LIT = 'Lit';
-    public const string SHADER_UNLIT = 'Unlit';
+    /**
+     * @deprecated Use {@see MaterialShaderMode::Lit}.
+     */
+    public const MaterialShaderMode SHADER_LIT = MaterialShaderMode::Lit;
+
+    /**
+     * @deprecated Use {@see MaterialShaderMode::Unlit}.
+     */
+    public const MaterialShaderMode SHADER_UNLIT = MaterialShaderMode::Unlit;
     public const string RENDERING_OPAQUE = 'Opaque';
     public const string RENDERING_CUTOUT = 'Cutout';
     public const string RENDERING_FADE = 'Fade';
     public const string RENDERING_TRANSPARENT = 'Transparent';
-    public const string UV0 = 'UV0';
-    public const string UV1 = 'UV1';
+
+    /**
+     * @deprecated Use {@see MaterialUvSet::UV0}.
+     */
+    public const MaterialUvSet UV0 = MaterialUvSet::UV0;
+
+    /**
+     * @deprecated Use {@see MaterialUvSet::UV1}.
+     */
+    public const MaterialUvSet UV1 = MaterialUvSet::UV1;
 
     /**
      * Project-relative material asset path.
@@ -76,7 +93,7 @@ final class Material implements Stringable
     public function __construct(
         ?string $assetPath = null,
         public string $name = 'Material',
-        public string $shader = self::SHADER_LIT,
+        public MaterialShaderMode $shader = MaterialShaderMode::Lit,
         public string $renderingMode = self::RENDERING_OPAQUE,
         public ?string $shaderAssetPath = null,
         Color $baseColor = new Color(1.0, 1.0, 1.0, 1.0),
@@ -94,7 +111,7 @@ final class Material implements Stringable
         public ?string $detailNormalMap = null,
         public Vector2 $secondaryTiling = new Vector2(1.0, 1.0),
         public Vector2 $secondaryOffset = new Vector2(0.0, 0.0),
-        public string $secondaryUvSet = self::UV0,
+        public MaterialUvSet $secondaryUvSet = MaterialUvSet::UV0,
     ) {
         $this->assetPathValue = self::normalizeNullablePath($assetPath);
         $this->baseColorValue = $baseColor;
@@ -107,7 +124,6 @@ final class Material implements Stringable
         $this->detailMask = self::normalizeNullablePath($detailMask);
         $this->detailAlbedo = self::normalizeNullablePath($detailAlbedo);
         $this->detailNormalMap = self::normalizeNullablePath($detailNormalMap);
-        $this->shader = self::validateOneOf($shader, [self::SHADER_LIT, self::SHADER_UNLIT], 'shader');
         $this->renderingMode = self::validateOneOf(
             $renderingMode,
             [
@@ -118,7 +134,6 @@ final class Material implements Stringable
             ],
             'rendering mode',
         );
-        $this->secondaryUvSet = self::validateOneOf($secondaryUvSet, [self::UV0, self::UV1], 'secondary UV set');
     }
 
     /**
@@ -217,7 +232,7 @@ final class Material implements Stringable
         return [
             'assetPath' => $this->assetPath,
             'name' => $this->name,
-            'shader' => $this->shader,
+            'shader' => $this->shader->value,
             'renderingMode' => $this->renderingMode,
             'shaderAssetPath' => $this->shaderAssetPath,
             'baseColor' => $this->baseColor->toRGBA(),
@@ -235,7 +250,7 @@ final class Material implements Stringable
             'detailNormalMap' => $this->detailNormalMap,
             'secondaryTiling' => ['x' => $this->secondaryTiling->x, 'y' => $this->secondaryTiling->y],
             'secondaryOffset' => ['x' => $this->secondaryOffset->x, 'y' => $this->secondaryOffset->y],
-            'secondaryUvSet' => $this->secondaryUvSet,
+            'secondaryUvSet' => $this->secondaryUvSet->value,
         ];
     }
 
@@ -246,7 +261,7 @@ final class Material implements Stringable
     {
         $this->assetPath = self::normalizeNullablePath($data['assetPath'] ?? null);
         $this->name = (string) ($data['name'] ?? 'Material');
-        $this->shader = self::validateOneOf((string) ($data['shader'] ?? self::SHADER_LIT), [self::SHADER_LIT, self::SHADER_UNLIT], 'shader');
+        $this->shader = MaterialShaderMode::from((string) ($data['shader'] ?? MaterialShaderMode::Lit->value));
         $this->renderingMode = self::validateOneOf(
             (string) ($data['renderingMode'] ?? self::RENDERING_OPAQUE),
             [
@@ -273,7 +288,7 @@ final class Material implements Stringable
         $this->detailNormalMap = self::normalizeNullablePath($data['detailNormalMap'] ?? null);
         $this->secondaryTiling = self::readVector2($data['secondaryTiling'] ?? null, new Vector2(1.0, 1.0));
         $this->secondaryOffset = self::readVector2($data['secondaryOffset'] ?? null, new Vector2(0.0, 0.0));
-        $this->secondaryUvSet = self::validateOneOf((string) ($data['secondaryUvSet'] ?? self::UV0), [self::UV0, self::UV1], 'secondary UV set');
+        $this->secondaryUvSet = MaterialUvSet::from((string) ($data['secondaryUvSet'] ?? MaterialUvSet::UV0->value));
     }
 
     private static function readVector2(mixed $value, Vector2 $fallback): Vector2
