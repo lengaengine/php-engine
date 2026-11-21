@@ -18,7 +18,6 @@ use Lenga\Engine\Enumerations\MaterialSurfaceType;
 use Lenga\Engine\Enumerations\MaterialUvSet;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
-use TypeError;
 use function array_column;
 use function log;
 
@@ -107,11 +106,36 @@ final class MaterialTest extends TestCase
         self::assertSame(MaterialUvSet::UV1, Material::UV1);
     }
 
-    public function testMaterialRejectsAShaderNameString(): void
+    public function testShaderAndUvSetAcceptTheirStringValues(): void
     {
-        $this->expectException(TypeError::class);
+        $material = new Material(shader: 'Unlit', secondaryUvSet: 'UV1');
 
-        new Material(shader: 'Unlit');
+        self::assertSame(MaterialShaderMode::Unlit, $material->shader);
+        self::assertSame(MaterialUvSet::UV1, $material->secondaryUvSet);
+
+        $material->shader = 'Lit';
+        $material->secondaryUvSet = 'UV0';
+
+        self::assertSame(MaterialShaderMode::Lit, $material->shader);
+        self::assertSame(MaterialUvSet::UV0, $material->secondaryUvSet);
+    }
+
+    public function testShaderRejectsAnInvalidString(): void
+    {
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage("Invalid material shader 'UnknownShader'.");
+
+        new Material(shader: 'UnknownShader');
+    }
+
+    public function testSecondaryUvSetRejectsAnInvalidString(): void
+    {
+        $material = new Material();
+
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage("Invalid material secondary UV set 'UV2'.");
+
+        $material->secondaryUvSet = 'UV2';
     }
 
     /**

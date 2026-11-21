@@ -134,6 +134,38 @@ final class Material implements Stringable
     }
 
     /**
+     * The built-in shader the material draws with.
+     *
+     * Reading it gives the enum case. Assigning the case's string value, such
+     * as 'Unlit', sets that case and is deprecated. Any other string throws an
+     * InvalidArgumentException.
+     */
+    public MaterialShaderMode $shader = MaterialShaderMode::Lit {
+        set(MaterialShaderMode|string $value) {
+            $this->shader = $value instanceof MaterialShaderMode
+                ? $value
+                : (MaterialShaderMode::tryFrom($value)
+                    ?? throw new InvalidArgumentException("Invalid material shader '{$value}'."));
+        }
+    }
+
+    /**
+     * The UV channel the detail textures sample.
+     *
+     * Reading it gives the enum case. Assigning the case's string value, such
+     * as 'UV1', sets that case and is deprecated. Any other string throws an
+     * InvalidArgumentException.
+     */
+    public MaterialUvSet $secondaryUvSet = MaterialUvSet::UV0 {
+        set(MaterialUvSet|string $value) {
+            $this->secondaryUvSet = $value instanceof MaterialUvSet
+                ? $value
+                : (MaterialUvSet::tryFrom($value)
+                    ?? throw new InvalidArgumentException("Invalid material secondary UV set '{$value}'."));
+        }
+    }
+
+    /**
      * The version 1 Rendering Mode the Surface Options correspond to.
      *
      * Assigning a mode sets the Surface Options as the engine converts a
@@ -202,7 +234,7 @@ final class Material implements Stringable
      *
      * @param ?string $assetPath Project-relative material asset path, or null for an inline material.
      * @param string $name Display name.
-     * @param MaterialShaderMode $shader The built-in shader the material draws with.
+     * @param MaterialShaderMode|string $shader The built-in shader the material draws with. A string is deprecated; see {@see $shader}.
      * @param ?string $renderingMode Deprecated. A version 1 Rendering Mode; when given it sets the Surface Options as {@see $renderingMode} does, over the Surface Options passed.
      * @param ?string $shaderAssetPath Project shader asset that replaces the built-in shader.
      * @param Color $baseColor Base colour the surface is tinted with.
@@ -223,7 +255,7 @@ final class Material implements Stringable
      * @param ?string $detailNormalMap Detail normal map texture path.
      * @param Vector2 $secondaryTiling Detail texture tiling.
      * @param Vector2 $secondaryOffset Detail texture offset.
-     * @param MaterialUvSet $secondaryUvSet UV channel the detail textures sample.
+     * @param MaterialUvSet|string $secondaryUvSet UV channel the detail textures sample. A string is deprecated; see {@see $secondaryUvSet}.
      * @param MaterialSurfaceType $surfaceType Whether the surface is Opaque or Transparent.
      * @param MaterialBlendingMode $blendingMode How a Transparent surface combines with what is behind it.
      * @param MaterialRenderFace $renderFace Which faces are drawn.
@@ -236,7 +268,7 @@ final class Material implements Stringable
     public function __construct(
         ?string $assetPath = null,
         public string $name = 'Material',
-        public MaterialShaderMode $shader = MaterialShaderMode::Lit,
+        MaterialShaderMode|string $shader = MaterialShaderMode::Lit,
         ?string $renderingMode = null,
         public ?string $shaderAssetPath = null,
         Color $baseColor = new Color(1.0, 1.0, 1.0, 1.0),
@@ -257,7 +289,7 @@ final class Material implements Stringable
         public ?string $detailNormalMap = null,
         public Vector2 $secondaryTiling = new Vector2(1.0, 1.0),
         public Vector2 $secondaryOffset = new Vector2(0.0, 0.0),
-        public MaterialUvSet $secondaryUvSet = MaterialUvSet::UV0,
+        MaterialUvSet|string $secondaryUvSet = MaterialUvSet::UV0,
         public MaterialSurfaceType $surfaceType = MaterialSurfaceType::Opaque,
         public MaterialBlendingMode $blendingMode = MaterialBlendingMode::Alpha,
         public MaterialRenderFace $renderFace = MaterialRenderFace::Front,
@@ -268,6 +300,8 @@ final class Material implements Stringable
         public MaterialDepthTest $depthTest = MaterialDepthTest::LessEqual,
     ) {
         $this->assetPathValue = self::normalizeNullablePath($assetPath);
+        $this->shader = $shader;
+        $this->secondaryUvSet = $secondaryUvSet;
         $this->baseColorValue = $baseColor;
         $this->baseColorCustomized = $baseColor->toRGBA() !== Color::white()->toRGBA();
         $this->shaderAssetPath = self::normalizeNullablePath($shaderAssetPath);
