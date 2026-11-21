@@ -19,6 +19,7 @@ use function is_bool;
 use function is_float;
 use function is_int;
 use function is_string;
+use function log;
 use function trim;
 
 /**
@@ -163,6 +164,34 @@ final class Material implements Stringable
         }
     }
 
+    /**
+     * The version 1 scalar emission the Emission settings correspond to.
+     *
+     * Assigning a value converts it once, as the engine converts a version 1
+     * material file once when it reads it. A value above 0 turns Emission on,
+     * sets the Emission Color to the opaque base colour at log2(value) stops,
+     * and sets the Emission Map to the base texture. 0 or less turns Emission
+     * off and leaves the Emission Color and Emission Map as they are. Changing
+     * the base colour or base texture afterwards does not change the Emission
+     * settings.
+     *
+     * Reading it gives 0 when Emission is off. When Emission is on and the
+     * Emission Color's red, green and blue are the base colour's, it gives
+     * 2^intensity, the factor version 1 multiplied the base colour by. When
+     * they differ, no version 1 factor describes the settings, and it gives
+     * 2^intensity all the same: the factor the Emission Color's own colour is
+     * multiplied by. The Emission Map is not compared.
+     *
+     * @deprecated Use {@see $emissionEnabled}, {@see $emissionColor} and {@see $emissionMap}.
+     */
+    public float $emission {
+        get => $this->emissionEnabled ? $this->emissionColor->intensityScale() : 0.0;
+
+        set(float $value) {
+            $this->applyEmission($value);
+        }
+    }
+
     private ?string $assetPathValue = null;
     private Color $baseColorValue;
     private bool $baseColorCustomized = false;
@@ -183,6 +212,7 @@ final class Material implements Stringable
      * @param ?string $normalMap Normal map texture path.
      * @param ?string $heightMap Height map texture path.
      * @param ?string $occlusion Occlusion map texture path.
+     * @param ?float $emission Deprecated. A version 1 scalar emission; when given it sets the Emission settings as {@see $emission} does, over the Emission settings passed.
      * @param bool $emissionEnabled Whether the surface emits light.
      * @param HdrColor $emissionColor Emitted colour and its intensity in stops.
      * @param ?string $emissionMap Texture the emission colour is multiplied by.
@@ -216,6 +246,7 @@ final class Material implements Stringable
         public ?string $normalMap = null,
         public ?string $heightMap = null,
         public ?string $occlusion = null,
+        ?float $emission = null,
         public bool $emissionEnabled = false,
         public HdrColor $emissionColor = new HdrColor(new Color(0.0, 0.0, 0.0, 1.0)),
         public ?string $emissionMap = null,
@@ -250,6 +281,9 @@ final class Material implements Stringable
         $this->detailNormalMap = self::normalizeNullablePath($detailNormalMap);
         if ($renderingMode !== null) {
             $this->applyRenderingMode($renderingMode);
+        }
+        if ($emission !== null) {
+            $this->applyEmission($emission);
         }
     }
 
@@ -526,6 +560,24 @@ final class Material implements Stringable
         if ($renderingMode === self::RENDERING_CUTOUT) {
             $this->alphaClipThreshold = self::DEFAULT_ALPHA_CLIP_THRESHOLD;
         }
+    }
+
+    /**
+     * Sets the Emission settings a version 1 scalar emission stands for, as
+     * the engine converts a version 1 material file.
+     */
+    private function applyEmission(float $emission): void
+    {
+        if ($emission <= 0.0) {
+            $this->emissionEnabled = false;
+
+            return;
+        }
+
+        $base = $this->baseColor;
+        $this->emissionEnabled = true;
+        $this->emissionColor = new HdrColor(new Color($base->r, $base->g, $base->b), log($emission, 2));
+        $this->emissionMap = $this->albedo;
     }
 
     /**

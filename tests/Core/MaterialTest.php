@@ -20,6 +20,7 @@ use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 use TypeError;
 use function array_column;
+use function log;
 
 final class MaterialTest extends TestCase
 {
@@ -196,6 +197,76 @@ final class MaterialTest extends TestCase
         $this->expectException(InvalidArgumentException::class);
 
         $material->renderingMode = 'Glass';
+    }
+
+    /**
+     * @return array<string, array{float, ?string}>
+     */
+    public static function scalarEmissions(): array
+    {
+        return [
+            'off without a base texture' => [0.0, null],
+            'off with a base texture' => [0.0, 'Assets/Images/lamp.png'],
+            'one without a base texture' => [1.0, null],
+            'one with a base texture' => [1.0, 'Assets/Images/lamp.png'],
+            'one and a half without a base texture' => [1.5, null],
+            'one and a half with a base texture' => [1.5, 'Assets/Images/lamp.png'],
+        ];
+    }
+
+    #[DataProvider('scalarEmissions')]
+    public function testEmissionSetsEmissionAsTheEngineConvertsVersionOneFiles(float $emission, ?string $albedo): void
+    {
+        $material = new Material(baseColor: Color::fromRGBA(200, 100, 50, 128), albedo: $albedo);
+
+        $material->emission = $emission;
+
+        self::assertEqualsWithDelta($emission, $material->emission, 1e-12);
+        if ($emission === 0.0) {
+            self::assertFalse($material->emissionEnabled);
+            self::assertSame(['r' => 0, 'g' => 0, 'b' => 0, 'a' => 255], $material->emissionColor->color->toRGBA());
+            self::assertNull($material->emissionMap);
+
+            return;
+        }
+
+        self::assertTrue($material->emissionEnabled);
+        self::assertSame(['r' => 200, 'g' => 100, 'b' => 50, 'a' => 255], $material->emissionColor->color->toRGBA());
+        self::assertEqualsWithDelta(log($emission, 2), $material->emissionColor->intensity, 1e-12);
+        self::assertSame($albedo, $material->emissionMap);
+    }
+
+    #[DataProvider('scalarEmissions')]
+    public function testEmissionConstructorParameterSetsEmission(float $emission, ?string $albedo): void
+    {
+        $material = new Material(baseColor: Color::fromRGBA(200, 100, 50), albedo: $albedo, emission: $emission);
+
+        self::assertSame($emission > 0.0, $material->emissionEnabled);
+        self::assertSame($emission > 0.0 ? $albedo : null, $material->emissionMap);
+        self::assertEqualsWithDelta($emission, $material->emission, 1e-12);
+    }
+
+    public function testEmissionOffKeepsTheEmissionColourAndMap(): void
+    {
+        $material = new Material(albedo: 'Assets/Images/lamp.png', emission: 2.0);
+
+        $material->emission = 0.0;
+
+        self::assertFalse($material->emissionEnabled);
+        self::assertSame(0.0, $material->emission);
+        self::assertSame(1.0, $material->emissionColor->intensity);
+        self::assertSame('Assets/Images/lamp.png', $material->emissionMap);
+    }
+
+    public function testEmissionReadsTheIntensityScaleWhenTheColourIsNotTheBaseColour(): void
+    {
+        $material = new Material(
+            baseColor: Color::red(),
+            emissionEnabled: true,
+            emissionColor: new HdrColor(Color::blue(), 2.0),
+        );
+
+        self::assertSame(4.0, $material->emission);
     }
 
     public function testMaterialCanReferenceAnAsset(): void
