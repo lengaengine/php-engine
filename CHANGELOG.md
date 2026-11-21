@@ -16,6 +16,7 @@ All notable changes to `lenga/engine` will be documented in this file.
 
 - `SpriteRenderer::$drawMode` (`SpriteDrawMode::Simple` or `SpriteDrawMode::Tiled`) and `SpriteRenderer::$tileSize`. A Tiled sprite repeats its image across its size, one tile every `tileSize` world units.
 - `Tween::spriteColorTo()`, which tweens a sprite's colour.
+- `CameraRig`, a component that moves the camera on its GameObject. It follows `$target` with per-axis `$dampingTime`, an optional `$deadZone` and `$lookaheadDistance`, keeps a 2D view inside `$boundsMin` and `$boundsMax` when `$boundsEnabled` is set, and eases the camera's Size toward `$targetSize`. `shake()` shakes the view without moving the Transform, and `snapToTarget()` jumps to the followed point. In a 2D scene the rig follows on X and Y and keeps the camera's Z; in a 3D scene it follows on X, Y and Z. The rig runs while the game runs.
 - Listed the classes renamed between Lenga lines in `composer.json`, under `extra.lenga.renames`. The editor reads the list when it upgrades a project and rewrites the project's scripts to the new names. A class that moves or changes its name gets an entry under the line that renames it.
 
 ## 0.9.1 - 2026-08-07
