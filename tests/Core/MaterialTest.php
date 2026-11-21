@@ -31,8 +31,10 @@ final class MaterialTest extends TestCase
 
         self::assertNull($material->assetPath);
         self::assertSame('Material', $material->name);
-        self::assertSame(MaterialShaderMode::Lit, $material->shader);
-        self::assertSame(MaterialUvSet::UV0, $material->secondaryUvSet);
+        self::assertSame(MaterialShaderMode::Lit, $material->shaderMode);
+        self::assertSame('Lit', $material->shader);
+        self::assertSame(MaterialUvSet::UV0, $material->secondaryUv);
+        self::assertSame('UV0', $material->secondaryUvSet);
         self::assertSame(['r' => 255, 'g' => 255, 'b' => 255, 'a' => 255], $material->baseColor->toRGBA());
         self::assertSame(0.0, $material->metallic);
         self::assertSame(0.5, $material->smoothness);
@@ -100,26 +102,56 @@ final class MaterialTest extends TestCase
         self::assertSame($names, array_column($cases, 'value'));
     }
 
-    public function testDeprecatedShaderAndUvSetConstantsNameTheEnumCases(): void
+    public function testDeprecatedShaderAndUvSetConstantsHoldTheEnumValues(): void
     {
-        self::assertSame(MaterialShaderMode::Lit, Material::SHADER_LIT);
-        self::assertSame(MaterialShaderMode::Unlit, Material::SHADER_UNLIT);
-        self::assertSame(MaterialUvSet::UV0, Material::UV0);
-        self::assertSame(MaterialUvSet::UV1, Material::UV1);
+        self::assertSame('Lit', Material::SHADER_LIT);
+        self::assertSame('Unlit', Material::SHADER_UNLIT);
+        self::assertSame('UV0', Material::UV0);
+        self::assertSame('UV1', Material::UV1);
+        self::assertSame(MaterialShaderMode::Lit->value, Material::SHADER_LIT);
+        self::assertSame(MaterialShaderMode::Unlit->value, Material::SHADER_UNLIT);
+        self::assertSame(MaterialUvSet::UV0->value, Material::UV0);
+        self::assertSame(MaterialUvSet::UV1->value, Material::UV1);
     }
 
     public function testShaderAndUvSetAcceptTheirStringValues(): void
     {
-        $material = new Material(shader: 'Unlit', secondaryUvSet: 'UV1');
+        $material = new Material(shader: Material::SHADER_UNLIT, secondaryUvSet: Material::UV1);
 
-        self::assertSame(MaterialShaderMode::Unlit, $material->shader);
-        self::assertSame(MaterialUvSet::UV1, $material->secondaryUvSet);
+        self::assertSame(MaterialShaderMode::Unlit, $material->shaderMode);
+        self::assertSame(Material::SHADER_UNLIT, $material->shader);
+        self::assertSame(MaterialUvSet::UV1, $material->secondaryUv);
+        self::assertSame(Material::UV1, $material->secondaryUvSet);
 
         $material->shader = 'Lit';
         $material->secondaryUvSet = 'UV0';
 
-        self::assertSame(MaterialShaderMode::Lit, $material->shader);
-        self::assertSame(MaterialUvSet::UV0, $material->secondaryUvSet);
+        self::assertSame(MaterialShaderMode::Lit, $material->shaderMode);
+        self::assertSame('Lit', $material->shader);
+        self::assertSame(MaterialUvSet::UV0, $material->secondaryUv);
+        self::assertSame('UV0', $material->secondaryUvSet);
+    }
+
+    public function testShaderAndUvSetNamesReadAndWriteTheEnumProperties(): void
+    {
+        $material = new Material(shader: MaterialShaderMode::Unlit, secondaryUvSet: MaterialUvSet::UV1);
+
+        self::assertSame('Unlit', $material->shader);
+        self::assertSame('UV1', $material->secondaryUvSet);
+
+        $material->shaderMode = MaterialShaderMode::Lit;
+        $material->secondaryUv = MaterialUvSet::UV0;
+
+        self::assertSame('Lit', $material->shader);
+        self::assertSame('UV0', $material->secondaryUvSet);
+
+        $material->shader = MaterialShaderMode::Unlit;
+        $material->secondaryUvSet = MaterialUvSet::UV1;
+
+        self::assertSame(MaterialShaderMode::Unlit, $material->shaderMode);
+        self::assertSame(MaterialUvSet::UV1, $material->secondaryUv);
+        self::assertTrue($material->shader === Material::SHADER_UNLIT);
+        self::assertTrue($material->secondaryUvSet === Material::UV1);
     }
 
     public function testShaderRejectsAnInvalidString(): void
@@ -168,7 +200,8 @@ final class MaterialTest extends TestCase
 
         self::assertSame('Assets/Materials/Ground.material.json', $material->assetPath);
         self::assertSame('Ground', $material->name);
-        self::assertSame(MaterialShaderMode::Unlit, $material->shader);
+        self::assertSame('Unlit', $material->shader);
+        self::assertSame(MaterialShaderMode::Unlit, $material->shaderMode);
         self::assertSame(Material::RENDERING_CUTOUT, $material->renderingMode);
         self::assertSame('Assets/Shaders/Default.shader.json', $material->shaderAssetPath);
         self::assertSame(['r' => 10, 'g' => 20, 'b' => 30, 'a' => 40], $material->baseColor->toRGBA());
@@ -187,7 +220,8 @@ final class MaterialTest extends TestCase
         self::assertSame('Assets/Images/detail-normal.png', $material->detailNormalMap);
         self::assertSame([4.0, 5.0], [$material->secondaryTiling->x, $material->secondaryTiling->y]);
         self::assertSame([0.75, 0.125], [$material->secondaryOffset->x, $material->secondaryOffset->y]);
-        self::assertSame(MaterialUvSet::UV1, $material->secondaryUvSet);
+        self::assertSame('UV1', $material->secondaryUvSet);
+        self::assertSame(MaterialUvSet::UV1, $material->secondaryUv);
     }
 
     /**
@@ -507,7 +541,8 @@ final class MaterialTest extends TestCase
         self::assertInstanceOf(Material::class, $ground);
         self::assertSame('Assets/Materials/Ground.material.json', $ground->assetPath);
         self::assertSame('Ground', $ground->name);
-        self::assertSame(MaterialShaderMode::Unlit, $ground->shader);
+        self::assertSame('Unlit', $ground->shader);
+        self::assertSame(MaterialShaderMode::Unlit, $ground->shaderMode);
         self::assertSame(MaterialSurfaceType::Opaque, $ground->surfaceType);
         self::assertTrue($ground->alphaClipping);
         self::assertSame(0.5, $ground->alphaClipThreshold);
@@ -524,7 +559,8 @@ final class MaterialTest extends TestCase
         self::assertSame([2.0, 3.0], [$ground->tiling->x, $ground->tiling->y]);
         self::assertSame('Assets/Images/detail-normal.png', $ground->detailNormalMap);
         self::assertSame([0.75, 0.125], [$ground->secondaryOffset->x, $ground->secondaryOffset->y]);
-        self::assertSame(MaterialUvSet::UV1, $ground->secondaryUvSet);
+        self::assertSame('UV1', $ground->secondaryUvSet);
+        self::assertSame(MaterialUvSet::UV1, $ground->secondaryUv);
 
         $inline = $materials['fadeInline'];
         self::assertInstanceOf(Material::class, $inline);

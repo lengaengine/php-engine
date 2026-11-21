@@ -64,14 +64,14 @@ final class Material implements Stringable
     public const int MAX_SORTING_PRIORITY = 50;
 
     /**
-     * @deprecated Use {@see MaterialShaderMode::Lit}.
+     * @deprecated Use {@see MaterialShaderMode::Lit} with {@see $shaderMode}.
      */
-    public const MaterialShaderMode SHADER_LIT = MaterialShaderMode::Lit;
+    public const string SHADER_LIT = 'Lit';
 
     /**
-     * @deprecated Use {@see MaterialShaderMode::Unlit}.
+     * @deprecated Use {@see MaterialShaderMode::Unlit} with {@see $shaderMode}.
      */
-    public const MaterialShaderMode SHADER_UNLIT = MaterialShaderMode::Unlit;
+    public const string SHADER_UNLIT = 'Unlit';
 
     /**
      * @deprecated Use {@see MaterialSurfaceType::Opaque}.
@@ -94,14 +94,14 @@ final class Material implements Stringable
     public const string RENDERING_TRANSPARENT = 'Transparent';
 
     /**
-     * @deprecated Use {@see MaterialUvSet::UV0}.
+     * @deprecated Use {@see MaterialUvSet::UV0} with {@see $secondaryUv}.
      */
-    public const MaterialUvSet UV0 = MaterialUvSet::UV0;
+    public const string UV0 = 'UV0';
 
     /**
-     * @deprecated Use {@see MaterialUvSet::UV1}.
+     * @deprecated Use {@see MaterialUvSet::UV1} with {@see $secondaryUv}.
      */
-    public const MaterialUvSet UV1 = MaterialUvSet::UV1;
+    public const string UV1 = 'UV1';
 
     /**
      * Project-relative material asset path.
@@ -141,14 +141,23 @@ final class Material implements Stringable
 
     /**
      * The built-in shader the material draws with.
-     *
-     * Reading it gives the enum case. Assigning the case's string value, such
-     * as 'Unlit', sets that case and is deprecated. Any other string throws an
-     * InvalidArgumentException.
      */
-    public MaterialShaderMode $shader = MaterialShaderMode::Lit {
+    public MaterialShaderMode $shaderMode = MaterialShaderMode::Lit;
+
+    /**
+     * The name of the built-in shader the material draws with, 'Lit' or 'Unlit'.
+     *
+     * It reads and writes {@see $shaderMode}. Assigning a name sets the case
+     * with that value, and assigning a case sets it as it is. Any other string
+     * throws an InvalidArgumentException.
+     *
+     * @deprecated Use {@see $shaderMode}.
+     */
+    public string $shader {
+        get => $this->shaderMode->value;
+
         set(MaterialShaderMode|string $value) {
-            $this->shader = $value instanceof MaterialShaderMode
+            $this->shaderMode = $value instanceof MaterialShaderMode
                 ? $value
                 : (MaterialShaderMode::tryFrom($value)
                     ?? throw new InvalidArgumentException("Invalid material shader '{$value}'."));
@@ -157,14 +166,23 @@ final class Material implements Stringable
 
     /**
      * The UV channel the detail textures sample.
-     *
-     * Reading it gives the enum case. Assigning the case's string value, such
-     * as 'UV1', sets that case and is deprecated. Any other string throws an
-     * InvalidArgumentException.
      */
-    public MaterialUvSet $secondaryUvSet = MaterialUvSet::UV0 {
+    public MaterialUvSet $secondaryUv = MaterialUvSet::UV0;
+
+    /**
+     * The name of the UV channel the detail textures sample, 'UV0' or 'UV1'.
+     *
+     * It reads and writes {@see $secondaryUv}. Assigning a name sets the case
+     * with that value, and assigning a case sets it as it is. Any other string
+     * throws an InvalidArgumentException.
+     *
+     * @deprecated Use {@see $secondaryUv}.
+     */
+    public string $secondaryUvSet {
+        get => $this->secondaryUv->value;
+
         set(MaterialUvSet|string $value) {
-            $this->secondaryUvSet = $value instanceof MaterialUvSet
+            $this->secondaryUv = $value instanceof MaterialUvSet
                 ? $value
                 : (MaterialUvSet::tryFrom($value)
                     ?? throw new InvalidArgumentException("Invalid material secondary UV set '{$value}'."));
@@ -243,7 +261,7 @@ final class Material implements Stringable
      *
      * @param ?string $assetPath Project-relative material asset path, or null for an inline material.
      * @param string $name Display name.
-     * @param MaterialShaderMode|string $shader The built-in shader the material draws with. A string is deprecated; see {@see $shader}.
+     * @param MaterialShaderMode|string $shader The built-in shader the material draws with, stored in {@see $shaderMode}. A name string is deprecated.
      * @param ?string $renderingMode Deprecated. A version 1 Rendering Mode; when given it sets the Surface Options as {@see $renderingMode} does, over the Surface Options passed.
      * @param ?string $shaderAssetPath Project shader asset that replaces the built-in shader.
      * @param Color $baseColor Base colour the surface is tinted with.
@@ -261,7 +279,7 @@ final class Material implements Stringable
      * @param ?string $detailNormalMap Detail normal map texture path.
      * @param Vector2 $secondaryTiling Detail texture tiling.
      * @param Vector2 $secondaryOffset Detail texture offset.
-     * @param MaterialUvSet|string $secondaryUvSet UV channel the detail textures sample. A string is deprecated; see {@see $secondaryUvSet}.
+     * @param MaterialUvSet|string $secondaryUvSet UV channel the detail textures sample, stored in {@see $secondaryUv}. A name string is deprecated.
      * @param bool $emissionEnabled Whether the surface emits light.
      * @param HdrColor $emissionColor Emitted colour and its intensity in stops.
      * @param ?string $emissionMap Texture the emission colour is multiplied by.
@@ -440,7 +458,7 @@ final class Material implements Stringable
             'material' => [
                 'name' => $this->name === '' ? 'Material' : $this->name,
                 'version' => self::ASSET_DOCUMENT_VERSION,
-                'shader' => $this->shader->value,
+                'shader' => $this->shaderMode->value,
                 'surfaceOptions' => [
                     'surfaceType' => $this->surfaceType->value,
                     'blendingMode' => $this->blendingMode->value,
@@ -470,7 +488,7 @@ final class Material implements Stringable
             'offset' => self::writeVector2($this->offset),
             'secondaryTiling' => self::writeVector2($this->secondaryTiling),
             'secondaryOffset' => self::writeVector2($this->secondaryOffset),
-            'secondaryUvSet' => $this->secondaryUvSet->value,
+            'secondaryUvSet' => $this->secondaryUv->value,
         ];
     }
 
@@ -600,7 +618,7 @@ final class Material implements Stringable
         $surface = is_array($header['surfaceOptions'] ?? null) ? $header['surfaceOptions'] : [];
 
         $this->name = is_string($header['name'] ?? null) ? $header['name'] : 'Material';
-        $this->shader = MaterialShaderMode::tryFrom(self::readString($header, 'shader')) ?? MaterialShaderMode::Lit;
+        $this->shaderMode = MaterialShaderMode::tryFrom(self::readString($header, 'shader')) ?? MaterialShaderMode::Lit;
         $this->surfaceType = MaterialSurfaceType::tryFrom(self::readString($surface, 'surfaceType')) ?? MaterialSurfaceType::Opaque;
         $this->blendingMode = MaterialBlendingMode::tryFrom(self::readString($surface, 'blendingMode')) ?? MaterialBlendingMode::Alpha;
         $this->renderFace = MaterialRenderFace::tryFrom(self::readString($surface, 'renderFace')) ?? MaterialRenderFace::Front;
@@ -635,7 +653,7 @@ final class Material implements Stringable
         $this->offset = self::readVector2($document['offset'] ?? null, new Vector2(0.0, 0.0));
         $this->secondaryTiling = self::readVector2($document['secondaryTiling'] ?? null, new Vector2(1.0, 1.0));
         $this->secondaryOffset = self::readVector2($document['secondaryOffset'] ?? null, new Vector2(0.0, 0.0));
-        $this->secondaryUvSet = MaterialUvSet::tryFrom(self::readString($document, 'secondaryUvSet')) ?? MaterialUvSet::UV0;
+        $this->secondaryUv = MaterialUvSet::tryFrom(self::readString($document, 'secondaryUvSet')) ?? MaterialUvSet::UV0;
     }
 
     /**
