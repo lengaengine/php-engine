@@ -541,7 +541,9 @@ final class Material implements Stringable
      *
      * Data serialized before 0.10 has no version and holds the fields as the
      * constructor takes them. Its renderingMode and emission convert as the
-     * deprecated {@see $renderingMode} and {@see $emission} convert them.
+     * deprecated {@see $renderingMode} and {@see $emission} convert them, and
+     * its base colour counts as custom, as it did when that data was
+     * unserialized before.
      *
      * @param array<string, mixed> $data
      *
@@ -596,6 +598,10 @@ final class Material implements Stringable
             secondaryOffset: self::readVector2($data['secondaryOffset'] ?? null, new Vector2(0.0, 0.0)),
             secondaryUvSet: (string) ($data['secondaryUvSet'] ?? MaterialUvSet::UV0->value),
         );
+        // Before 0.10, unserializing assigned the base colour through its
+        // property, which marks it custom whatever its value. The renderer
+        // sends a custom base colour with the material's asset.
+        $this->baseColorCustomized = true;
     }
 
     /**

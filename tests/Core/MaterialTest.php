@@ -569,6 +569,17 @@ final class MaterialTest extends TestCase
         self::assertSame(MaterialBlendingMode::Alpha, $inline->blendingMode);
         self::assertFalse($inline->emissionEnabled);
         self::assertSame(['r' => 200, 'g' => 100, 'b' => 50, 'a' => 128], $inline->baseColor->toRGBA());
+
+        $plain = $materials['whiteAsset'];
+        self::assertInstanceOf(Material::class, $plain);
+        self::assertSame('Assets/Materials/Plain.material.json', $plain->assetPath);
+        self::assertSame(['r' => 255, 'g' => 255, 'b' => 255, 'a' => 255], $plain->baseColor->toRGBA());
+
+        foreach ($materials as $material) {
+            self::assertTrue($material->hasCustomBaseColor(), 'Unserialized data from 6d6b79d marks its base colour custom.');
+        }
+
+        self::assertFalse(Material::fromAssetPath('Assets/Materials/Plain.material.json')->hasCustomBaseColor());
     }
 
     public function testMaterialRejectsAnUnknownSerializationVersion(): void
