@@ -138,6 +138,56 @@ final class MaterialTest extends TestCase
         $material->secondaryUvSet = 'UV2';
     }
 
+    public function testConstructorTakesTheParametersInTheirPreviousPositions(): void
+    {
+        $material = new Material(
+            'Assets/Materials/Ground.material.json',
+            'Ground',
+            'Unlit',
+            'Cutout',
+            'Assets/Shaders/Default.shader.json',
+            Color::fromRGBA(10, 20, 30, 40),
+            'Assets/Images/ground.png',
+            0.25,
+            0.75,
+            'Assets/Images/ground-normal.png',
+            'Assets/Images/ground-height.png',
+            'Assets/Images/ground-ao.png',
+            1.5,
+            'Assets/Images/detail-mask.png',
+            new Vector2(2.0, 3.0),
+            new Vector2(0.25, 0.5),
+            'Assets/Images/detail.png',
+            'Assets/Images/detail-normal.png',
+            new Vector2(4.0, 5.0),
+            new Vector2(0.75, 0.125),
+            'UV1',
+        );
+
+        self::assertSame('Assets/Materials/Ground.material.json', $material->assetPath);
+        self::assertSame('Ground', $material->name);
+        self::assertSame(MaterialShaderMode::Unlit, $material->shader);
+        self::assertSame(Material::RENDERING_CUTOUT, $material->renderingMode);
+        self::assertSame('Assets/Shaders/Default.shader.json', $material->shaderAssetPath);
+        self::assertSame(['r' => 10, 'g' => 20, 'b' => 30, 'a' => 40], $material->baseColor->toRGBA());
+        self::assertSame('Assets/Images/ground.png', $material->albedo);
+        self::assertSame(0.25, $material->metallic);
+        self::assertSame(0.75, $material->smoothness);
+        self::assertSame('Assets/Images/ground-normal.png', $material->normalMap);
+        self::assertSame('Assets/Images/ground-height.png', $material->heightMap);
+        self::assertSame('Assets/Images/ground-ao.png', $material->occlusion);
+        self::assertEqualsWithDelta(1.5, $material->emission, 1e-12);
+        self::assertSame('Assets/Images/ground.png', $material->emissionMap);
+        self::assertSame('Assets/Images/detail-mask.png', $material->detailMask);
+        self::assertSame([2.0, 3.0], [$material->tiling->x, $material->tiling->y]);
+        self::assertSame([0.25, 0.5], [$material->offset->x, $material->offset->y]);
+        self::assertSame('Assets/Images/detail.png', $material->detailAlbedo);
+        self::assertSame('Assets/Images/detail-normal.png', $material->detailNormalMap);
+        self::assertSame([4.0, 5.0], [$material->secondaryTiling->x, $material->secondaryTiling->y]);
+        self::assertSame([0.75, 0.125], [$material->secondaryOffset->x, $material->secondaryOffset->y]);
+        self::assertSame(MaterialUvSet::UV1, $material->secondaryUvSet);
+    }
+
     /**
      * @return array<string, array{string, MaterialSurfaceType, MaterialBlendingMode, bool}>
      */

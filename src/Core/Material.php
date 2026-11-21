@@ -230,7 +230,10 @@ final class Material implements Stringable
     private ?Closure $changeListener = null;
 
     /**
-     * Creates a material. Pass the parameters by name.
+     * Creates a material.
+     *
+     * The parameters up to secondaryUvSet keep the order they had before the
+     * Surface Options and Emission settings were added, which follow them.
      *
      * @param ?string $assetPath Project-relative material asset path, or null for an inline material.
      * @param string $name Display name.
@@ -245,9 +248,6 @@ final class Material implements Stringable
      * @param ?string $heightMap Height map texture path.
      * @param ?string $occlusion Occlusion map texture path.
      * @param ?float $emission Deprecated. A version 1 scalar emission; when given it sets the Emission settings as {@see $emission} does, over the Emission settings passed.
-     * @param bool $emissionEnabled Whether the surface emits light.
-     * @param HdrColor $emissionColor Emitted colour and its intensity in stops.
-     * @param ?string $emissionMap Texture the emission colour is multiplied by.
      * @param ?string $detailMask Detail mask texture path.
      * @param Vector2 $tiling Main texture tiling.
      * @param Vector2 $offset Main texture offset.
@@ -256,6 +256,9 @@ final class Material implements Stringable
      * @param Vector2 $secondaryTiling Detail texture tiling.
      * @param Vector2 $secondaryOffset Detail texture offset.
      * @param MaterialUvSet|string $secondaryUvSet UV channel the detail textures sample. A string is deprecated; see {@see $secondaryUvSet}.
+     * @param bool $emissionEnabled Whether the surface emits light.
+     * @param HdrColor $emissionColor Emitted colour and its intensity in stops.
+     * @param ?string $emissionMap Texture the emission colour is multiplied by.
      * @param MaterialSurfaceType $surfaceType Whether the surface is Opaque or Transparent.
      * @param MaterialBlendingMode $blendingMode How a Transparent surface combines with what is behind it.
      * @param MaterialRenderFace $renderFace Which faces are drawn.
@@ -279,9 +282,6 @@ final class Material implements Stringable
         public ?string $heightMap = null,
         public ?string $occlusion = null,
         ?float $emission = null,
-        public bool $emissionEnabled = false,
-        public HdrColor $emissionColor = new HdrColor(new Color(0.0, 0.0, 0.0, 1.0)),
-        public ?string $emissionMap = null,
         public ?string $detailMask = null,
         public Vector2 $tiling = new Vector2(1.0, 1.0),
         public Vector2 $offset = new Vector2(0.0, 0.0),
@@ -290,6 +290,9 @@ final class Material implements Stringable
         public Vector2 $secondaryTiling = new Vector2(1.0, 1.0),
         public Vector2 $secondaryOffset = new Vector2(0.0, 0.0),
         MaterialUvSet|string $secondaryUvSet = MaterialUvSet::UV0,
+        public bool $emissionEnabled = false,
+        public HdrColor $emissionColor = new HdrColor(new Color(0.0, 0.0, 0.0, 1.0)),
+        public ?string $emissionMap = null,
         public MaterialSurfaceType $surfaceType = MaterialSurfaceType::Opaque,
         public MaterialBlendingMode $blendingMode = MaterialBlendingMode::Alpha,
         public MaterialRenderFace $renderFace = MaterialRenderFace::Front,
