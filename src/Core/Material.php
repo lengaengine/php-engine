@@ -6,11 +6,18 @@ namespace Lenga\Engine\Core;
 
 use Closure;
 use InvalidArgumentException;
+use Lenga\Engine\Enumerations\MaterialBlendingMode;
+use Lenga\Engine\Enumerations\MaterialDepthTest;
+use Lenga\Engine\Enumerations\MaterialDepthWrite;
+use Lenga\Engine\Enumerations\MaterialRenderFace;
 use Lenga\Engine\Enumerations\MaterialShaderMode;
+use Lenga\Engine\Enumerations\MaterialSurfaceType;
 use Lenga\Engine\Enumerations\MaterialUvSet;
 use Stringable;
-use function in_array;
 use function is_array;
+use function is_bool;
+use function is_float;
+use function is_int;
 use function is_string;
 use function trim;
 
@@ -18,10 +25,37 @@ use function trim;
  * Describes the surface appearance assigned to a Renderer.
  *
  * A Material may reference a project asset through {@see assetPath}, or it may
- * be an inline runtime material value created directly from script.
+ * be an inline runtime material value created directly from script. Its fields
+ * are those of a material file: Unity URP's Surface Options, surface inputs and
+ * Emission.
+ *
+ * The native renderer receives a Material's asset path and base colour. Its
+ * other fields describe the material but do not change how a script-made
+ * Material draws; assign a material asset to draw with them.
  */
 final class Material implements Stringable
 {
+    /**
+     * The material file version {@see toAssetDocument()} writes and
+     * {@see fromAssetDocument()} reads.
+     */
+    public const int ASSET_DOCUMENT_VERSION = 2;
+
+    /**
+     * The Alpha Clipping threshold of a new material.
+     */
+    public const float DEFAULT_ALPHA_CLIP_THRESHOLD = 0.5;
+
+    /**
+     * The lowest Sorting Priority the engine draws with.
+     */
+    public const int MIN_SORTING_PRIORITY = -50;
+
+    /**
+     * The highest Sorting Priority the engine draws with.
+     */
+    public const int MAX_SORTING_PRIORITY = 50;
+
     /**
      * @deprecated Use {@see MaterialShaderMode::Lit}.
      */
@@ -31,9 +65,25 @@ final class Material implements Stringable
      * @deprecated Use {@see MaterialShaderMode::Unlit}.
      */
     public const MaterialShaderMode SHADER_UNLIT = MaterialShaderMode::Unlit;
+
+    /**
+     * @deprecated Use {@see MaterialSurfaceType::Opaque}.
+     */
     public const string RENDERING_OPAQUE = 'Opaque';
+
+    /**
+     * @deprecated Use {@see MaterialSurfaceType::Opaque} with {@see $alphaClipping}.
+     */
     public const string RENDERING_CUTOUT = 'Cutout';
+
+    /**
+     * @deprecated Use {@see MaterialSurfaceType::Transparent} with {@see MaterialBlendingMode::Alpha}.
+     */
     public const string RENDERING_FADE = 'Fade';
+
+    /**
+     * @deprecated Use {@see MaterialSurfaceType::Transparent} with {@see MaterialBlendingMode::Premultiply}.
+     */
     public const string RENDERING_TRANSPARENT = 'Transparent';
 
     /**
@@ -82,19 +132,82 @@ final class Material implements Stringable
         }
     }
 
+    /**
+     * The version 1 Rendering Mode the Surface Options correspond to.
+     *
+     * Assigning a mode sets the Surface Options as the engine converts a
+     * version 1 material file: Opaque is Opaque; Cutout is Opaque with Alpha
+     * Clipping at 0.5; Fade is Transparent with Alpha blending; Transparent is
+     * Transparent with Premultiply blending. Render Face, Sorting Priority,
+     * Depth Write and Depth Test keep their values, and so does the Alpha
+     * Clipping threshold for every mode but Cutout. An unknown mode throws an
+     * InvalidArgumentException.
+     *
+     * Reading it gives Fade for a Transparent surface with Alpha blending,
+     * Transparent for a Transparent surface with any other blending mode,
+     * Cutout for an Opaque surface with Alpha Clipping, and Opaque otherwise.
+     *
+     * @deprecated Use {@see $surfaceType}, {@see $blendingMode}, {@see $alphaClipping} and {@see $alphaClipThreshold}.
+     */
+    public string $renderingMode {
+        get => match (true) {
+            $this->surfaceType === MaterialSurfaceType::Transparent
+                && $this->blendingMode === MaterialBlendingMode::Alpha => self::RENDERING_FADE,
+            $this->surfaceType === MaterialSurfaceType::Transparent => self::RENDERING_TRANSPARENT,
+            $this->alphaClipping => self::RENDERING_CUTOUT,
+            default => self::RENDERING_OPAQUE,
+        };
+
+        set(string $value) {
+            $this->applyRenderingMode($value);
+        }
+    }
+
     private ?string $assetPathValue = null;
     private Color $baseColorValue;
     private bool $baseColorCustomized = false;
     private ?Closure $changeListener = null;
 
     /**
-     * Creates a material.
+     * Creates a material. Pass the parameters by name.
+     *
+     * @param ?string $assetPath Project-relative material asset path, or null for an inline material.
+     * @param string $name Display name.
+     * @param MaterialShaderMode $shader The built-in shader the material draws with.
+     * @param ?string $renderingMode Deprecated. A version 1 Rendering Mode; when given it sets the Surface Options as {@see $renderingMode} does, over the Surface Options passed.
+     * @param ?string $shaderAssetPath Project shader asset that replaces the built-in shader.
+     * @param Color $baseColor Base colour the surface is tinted with.
+     * @param ?string $albedo Base texture path.
+     * @param float $metallic Metallic, 0..1.
+     * @param float $smoothness Smoothness, 0..1.
+     * @param ?string $normalMap Normal map texture path.
+     * @param ?string $heightMap Height map texture path.
+     * @param ?string $occlusion Occlusion map texture path.
+     * @param bool $emissionEnabled Whether the surface emits light.
+     * @param HdrColor $emissionColor Emitted colour and its intensity in stops.
+     * @param ?string $emissionMap Texture the emission colour is multiplied by.
+     * @param ?string $detailMask Detail mask texture path.
+     * @param Vector2 $tiling Main texture tiling.
+     * @param Vector2 $offset Main texture offset.
+     * @param ?string $detailAlbedo Detail albedo texture path.
+     * @param ?string $detailNormalMap Detail normal map texture path.
+     * @param Vector2 $secondaryTiling Detail texture tiling.
+     * @param Vector2 $secondaryOffset Detail texture offset.
+     * @param MaterialUvSet $secondaryUvSet UV channel the detail textures sample.
+     * @param MaterialSurfaceType $surfaceType Whether the surface is Opaque or Transparent.
+     * @param MaterialBlendingMode $blendingMode How a Transparent surface combines with what is behind it.
+     * @param MaterialRenderFace $renderFace Which faces are drawn.
+     * @param bool $alphaClipping Whether fragments below the threshold are discarded.
+     * @param float $alphaClipThreshold Alpha below which fragments are discarded, 0..1.
+     * @param int $sortingPriority Draw order among surfaces of the same type, -50..50.
+     * @param MaterialDepthWrite $depthWrite Whether the surface writes depth.
+     * @param MaterialDepthTest $depthTest The depth comparison fragments must pass.
      */
     public function __construct(
         ?string $assetPath = null,
         public string $name = 'Material',
         public MaterialShaderMode $shader = MaterialShaderMode::Lit,
-        public string $renderingMode = self::RENDERING_OPAQUE,
+        ?string $renderingMode = null,
         public ?string $shaderAssetPath = null,
         Color $baseColor = new Color(1.0, 1.0, 1.0, 1.0),
         public ?string $albedo = null,
@@ -103,7 +216,9 @@ final class Material implements Stringable
         public ?string $normalMap = null,
         public ?string $heightMap = null,
         public ?string $occlusion = null,
-        public float $emission = 0.0,
+        public bool $emissionEnabled = false,
+        public HdrColor $emissionColor = new HdrColor(new Color(0.0, 0.0, 0.0, 1.0)),
+        public ?string $emissionMap = null,
         public ?string $detailMask = null,
         public Vector2 $tiling = new Vector2(1.0, 1.0),
         public Vector2 $offset = new Vector2(0.0, 0.0),
@@ -112,6 +227,14 @@ final class Material implements Stringable
         public Vector2 $secondaryTiling = new Vector2(1.0, 1.0),
         public Vector2 $secondaryOffset = new Vector2(0.0, 0.0),
         public MaterialUvSet $secondaryUvSet = MaterialUvSet::UV0,
+        public MaterialSurfaceType $surfaceType = MaterialSurfaceType::Opaque,
+        public MaterialBlendingMode $blendingMode = MaterialBlendingMode::Alpha,
+        public MaterialRenderFace $renderFace = MaterialRenderFace::Front,
+        public bool $alphaClipping = false,
+        public float $alphaClipThreshold = self::DEFAULT_ALPHA_CLIP_THRESHOLD,
+        public int $sortingPriority = 0,
+        public MaterialDepthWrite $depthWrite = MaterialDepthWrite::Auto,
+        public MaterialDepthTest $depthTest = MaterialDepthTest::LessEqual,
     ) {
         $this->assetPathValue = self::normalizeNullablePath($assetPath);
         $this->baseColorValue = $baseColor;
@@ -121,19 +244,13 @@ final class Material implements Stringable
         $this->normalMap = self::normalizeNullablePath($normalMap);
         $this->heightMap = self::normalizeNullablePath($heightMap);
         $this->occlusion = self::normalizeNullablePath($occlusion);
+        $this->emissionMap = self::normalizeNullablePath($emissionMap);
         $this->detailMask = self::normalizeNullablePath($detailMask);
         $this->detailAlbedo = self::normalizeNullablePath($detailAlbedo);
         $this->detailNormalMap = self::normalizeNullablePath($detailNormalMap);
-        $this->renderingMode = self::validateOneOf(
-            $renderingMode,
-            [
-                self::RENDERING_OPAQUE,
-                self::RENDERING_CUTOUT,
-                self::RENDERING_FADE,
-                self::RENDERING_TRANSPARENT,
-            ],
-            'rendering mode',
-        );
+        if ($renderingMode !== null) {
+            $this->applyRenderingMode($renderingMode);
+        }
     }
 
     /**
@@ -173,6 +290,114 @@ final class Material implements Stringable
     }
 
     /**
+     * Creates a material from a material file's decoded JSON document.
+     *
+     * The document has the layout {@see toAssetDocument()} writes, at
+     * {@see ASSET_DOCUMENT_VERSION}. Missing or mistyped keys read as their
+     * defaults, and a name that is not one of an enum's values reads as that
+     * field's default, as the engine reads material files. The engine converts
+     * version 1 files when it loads them; this method does not read them.
+     *
+     * @param array<string, mixed> $document
+     * @param ?string $assetPath Project-relative path of the file the document came from.
+     *
+     * @throws InvalidArgumentException When the document is not a version 2 material document.
+     */
+    public static function fromAssetDocument(array $document, ?string $assetPath = null): self
+    {
+        $material = new self(assetPath: $assetPath);
+        $material->readAssetDocument($document);
+
+        return $material;
+    }
+
+    /**
+     * Returns the material as a material file's JSON document.
+     *
+     * The layout is the one the engine's material files have at
+     * {@see ASSET_DOCUMENT_VERSION}: the name, version, shader and Surface
+     * Options under "material", and the surface inputs, Emission and texture
+     * paths at the root. Texture paths that are not set are empty strings.
+     * The asset path is not part of the document.
+     *
+     * @return array{
+     *     material: array{
+     *         name: string,
+     *         version: int,
+     *         shader: string,
+     *         surfaceOptions: array{
+     *             surfaceType: string,
+     *             blendingMode: string,
+     *             renderFace: string,
+     *             alphaClipping: bool,
+     *             alphaClipThreshold: float,
+     *             sortingPriority: int,
+     *             depthWrite: string,
+     *             depthTest: string
+     *         }
+     *     },
+     *     baseColor: string,
+     *     metallic: float,
+     *     smoothness: float,
+     *     emissionEnabled: bool,
+     *     emissionColor: array{color: string, intensity: float},
+     *     shaderAssetPath: string,
+     *     baseTexturePath: string,
+     *     normalMapPath: string,
+     *     heightMapPath: string,
+     *     occlusionMapPath: string,
+     *     detailMaskPath: string,
+     *     detailAlbedoPath: string,
+     *     detailNormalMapPath: string,
+     *     emissionMapPath: string,
+     *     tiling: array{x: float, y: float},
+     *     offset: array{x: float, y: float},
+     *     secondaryTiling: array{x: float, y: float},
+     *     secondaryOffset: array{x: float, y: float},
+     *     secondaryUvSet: string
+     * }
+     */
+    public function toAssetDocument(): array
+    {
+        return [
+            'material' => [
+                'name' => $this->name === '' ? 'Material' : $this->name,
+                'version' => self::ASSET_DOCUMENT_VERSION,
+                'shader' => $this->shader->value,
+                'surfaceOptions' => [
+                    'surfaceType' => $this->surfaceType->value,
+                    'blendingMode' => $this->blendingMode->value,
+                    'renderFace' => $this->renderFace->value,
+                    'alphaClipping' => $this->alphaClipping,
+                    'alphaClipThreshold' => $this->alphaClipThreshold,
+                    'sortingPriority' => $this->sortingPriority,
+                    'depthWrite' => $this->depthWrite->value,
+                    'depthTest' => $this->depthTest->value,
+                ],
+            ],
+            'baseColor' => $this->baseColor->toHex(),
+            'metallic' => $this->metallic,
+            'smoothness' => $this->smoothness,
+            'emissionEnabled' => $this->emissionEnabled,
+            'emissionColor' => $this->emissionColor->toAssetValue(),
+            'shaderAssetPath' => $this->shaderAssetPath ?? '',
+            'baseTexturePath' => $this->albedo ?? '',
+            'normalMapPath' => $this->normalMap ?? '',
+            'heightMapPath' => $this->heightMap ?? '',
+            'occlusionMapPath' => $this->occlusion ?? '',
+            'detailMaskPath' => $this->detailMask ?? '',
+            'detailAlbedoPath' => $this->detailAlbedo ?? '',
+            'detailNormalMapPath' => $this->detailNormalMap ?? '',
+            'emissionMapPath' => $this->emissionMap ?? '',
+            'tiling' => self::writeVector2($this->tiling),
+            'offset' => self::writeVector2($this->offset),
+            'secondaryTiling' => self::writeVector2($this->secondaryTiling),
+            'secondaryOffset' => self::writeVector2($this->secondaryOffset),
+            'secondaryUvSet' => $this->secondaryUvSet->value,
+        ];
+    }
+
+    /**
      * Returns a readable material label.
      */
     public function __toString(): string
@@ -203,92 +428,124 @@ final class Material implements Stringable
     }
 
     /**
-     * @return array{
-     *     assetPath: ?string,
-     *     name: string,
-     *     shader: string,
-     *     renderingMode: string,
-     *     shaderAssetPath: ?string,
-     *     baseColor: array{r: int, g: int, b: int, a: int},
-     *     albedo: ?string,
-     *     metallic: float,
-     *     smoothness: float,
-     *     normalMap: ?string,
-     *     heightMap: ?string,
-     *     occlusion: ?string,
-     *     emission: float,
-     *     detailMask: ?string,
-     *     tiling: array{x: float, y: float},
-     *     offset: array{x: float, y: float},
-     *     detailAlbedo: ?string,
-     *     detailNormalMap: ?string,
-     *     secondaryTiling: array{x: float, y: float},
-     *     secondaryOffset: array{x: float, y: float},
-     *     secondaryUvSet: string
-     * }
+     * Serializes the material as its asset path and its material file document.
+     *
+     * @return array{assetPath: ?string, document: array<string, mixed>}
      */
     public function __serialize(): array
     {
         return [
             'assetPath' => $this->assetPath,
-            'name' => $this->name,
-            'shader' => $this->shader->value,
-            'renderingMode' => $this->renderingMode,
-            'shaderAssetPath' => $this->shaderAssetPath,
-            'baseColor' => $this->baseColor->toRGBA(),
-            'albedo' => $this->albedo,
-            'metallic' => $this->metallic,
-            'smoothness' => $this->smoothness,
-            'normalMap' => $this->normalMap,
-            'heightMap' => $this->heightMap,
-            'occlusion' => $this->occlusion,
-            'emission' => $this->emission,
-            'detailMask' => $this->detailMask,
-            'tiling' => ['x' => $this->tiling->x, 'y' => $this->tiling->y],
-            'offset' => ['x' => $this->offset->x, 'y' => $this->offset->y],
-            'detailAlbedo' => $this->detailAlbedo,
-            'detailNormalMap' => $this->detailNormalMap,
-            'secondaryTiling' => ['x' => $this->secondaryTiling->x, 'y' => $this->secondaryTiling->y],
-            'secondaryOffset' => ['x' => $this->secondaryOffset->x, 'y' => $this->secondaryOffset->y],
-            'secondaryUvSet' => $this->secondaryUvSet->value,
+            'document' => $this->toAssetDocument(),
         ];
     }
 
     /**
+     * Restores the material from {@see __serialize()} data.
+     *
      * @param array<string, mixed> $data
      */
     public function __unserialize(array $data): void
     {
-        $this->assetPath = self::normalizeNullablePath($data['assetPath'] ?? null);
-        $this->name = (string) ($data['name'] ?? 'Material');
-        $this->shader = MaterialShaderMode::from((string) ($data['shader'] ?? MaterialShaderMode::Lit->value));
-        $this->renderingMode = self::validateOneOf(
-            (string) ($data['renderingMode'] ?? self::RENDERING_OPAQUE),
-            [
-                self::RENDERING_OPAQUE,
-                self::RENDERING_CUTOUT,
-                self::RENDERING_FADE,
-                self::RENDERING_TRANSPARENT,
-            ],
-            'rendering mode',
+        $this->assetPathValue = self::normalizeNullablePath($data['assetPath'] ?? null);
+        $this->readAssetDocument(is_array($data['document'] ?? null) ? $data['document'] : []);
+    }
+
+    /**
+     * Sets every field but the asset path from the document, reading missing
+     * or mistyped keys as their defaults. It assigns every field, so it also
+     * initialises an unserialized material, whose constructor does not run.
+     *
+     * @param array<string, mixed> $document
+     */
+    private function readAssetDocument(array $document): void
+    {
+        $header = is_array($document['material'] ?? null) ? $document['material'] : [];
+        if (($header['version'] ?? null) !== self::ASSET_DOCUMENT_VERSION) {
+            throw new InvalidArgumentException(
+                'Material documents must be version ' . self::ASSET_DOCUMENT_VERSION
+                . '. The engine converts version 1 material files when it loads them.',
+            );
+        }
+
+        $surface = is_array($header['surfaceOptions'] ?? null) ? $header['surfaceOptions'] : [];
+
+        $this->name = is_string($header['name'] ?? null) ? $header['name'] : 'Material';
+        $this->shader = MaterialShaderMode::tryFrom(self::readString($header, 'shader')) ?? MaterialShaderMode::Lit;
+        $this->surfaceType = MaterialSurfaceType::tryFrom(self::readString($surface, 'surfaceType')) ?? MaterialSurfaceType::Opaque;
+        $this->blendingMode = MaterialBlendingMode::tryFrom(self::readString($surface, 'blendingMode')) ?? MaterialBlendingMode::Alpha;
+        $this->renderFace = MaterialRenderFace::tryFrom(self::readString($surface, 'renderFace')) ?? MaterialRenderFace::Front;
+        $this->alphaClipping = is_bool($surface['alphaClipping'] ?? null) ? $surface['alphaClipping'] : false;
+        $this->alphaClipThreshold = self::readFloat($surface, 'alphaClipThreshold', self::DEFAULT_ALPHA_CLIP_THRESHOLD);
+        $this->sortingPriority = is_int($surface['sortingPriority'] ?? null) ? $surface['sortingPriority'] : 0;
+        $this->depthWrite = MaterialDepthWrite::tryFrom(self::readString($surface, 'depthWrite')) ?? MaterialDepthWrite::Auto;
+        $this->depthTest = MaterialDepthTest::tryFrom(self::readString($surface, 'depthTest')) ?? MaterialDepthTest::LessEqual;
+
+        $baseColor = Color::tryFromHex(self::readString($document, 'baseColor')) ?? Color::white();
+        $this->baseColorValue = $baseColor;
+        $this->baseColorCustomized = $baseColor->toRGBA() !== Color::white()->toRGBA();
+        $this->metallic = self::readFloat($document, 'metallic', 0.0);
+        $this->smoothness = self::readFloat($document, 'smoothness', 0.5);
+        $this->emissionEnabled = is_bool($document['emissionEnabled'] ?? null) ? $document['emissionEnabled'] : false;
+        $this->emissionColor = HdrColor::fromAssetValue(
+            $document['emissionColor'] ?? null,
+            new HdrColor(Color::black()),
         );
-        $this->shaderAssetPath = self::normalizeNullablePath($data['shaderAssetPath'] ?? null);
-        $this->baseColor = Color::fromRGBAArray(is_array($data['baseColor'] ?? null) ? $data['baseColor'] : []);
-        $this->albedo = self::normalizeNullablePath($data['albedo'] ?? null);
-        $this->metallic = (float) ($data['metallic'] ?? 0.0);
-        $this->smoothness = (float) ($data['smoothness'] ?? 0.5);
-        $this->normalMap = self::normalizeNullablePath($data['normalMap'] ?? null);
-        $this->heightMap = self::normalizeNullablePath($data['heightMap'] ?? null);
-        $this->occlusion = self::normalizeNullablePath($data['occlusion'] ?? null);
-        $this->emission = (float) ($data['emission'] ?? 0.0);
-        $this->detailMask = self::normalizeNullablePath($data['detailMask'] ?? null);
-        $this->tiling = self::readVector2($data['tiling'] ?? null, new Vector2(1.0, 1.0));
-        $this->offset = self::readVector2($data['offset'] ?? null, new Vector2(0.0, 0.0));
-        $this->detailAlbedo = self::normalizeNullablePath($data['detailAlbedo'] ?? null);
-        $this->detailNormalMap = self::normalizeNullablePath($data['detailNormalMap'] ?? null);
-        $this->secondaryTiling = self::readVector2($data['secondaryTiling'] ?? null, new Vector2(1.0, 1.0));
-        $this->secondaryOffset = self::readVector2($data['secondaryOffset'] ?? null, new Vector2(0.0, 0.0));
-        $this->secondaryUvSet = MaterialUvSet::from((string) ($data['secondaryUvSet'] ?? MaterialUvSet::UV0->value));
+
+        $this->shaderAssetPath = self::normalizeNullablePath($document['shaderAssetPath'] ?? null);
+        $this->albedo = self::normalizeNullablePath($document['baseTexturePath'] ?? null);
+        $this->normalMap = self::normalizeNullablePath($document['normalMapPath'] ?? null);
+        $this->heightMap = self::normalizeNullablePath($document['heightMapPath'] ?? null);
+        $this->occlusion = self::normalizeNullablePath($document['occlusionMapPath'] ?? null);
+        $this->detailMask = self::normalizeNullablePath($document['detailMaskPath'] ?? null);
+        $this->detailAlbedo = self::normalizeNullablePath($document['detailAlbedoPath'] ?? null);
+        $this->detailNormalMap = self::normalizeNullablePath($document['detailNormalMapPath'] ?? null);
+        $this->emissionMap = self::normalizeNullablePath($document['emissionMapPath'] ?? null);
+
+        $this->tiling = self::readVector2($document['tiling'] ?? null, new Vector2(1.0, 1.0));
+        $this->offset = self::readVector2($document['offset'] ?? null, new Vector2(0.0, 0.0));
+        $this->secondaryTiling = self::readVector2($document['secondaryTiling'] ?? null, new Vector2(1.0, 1.0));
+        $this->secondaryOffset = self::readVector2($document['secondaryOffset'] ?? null, new Vector2(0.0, 0.0));
+        $this->secondaryUvSet = MaterialUvSet::tryFrom(self::readString($document, 'secondaryUvSet')) ?? MaterialUvSet::UV0;
+    }
+
+    /**
+     * Sets the Surface Options a version 1 Rendering Mode stands for, as the
+     * engine converts a version 1 material file.
+     */
+    private function applyRenderingMode(string $renderingMode): void
+    {
+        [$this->surfaceType, $this->blendingMode, $this->alphaClipping] = match ($renderingMode) {
+            self::RENDERING_OPAQUE => [MaterialSurfaceType::Opaque, MaterialBlendingMode::Alpha, false],
+            self::RENDERING_CUTOUT => [MaterialSurfaceType::Opaque, MaterialBlendingMode::Alpha, true],
+            self::RENDERING_FADE => [MaterialSurfaceType::Transparent, MaterialBlendingMode::Alpha, false],
+            self::RENDERING_TRANSPARENT => [MaterialSurfaceType::Transparent, MaterialBlendingMode::Premultiply, false],
+            default => throw new InvalidArgumentException("Invalid material rendering mode '{$renderingMode}'."),
+        };
+
+        if ($renderingMode === self::RENDERING_CUTOUT) {
+            $this->alphaClipThreshold = self::DEFAULT_ALPHA_CLIP_THRESHOLD;
+        }
+    }
+
+    /**
+     * @param array<string, mixed> $object
+     */
+    private static function readString(array $object, string $key): string
+    {
+        $value = $object[$key] ?? null;
+
+        return is_string($value) ? $value : '';
+    }
+
+    /**
+     * @param array<string, mixed> $object
+     */
+    private static function readFloat(array $object, string $key, float $fallback): float
+    {
+        $value = $object[$key] ?? null;
+
+        return is_int($value) || is_float($value) ? (float) $value : $fallback;
     }
 
     private static function readVector2(mixed $value, Vector2 $fallback): Vector2
@@ -301,6 +558,14 @@ final class Material implements Stringable
             (float) ($value['x'] ?? $value[0] ?? $fallback->x),
             (float) ($value['y'] ?? $value[1] ?? $fallback->y),
         );
+    }
+
+    /**
+     * @return array{x: float, y: float}
+     */
+    private static function writeVector2(Vector2 $value): array
+    {
+        return ['x' => $value->x, 'y' => $value->y];
     }
 
     private static function normalizeNullablePath(mixed $path): ?string
@@ -322,18 +587,6 @@ final class Material implements Stringable
         }
 
         return $path;
-    }
-
-    /**
-     * @param list<string> $allowed
-     */
-    private static function validateOneOf(string $value, array $allowed, string $label): string
-    {
-        if (!in_array($value, $allowed, true)) {
-            throw new InvalidArgumentException("Invalid material {$label} '{$value}'.");
-        }
-
-        return $value;
     }
 
     private function notifyChanged(): void

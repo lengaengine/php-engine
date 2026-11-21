@@ -43,6 +43,12 @@ abstract class Renderer extends Component implements RendererInterface
     /**
      * The materials assigned to this renderer.
      *
+     * Assigning sends each material's asset path to the native renderer, and
+     * the first material's base colour when it has no asset or a custom tint.
+     * The other fields of a script-made Material, such as its Surface Options
+     * and Emission, do not reach the native renderer. Reading returns materials
+     * that carry the assigned asset paths and colour.
+     *
      * @var list<Material>
      */
     public array $materials {

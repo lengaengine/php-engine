@@ -7,10 +7,35 @@ All notable changes to `lenga/engine` will be documented in this file.
 ### Changed
 
 - `AudioMixer::transitionToPreset()` now sweeps the cutoff of low-pass and high-pass effects over the transition time, alongside channel volume, pitch and pan. Other effect settings still switch when the transition starts. The method's description lists which values blend.
+- `Material` follows the engine's Unity URP material model. Its fields are those of a version 2 material file.
+- `Material::$shader` is a `MaterialShaderMode` enum and `Material::$secondaryUvSet` is a `MaterialUvSet` enum, both in `Lenga\Engine\Enumerations`. They were strings. A script that assigns or compares the strings `'Lit'`, `'Unlit'`, `'UV0'` or `'UV1'` must use the enum cases. The constants `Material::SHADER_LIT`, `SHADER_UNLIT`, `UV0` and `UV1` now hold the enum cases and are deprecated.
+- `Material::$renderingMode`, its constructor parameter and the `RENDERING_*` constants are deprecated. Assigning a Rendering Mode sets the Surface Options as the engine converts a version 1 material file: Opaque is Opaque; Cutout is Opaque with Alpha Clipping at 0.5; Fade is Transparent with Alpha blending; Transparent is Transparent with Premultiply blending. Reading it gives the mode the Surface Options correspond to, and Transparent for Additive and Multiply blending.
+- The `Material` constructor's parameters after `occlusion` changed order. Pass them by name.
+- `Material` serializes as its asset path and its material file document. Data serialized by earlier versions does not unserialize.
 
 ### Added
 
 - Listed the classes renamed between Lenga lines in `composer.json`, under `extra.lenga.renames`. The editor reads the list when it upgrades a project and rewrites the project's scripts to the new names. A class that moves or changes its name gets an entry under the line that renames it.
+- `Material` Surface Options: `surfaceType`, `blendingMode`, `renderFace`, `alphaClipping`, `alphaClipThreshold`, `sortingPriority`, `depthWrite` and `depthTest`, with the enums `MaterialSurfaceType`, `MaterialBlendingMode`, `MaterialRenderFace`, `MaterialDepthWrite` and `MaterialDepthTest`. Names and defaults are the engine's.
+- `Material` Emission: `emissionEnabled`, `emissionColor` and `emissionMap`.
+- `HdrColor`, a colour with an intensity in exposure stops. `linearValue()` gives the colour decoded to linear times 2^intensity, as the engine computes it.
+- `Material::toAssetDocument()` and `Material::fromAssetDocument()`, which write and read a material file's version 2 document.
+- `Color::toHex()`, `Color::fromHex()` and `Color::tryFromHex()` for `#RRGGBB` and `#RRGGBBAA` strings.
+- The descriptions of `Material` and `Renderer::$materials` state that a script-made Material sends only its asset path and base colour to the native renderer.
+
+### Removed
+
+- `Material::$emission`, the scalar emission, and the constructor's `emission` parameter. Use `emissionEnabled`, `emissionColor` and `emissionMap`. The engine converts a version 1 file's scalar into the base colour at log2(scalar) stops with the base texture as the Emission Map; a script does the same with:
+
+```php
+use Lenga\Engine\Core\Color;
+use Lenga\Engine\Core\HdrColor;
+
+$base = $material->baseColor;
+$material->emissionEnabled = true;
+$material->emissionColor = new HdrColor(new Color($base->r, $base->g, $base->b), log($scalar, 2));
+$material->emissionMap = $material->albedo;
+```
 
 ## 0.9.1 - 2026-08-07
 
