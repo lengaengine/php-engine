@@ -483,6 +483,32 @@ final class Bindings
         );
     }
 
+    public static function tweenSpriteColorTo(
+        int $componentId,
+        float $red,
+        float $green,
+        float $blue,
+        float $alpha,
+        float $duration,
+        float $delay,
+        string $ease,
+        bool $useUnscaledTime,
+        bool $relative,
+    ): int {
+        return NativeEngine::call('tween_sprite_color_to',
+            $componentId,
+            $red,
+            $green,
+            $blue,
+            $alpha,
+            $duration,
+            $delay,
+            $ease,
+            $useUnscaledTime,
+            $relative,
+        );
+    }
+
     public static function tweenUiColorTo(
         int $elementId,
         string $property,

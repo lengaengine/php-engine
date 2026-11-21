@@ -4,6 +4,10 @@ All notable changes to `lenga/engine` will be documented in this file.
 
 ## Unreleased
 
+### Removed
+
+- Removed `Scene::getBackdropLayers()`, `Scene::getBackdropLayer()`, `Scene::getBackdropLayerCount()` and the `BackdropLayer` class. The engine no longer has backdrop layers: since scene format 3 each saved layer is a sprite in the scene, a GameObject named "Backdrop N" under the main camera or the Backdrops root. Scripts that read or moved backdrop layers stop working; move those GameObjects instead.
+
 ### Changed
 
 - `AudioMixer::transitionToPreset()` now sweeps the cutoff of low-pass and high-pass effects over the transition time, alongside channel volume, pitch and pan. Other effect settings still switch when the transition starts. The method's description lists which values blend.
@@ -15,6 +19,8 @@ All notable changes to `lenga/engine` will be documented in this file.
 
 ### Added
 
+- `SpriteRenderer::$drawMode` (`SpriteDrawMode::Simple` or `SpriteDrawMode::Tiled`) and `SpriteRenderer::$tileSize`. A Tiled sprite repeats its image across its size, one tile every `tileSize` world units.
+- `Tween::spriteColorTo()`, which tweens a sprite's colour.
 - Listed the classes renamed between Lenga lines in `composer.json`, under `extra.lenga.renames`. The editor reads the list when it upgrades a project and rewrites the project's scripts to the new names. A class that moves or changes its name gets an entry under the line that renames it.
 - `Material` Surface Options: `surfaceType`, `blendingMode`, `renderFace`, `alphaClipping`, `alphaClipThreshold`, `sortingPriority`, `depthWrite` and `depthTest`, with the enums `MaterialSurfaceType`, `MaterialBlendingMode`, `MaterialRenderFace`, `MaterialDepthWrite` and `MaterialDepthTest`. Names and defaults are the engine's.
 - `Material` Emission: `emissionEnabled`, `emissionColor` and `emissionMap`.
