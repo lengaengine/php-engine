@@ -19,6 +19,11 @@ use function is_bool;
 use function is_float;
 use function is_int;
 use function is_string;
+use function array_diff;
+use function array_keys;
+use function array_unique;
+use function array_values;
+use function in_array;
 use function log;
 use function trim;
 
@@ -30,9 +35,13 @@ use function trim;
  * are those of a material file: Unity URP's Surface Options, surface inputs and
  * Emission.
  *
- * The native renderer receives a Material's asset path and base colour. Its
- * other fields describe the material but do not change how a script-made
- * Material draws; assign a material asset to draw with them.
+ * Assigned to a renderer, a Material draws with every field it has: the
+ * renderer's material slot takes its asset, or the renderer's default
+ * material when it has none, with the fields the Material sets over it. A
+ * Material read from a renderer carries the values its slot draws with, and
+ * assigning one of its fields changes the slot, as assigning a field of
+ * Unity's Renderer.material does. Changing an object a field holds, such as
+ * `$material->tiling->x`, does not; assign the field.
  */
 final class Material implements Stringable
 {
@@ -123,8 +132,7 @@ final class Material implements Stringable
 
         set(Color $value) {
             $this->baseColorValue = $value;
-            $this->baseColorCustomized = true;
-            $this->notifyChanged();
+            $this->recordChange('baseColor');
         }
     }
 
@@ -142,7 +150,12 @@ final class Material implements Stringable
     /**
      * The built-in shader the material draws with.
      */
-    public MaterialShaderMode $shaderMode = MaterialShaderMode::Lit;
+    public MaterialShaderMode $shaderMode = MaterialShaderMode::Lit {
+        set {
+            $this->shaderMode = $value;
+            $this->recordChange('shaderMode');
+        }
+    }
 
     /**
      * The name of the built-in shader the material draws with, 'Lit' or 'Unlit'.
@@ -167,7 +180,12 @@ final class Material implements Stringable
     /**
      * The UV channel the detail textures sample.
      */
-    public MaterialUvSet $secondaryUv = MaterialUvSet::UV0;
+    public MaterialUvSet $secondaryUv = MaterialUvSet::UV0 {
+        set {
+            $this->secondaryUv = $value;
+            $this->recordChange('secondaryUv');
+        }
+    }
 
     /**
      * The name of the UV channel the detail textures sample, 'UV0' or 'UV1'.
@@ -248,10 +266,62 @@ final class Material implements Stringable
         }
     }
 
+    /**
+     * Where each field is in a material file's document.
+     */
+    private const array DOCUMENT_PATHS = [
+        'name' => ['material', 'name'],
+        'shaderMode' => ['material', 'shader'],
+        'surfaceType' => ['material', 'surfaceOptions', 'surfaceType'],
+        'blendingMode' => ['material', 'surfaceOptions', 'blendingMode'],
+        'renderFace' => ['material', 'surfaceOptions', 'renderFace'],
+        'alphaClipping' => ['material', 'surfaceOptions', 'alphaClipping'],
+        'alphaClipThreshold' => ['material', 'surfaceOptions', 'alphaClipThreshold'],
+        'sortingPriority' => ['material', 'surfaceOptions', 'sortingPriority'],
+        'depthWrite' => ['material', 'surfaceOptions', 'depthWrite'],
+        'depthTest' => ['material', 'surfaceOptions', 'depthTest'],
+        'baseColor' => ['baseColor'],
+        'metallic' => ['metallic'],
+        'smoothness' => ['smoothness'],
+        'emissionEnabled' => ['emissionEnabled'],
+        'emissionColor' => ['emissionColor'],
+        'shaderAssetPath' => ['shaderAssetPath'],
+        'albedo' => ['baseTexturePath'],
+        'normalMap' => ['normalMapPath'],
+        'heightMap' => ['heightMapPath'],
+        'occlusion' => ['occlusionMapPath'],
+        'detailMask' => ['detailMaskPath'],
+        'detailAlbedo' => ['detailAlbedoPath'],
+        'detailNormalMap' => ['detailNormalMapPath'],
+        'emissionMap' => ['emissionMapPath'],
+        'tiling' => ['tiling'],
+        'offset' => ['offset'],
+        'secondaryTiling' => ['secondaryTiling'],
+        'secondaryOffset' => ['secondaryOffset'],
+        'secondaryUv' => ['secondaryUvSet'],
+    ];
+
     private ?string $assetPathValue = null;
     private Color $baseColorValue;
-    private bool $baseColorCustomized = false;
     private ?Closure $changeListener = null;
+
+    /**
+     * Whether the fields hold the values of a material file or renderer slot,
+     * read with them, rather than only the values a script gave.
+     */
+    private bool $documentBacked = false;
+
+    /**
+     * The fields assigned since the material was made or read.
+     *
+     * @var array<string, true>
+     */
+    private array $assignedFields = [];
+
+    /**
+     * Whether assignments are recorded: off while the material is made or read.
+     */
+    private bool $recordingChanges = false;
 
     /**
      * Creates a material.
@@ -294,43 +364,172 @@ final class Material implements Stringable
      */
     public function __construct(
         ?string $assetPath = null,
-        public string $name = 'Material',
+        public string $name = 'Material' {
+            set {
+                $this->name = $value;
+                $this->recordChange('name');
+            }
+        },
         MaterialShaderMode|string $shader = MaterialShaderMode::Lit,
         ?string $renderingMode = null,
-        public ?string $shaderAssetPath = null,
+        public ?string $shaderAssetPath = null {
+            set {
+                $this->shaderAssetPath = $value;
+                $this->recordChange('shaderAssetPath');
+            }
+        },
         Color $baseColor = new Color(1.0, 1.0, 1.0, 1.0),
-        public ?string $albedo = null,
-        public float $metallic = 0.0,
-        public float $smoothness = 0.5,
-        public ?string $normalMap = null,
-        public ?string $heightMap = null,
-        public ?string $occlusion = null,
+        public ?string $albedo = null {
+            set {
+                $this->albedo = $value;
+                $this->recordChange('albedo');
+            }
+        },
+        public float $metallic = 0.0 {
+            set {
+                $this->metallic = $value;
+                $this->recordChange('metallic');
+            }
+        },
+        public float $smoothness = 0.5 {
+            set {
+                $this->smoothness = $value;
+                $this->recordChange('smoothness');
+            }
+        },
+        public ?string $normalMap = null {
+            set {
+                $this->normalMap = $value;
+                $this->recordChange('normalMap');
+            }
+        },
+        public ?string $heightMap = null {
+            set {
+                $this->heightMap = $value;
+                $this->recordChange('heightMap');
+            }
+        },
+        public ?string $occlusion = null {
+            set {
+                $this->occlusion = $value;
+                $this->recordChange('occlusion');
+            }
+        },
         ?float $emission = null,
-        public ?string $detailMask = null,
-        public Vector2 $tiling = new Vector2(1.0, 1.0),
-        public Vector2 $offset = new Vector2(0.0, 0.0),
-        public ?string $detailAlbedo = null,
-        public ?string $detailNormalMap = null,
-        public Vector2 $secondaryTiling = new Vector2(1.0, 1.0),
-        public Vector2 $secondaryOffset = new Vector2(0.0, 0.0),
+        public ?string $detailMask = null {
+            set {
+                $this->detailMask = $value;
+                $this->recordChange('detailMask');
+            }
+        },
+        public Vector2 $tiling = new Vector2(1.0, 1.0) {
+            set {
+                $this->tiling = $value;
+                $this->recordChange('tiling');
+            }
+        },
+        public Vector2 $offset = new Vector2(0.0, 0.0) {
+            set {
+                $this->offset = $value;
+                $this->recordChange('offset');
+            }
+        },
+        public ?string $detailAlbedo = null {
+            set {
+                $this->detailAlbedo = $value;
+                $this->recordChange('detailAlbedo');
+            }
+        },
+        public ?string $detailNormalMap = null {
+            set {
+                $this->detailNormalMap = $value;
+                $this->recordChange('detailNormalMap');
+            }
+        },
+        public Vector2 $secondaryTiling = new Vector2(1.0, 1.0) {
+            set {
+                $this->secondaryTiling = $value;
+                $this->recordChange('secondaryTiling');
+            }
+        },
+        public Vector2 $secondaryOffset = new Vector2(0.0, 0.0) {
+            set {
+                $this->secondaryOffset = $value;
+                $this->recordChange('secondaryOffset');
+            }
+        },
         MaterialUvSet|string $secondaryUvSet = MaterialUvSet::UV0,
-        public bool $emissionEnabled = false,
-        public HdrColor $emissionColor = new HdrColor(new Color(0.0, 0.0, 0.0, 1.0)),
-        public ?string $emissionMap = null,
-        public MaterialSurfaceType $surfaceType = MaterialSurfaceType::Opaque,
-        public MaterialBlendingMode $blendingMode = MaterialBlendingMode::Alpha,
-        public MaterialRenderFace $renderFace = MaterialRenderFace::Front,
-        public bool $alphaClipping = false,
-        public float $alphaClipThreshold = self::DEFAULT_ALPHA_CLIP_THRESHOLD,
-        public int $sortingPriority = 0,
-        public MaterialDepthWrite $depthWrite = MaterialDepthWrite::Auto,
-        public MaterialDepthTest $depthTest = MaterialDepthTest::LessEqual,
+        public bool $emissionEnabled = false {
+            set {
+                $this->emissionEnabled = $value;
+                $this->recordChange('emissionEnabled');
+            }
+        },
+        public HdrColor $emissionColor = new HdrColor(new Color(0.0, 0.0, 0.0, 1.0)) {
+            set {
+                $this->emissionColor = $value;
+                $this->recordChange('emissionColor');
+            }
+        },
+        public ?string $emissionMap = null {
+            set {
+                $this->emissionMap = $value;
+                $this->recordChange('emissionMap');
+            }
+        },
+        public MaterialSurfaceType $surfaceType = MaterialSurfaceType::Opaque {
+            set {
+                $this->surfaceType = $value;
+                $this->recordChange('surfaceType');
+            }
+        },
+        public MaterialBlendingMode $blendingMode = MaterialBlendingMode::Alpha {
+            set {
+                $this->blendingMode = $value;
+                $this->recordChange('blendingMode');
+            }
+        },
+        public MaterialRenderFace $renderFace = MaterialRenderFace::Front {
+            set {
+                $this->renderFace = $value;
+                $this->recordChange('renderFace');
+            }
+        },
+        public bool $alphaClipping = false {
+            set {
+                $this->alphaClipping = $value;
+                $this->recordChange('alphaClipping');
+            }
+        },
+        public float $alphaClipThreshold = self::DEFAULT_ALPHA_CLIP_THRESHOLD {
+            set {
+                $this->alphaClipThreshold = $value;
+                $this->recordChange('alphaClipThreshold');
+            }
+        },
+        public int $sortingPriority = 0 {
+            set {
+                $this->sortingPriority = $value;
+                $this->recordChange('sortingPriority');
+            }
+        },
+        public MaterialDepthWrite $depthWrite = MaterialDepthWrite::Auto {
+            set {
+                $this->depthWrite = $value;
+                $this->recordChange('depthWrite');
+            }
+        },
+        public MaterialDepthTest $depthTest = MaterialDepthTest::LessEqual {
+            set {
+                $this->depthTest = $value;
+                $this->recordChange('depthTest');
+            }
+        },
     ) {
         $this->assetPathValue = self::normalizeNullablePath($assetPath);
         $this->shader = $shader;
         $this->secondaryUvSet = $secondaryUvSet;
         $this->baseColorValue = $baseColor;
-        $this->baseColorCustomized = $baseColor->toRGBA() !== Color::white()->toRGBA();
         $this->shaderAssetPath = self::normalizeNullablePath($shaderAssetPath);
         $this->albedo = self::normalizeNullablePath($albedo);
         $this->normalMap = self::normalizeNullablePath($normalMap);
@@ -346,6 +545,7 @@ final class Material implements Stringable
         if ($emission !== null) {
             $this->applyEmission($emission);
         }
+        $this->recordingChanges = true;
     }
 
     /**
@@ -519,7 +719,53 @@ final class Material implements Stringable
      */
     public function hasCustomBaseColor(): bool
     {
-        return $this->baseColorCustomized;
+        return isset($this->assignedFields['baseColor'])
+            || $this->baseColor->toRGBA() !== Color::white()->toRGBA();
+    }
+
+    /**
+     * Creates the material of a renderer's slot from the native renderer's
+     * description of it: the asset the slot references, '' for none, and the
+     * material file document of what the slot draws with.
+     *
+     * @internal
+     *
+     * @param array{assetPath?: mixed, document?: mixed} $slot
+     */
+    public static function fromRendererSlot(array $slot): self
+    {
+        $document = is_array($slot['document'] ?? null) ? $slot['document'] : [];
+
+        return self::fromAssetDocument($document, self::normalizeNullablePath($slot['assetPath'] ?? null));
+    }
+
+    /**
+     * The native renderer's description of this material for a slot.
+     *
+     * With an asset path, the slot takes the asset, and `document` holds the
+     * fields that go over the asset's: every field for a material read with
+     * its values, and the fields a script set otherwise. Without one, a
+     * material that sets no field but its base colour leaves the slot to the
+     * renderer's default material in that colour, as Material::fromColor()
+     * always has; any other material is drawn with all of its fields.
+     *
+     * @internal
+     *
+     * @return array{assetPath: string, document: ?array<string, mixed>, baseColor?: string}
+     */
+    public function toRendererSlot(): array
+    {
+        if ($this->assetPath !== null) {
+            $document = $this->documentBacked ? $this->toAssetDocument() : $this->changedDocument();
+
+            return ['assetPath' => $this->assetPath, 'document' => $document === [] ? null : $document];
+        }
+
+        if (array_diff($this->changedFields(), ['baseColor']) === []) {
+            return ['assetPath' => '', 'document' => null, 'baseColor' => $this->baseColor->toHex()];
+        }
+
+        return ['assetPath' => '', 'document' => $this->toAssetDocument()];
     }
 
     /**
@@ -601,7 +847,7 @@ final class Material implements Stringable
         // Before 0.10, unserializing assigned the base colour through its
         // property, which marks it custom whatever its value. The renderer
         // sends a custom base colour with the material's asset.
-        $this->baseColorCustomized = true;
+        $this->assignedFields['baseColor'] = true;
     }
 
     /**
@@ -612,6 +858,18 @@ final class Material implements Stringable
      * @param array<string, mixed> $document
      */
     private function readAssetDocument(array $document): void
+    {
+        $this->recordingChanges = false;
+        $this->readAssetDocumentFields($document);
+        $this->documentBacked = true;
+        $this->assignedFields = [];
+        $this->recordingChanges = true;
+    }
+
+    /**
+     * @param array<string, mixed> $document
+     */
+    private function readAssetDocumentFields(array $document): void
     {
         $header = is_array($document['material'] ?? null) ? $document['material'] : [];
         if (($header['version'] ?? null) !== self::ASSET_DOCUMENT_VERSION) {
@@ -634,9 +892,7 @@ final class Material implements Stringable
         $this->depthWrite = MaterialDepthWrite::tryFrom(self::readString($surface, 'depthWrite')) ?? MaterialDepthWrite::Auto;
         $this->depthTest = MaterialDepthTest::tryFrom(self::readString($surface, 'depthTest')) ?? MaterialDepthTest::LessEqual;
 
-        $baseColor = Color::tryFromHex(self::readString($document, 'baseColor')) ?? Color::white();
-        $this->baseColorValue = $baseColor;
-        $this->baseColorCustomized = $baseColor->toRGBA() !== Color::white()->toRGBA();
+        $this->baseColorValue = Color::tryFromHex(self::readString($document, 'baseColor')) ?? Color::white();
         $this->metallic = self::readFloat($document, 'metallic', 0.0);
         $this->smoothness = self::readFloat($document, 'smoothness', 0.5);
         $this->emissionEnabled = is_bool($document['emissionEnabled'] ?? null) ? $document['emissionEnabled'] : false;
@@ -758,6 +1014,81 @@ final class Material implements Stringable
         }
 
         return $path;
+    }
+
+    /**
+     * The fields this material sets: those assigned since it was made or
+     * read and, for a material not read with its values, those that differ
+     * from a new material's.
+     *
+     * @return list<string>
+     */
+    private function changedFields(): array
+    {
+        $fields = array_keys($this->assignedFields);
+        if ($this->documentBacked) {
+            return $fields;
+        }
+
+        $document = $this->toAssetDocument();
+        $defaults = new self()->toAssetDocument();
+        foreach (self::DOCUMENT_PATHS as $field => $path) {
+            if (self::valueAt($document, $path) !== self::valueAt($defaults, $path)) {
+                $fields[] = $field;
+            }
+        }
+
+        return array_values(array_unique($fields));
+    }
+
+    /**
+     * The material file document of the fields this material sets.
+     *
+     * @return array<string, mixed>
+     */
+    private function changedDocument(): array
+    {
+        $document = $this->toAssetDocument();
+        $changedFields = $this->changedFields();
+        $changed = [];
+        foreach (self::DOCUMENT_PATHS as $field => $path) {
+            if (!in_array($field, $changedFields, true)) {
+                continue;
+            }
+            $target = &$changed;
+            foreach ($path as $key) {
+                $target[$key] ??= [];
+                $target = &$target[$key];
+            }
+            $target = self::valueAt($document, $path);
+            unset($target);
+        }
+
+        return $changed;
+    }
+
+    /**
+     * @param array<string, mixed> $document
+     * @param list<string> $path
+     */
+    private static function valueAt(array $document, array $path): mixed
+    {
+        $value = $document;
+        foreach ($path as $key) {
+            $value = is_array($value) ? ($value[$key] ?? null) : null;
+        }
+
+        return $value;
+    }
+
+    private function recordChange(string $field): void
+    {
+        if (!$this->recordingChanges) {
+            return;
+        }
+
+        $this->assignedFields[$field] = true;
+        $this->notifyChanged();
     }
 
     private function notifyChanged(): void

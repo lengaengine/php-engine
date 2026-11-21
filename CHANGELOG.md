@@ -6,6 +6,7 @@ All notable changes to `lenga/engine` will be documented in this file.
 
 ### Removed
 
+- `Renderer` no longer calls the per-type `<renderer>_set_material_path`, `<renderer>_set_material_paths` and `<renderer>_set_color` native functions to assign materials, and no longer throws a `LogicException` for several material assets; it uses the renderer material bridge. The engine keeps `<renderer>_set_material_path` and `<renderer>_set_color` for scripts that call them.
 - Removed `Scene::getBackdropLayers()`, `Scene::getBackdropLayer()`, `Scene::getBackdropLayerCount()` and the `BackdropLayer` class. The engine no longer has backdrop layers: since scene format 3 each saved layer is a sprite in the scene, a GameObject named "Backdrop N" under the main camera or the Backdrops root. Scripts that read or moved backdrop layers stop working; move those GameObjects instead.
 
 ### Changed
@@ -16,6 +17,8 @@ All notable changes to `lenga/engine` will be documented in this file.
 - `Material::$renderingMode`, its constructor parameter and the `RENDERING_*` constants are deprecated. Assigning a Rendering Mode sets the Surface Options as the engine converts a version 1 material file: Opaque is Opaque; Cutout is Opaque with Alpha Clipping at 0.5; Fade is Transparent with Alpha blending; Transparent is Transparent with Premultiply blending. Reading it gives the mode the Surface Options correspond to, and Transparent for Additive and Multiply blending.
 - `Material::$emission` and its constructor parameter are deprecated. Assigning a value converts it once, as the engine converts a version 1 material file once when it reads it: a value above 0 turns Emission on with the opaque base colour at log2(value) stops as the Emission Color and the base texture as the Emission Map; 0 turns Emission off. Reading it gives 0 when Emission is off and 2^intensity of the Emission Color when it is on.
 - `Material` serializes as a version number, its asset path and its material file document. Data serialized by earlier versions still unserializes; its `renderingMode` and `emission` convert as the deprecated properties convert them, and its base colour counts as custom, as before.
+- A `Material` assigned to a renderer draws with every field it has, through the engine's renderer material bridge (`renderer_get_materials`, `renderer_set_materials`, `renderer_set_material`). A material with an asset path draws its asset with the fields a script set over it, or every field when it was read with its values; a script-made material draws with all of its fields; a material that sets nothing but its base colour leaves the slot to the renderer's default material in that colour, as `Material::fromColor()` did. Before, only the asset path and base colour reached the renderer.
+- `Renderer::$materials` reads every slot with the values it draws with, including its Surface Options and Emission, and assigning sets every slot. Assigning a field of a Material read from or assigned to a renderer changes its slot; before, only `assetPath` and `baseColor` did. `Renderer::$material` sets the first slot and leaves the others, as the native bridge did before.
 
 ### Added
 
@@ -27,7 +30,7 @@ All notable changes to `lenga/engine` will be documented in this file.
 - `HdrColor`, a colour with an intensity in exposure stops. `linearValue()` gives the colour decoded to linear times 2^intensity, as the engine computes it.
 - `Material::toAssetDocument()` and `Material::fromAssetDocument()`, which write and read a material file's version 2 document.
 - `Color::toHex()`, `Color::fromHex()` and `Color::tryFromHex()` for `#RRGGBB` and `#RRGGBBAA` strings.
-- The descriptions of `Material` and `Renderer::$materials` state that a script-made Material sends only its asset path and base colour to the native renderer.
+- `Material::toRendererSlot()` and `Material::fromRendererSlot()` (internal), which describe a material to the renderer material bridge.
 
 ## 0.9.1 - 2026-08-07
 
