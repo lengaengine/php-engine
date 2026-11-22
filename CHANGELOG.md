@@ -33,6 +33,7 @@ All notable changes to `lenga/engine` will be documented in this file.
 - `Material::toAssetDocument()` and `Material::fromAssetDocument()`, which write and read a material file's version 2 document.
 - `Color::toHex()`, `Color::fromHex()` and `Color::tryFromHex()` for `#RRGGBB` and `#RRGGBBAA` strings.
 - `Material::toRendererSlot()` and `Material::fromRendererSlot()` (internal), which describe a material to the renderer material bridge.
+- `Camera::getMain()`, which returns the camera the engine draws the active scene with: the first enabled camera marked primary on an active GameObject, otherwise the first enabled camera on an active GameObject, or null when no camera qualifies. The engine chooses the camera on every call, through the `camera_get_main` native function.
 
 ## 0.9.1 - 2026-08-07
 

@@ -16,6 +16,23 @@ final class Camera extends Component
 
     // TODO: Implement screen-space related methods e.g.
 
+    /**
+     * Returns the camera the engine draws the active scene with: the first
+     * enabled camera marked primary on an active GameObject, otherwise the
+     * first enabled camera on an active GameObject, in hierarchy order.
+     *
+     * The engine chooses the camera on every call, so the result follows
+     * cameras enabled, disabled or made primary since the previous call.
+     *
+     * @return Camera|null The main camera, or null when no camera qualifies.
+     */
+    public static function getMain(): ?Camera
+    {
+        $camera = GameObject::wrapNativeComponentLookupData(NativeEngine::call('camera_get_main'));
+
+        return $camera instanceof self ? $camera : null;
+    }
+
     public bool $primary {
         get {
             return (bool) ($this->getState()['primary'] ?? false);
