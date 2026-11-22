@@ -30,15 +30,39 @@ namespace {
 
         return true;
     }
+
+    /**
+     * @return array{r: int, g: int, b: int, a: int}|false
+     */
+    function lenga_internal_renderer_get_color(int $componentId): array|false
+    {
+        return $GLOBALS['lenga_renderer_material_slot_test']['colors'][$componentId] ?? false;
+    }
+
+    function lenga_internal_renderer_set_color(int $componentId, int $red, int $green, int $blue, int $alpha = 255): bool
+    {
+        $GLOBALS['lenga_renderer_material_slot_test']['colors'][$componentId] = [
+            'r' => $red,
+            'g' => $green,
+            'b' => $blue,
+            'a' => $alpha,
+        ];
+        $GLOBALS['lenga_renderer_material_slot_test']['calls'][] = ['set_color', $componentId, $red, $green, $blue, $alpha];
+
+        return true;
+    }
 }
 
 namespace Lenga\Engine\Tests\Core {
     use InvalidArgumentException;
+    use Lenga\Engine\Core\CircleRenderer;
     use Lenga\Engine\Core\Color;
     use Lenga\Engine\Core\CubeRenderer;
     use Lenga\Engine\Core\GameObject;
     use Lenga\Engine\Core\Material;
     use Lenga\Engine\Core\ModelRenderer;
+    use Lenga\Engine\Core\RectangleRenderer;
+    use Lenga\Engine\Core\SpriteRenderer;
     use Lenga\Engine\Enumerations\MaterialBlendingMode;
     use Lenga\Engine\Enumerations\MaterialDepthTest;
     use Lenga\Engine\Enumerations\MaterialRenderFace;
@@ -51,7 +75,7 @@ namespace Lenga\Engine\Tests\Core {
 
         protected function setUp(): void
         {
-            $GLOBALS['lenga_renderer_material_slot_test'] = ['slots' => [], 'calls' => []];
+            $GLOBALS['lenga_renderer_material_slot_test'] = ['slots' => [], 'colors' => [], 'calls' => []];
         }
 
         public function testReadingGivesEverySlotWithTheValuesItDrawsWith(): void
@@ -177,6 +201,28 @@ namespace Lenga\Engine\Tests\Core {
             $this->expectException(InvalidArgumentException::class);
 
             $this->cube()->materials = ['Assets/Brick.material.json'];
+        }
+
+        public function testTwoDRenderersReadAndWritePerRendererTintColor(): void
+        {
+            $sprite = new SpriteRenderer(new GameObject('Sprite'), self::COMPONENT_ID);
+            self::assertSame(Color::white()->toRGBA(), $sprite->color->toRGBA());
+
+            $unlocked = Color::fromRGBA(46, 204, 113, 255);
+            $sprite->color = $unlocked;
+            self::assertSame($unlocked->toRGBA(), $sprite->color->toRGBA());
+            self::assertSame(
+                [['set_color', self::COMPONENT_ID, 46, 204, 113, 255]],
+                $this->calls(),
+            );
+
+            $rectangle = new RectangleRenderer(new GameObject('Portal'), self::COMPONENT_ID + 1);
+            $rectangle->color = Color::red();
+            self::assertSame(Color::red()->toRGBA(), $rectangle->color->toRGBA());
+
+            $circle = new CircleRenderer(new GameObject('Orb'), self::COMPONENT_ID + 2);
+            $circle->color = Color::blue();
+            self::assertSame(Color::blue()->toRGBA(), $circle->color->toRGBA());
         }
 
         /**

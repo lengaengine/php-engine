@@ -8,7 +8,7 @@ use Lenga\Engine\Enumerations\SpriteDrawMode;
 
 use function is_array;
 
-final class SpriteRenderer extends Renderer
+final class SpriteRenderer extends Renderer2D
 {
     public function __construct(GameObject $gameObject, int $componentId)
     {

@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Lenga\Engine\Core;
 
-final class TriangleRenderer2D extends Renderer
+final class TriangleRenderer2D extends Renderer2D
 {
     public function __construct(GameObject $gameObject, int $componentId)
     {

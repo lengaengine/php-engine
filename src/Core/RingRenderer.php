@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Lenga\Engine\Core;
 
-final class RingRenderer extends Renderer
+final class RingRenderer extends Renderer2D
 {
     public function __construct(GameObject $gameObject, int $componentId)
     {
