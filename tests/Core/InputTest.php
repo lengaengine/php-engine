@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Lenga\Engine\Tests\Core;
 
 use Lenga\Engine\Core\Input;
+use Lenga\Engine\Enumerations\KeyCode;
 use Lenga\Engine\Enumerations\TouchPhase;
 use Lenga\Engine\Exceptions\LengaRuntimeUnavailableException;
 use PHPUnit\Framework\TestCase;
@@ -53,5 +54,17 @@ final class InputTest extends TestCase
         $this->expectException(LengaRuntimeUnavailableException::class);
 
         Input::getTouch(0);
+    }
+
+    public function testKeyCodesResolveAsciiLettersAndDigits(): void
+    {
+        self::assertSame(65, KeyCode::resolve(KeyCode::A));
+        self::assertSame(90, KeyCode::resolve(' key_z '));
+        self::assertSame(48, KeyCode::resolve(KeyCode::ZERO));
+        self::assertSame(57, KeyCode::resolve('KEY_9'));
+        self::assertSame(301, KeyCode::resolve(KeyCode::F12));
+        self::assertSame(265, KeyCode::resolve('UpArrow'));
+        self::assertNull(KeyCode::resolve('@'));
+        self::assertNull(KeyCode::resolve("\xE9"));
     }
 }

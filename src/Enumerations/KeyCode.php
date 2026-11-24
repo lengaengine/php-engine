@@ -151,10 +151,8 @@ enum KeyCode: string
 
     private static function resolveGeneratedKey(string $key): ?int
     {
-        if (strlen($key) === 1) {
-            if (ctype_alpha($key) || ctype_digit($key)) {
-                return ord($key);
-            }
+        if (strlen($key) === 1 && str_contains('ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789', $key)) {
+            return ord($key);
         }
 
         if (preg_match('/^F([1-9]|1[0-2])$/', $key, $matches) === 1) {
