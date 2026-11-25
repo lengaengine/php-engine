@@ -6,7 +6,7 @@ namespace Lenga\Engine\Core;
 
 use function is_array;
 
-final class RectangleRenderer extends Renderer
+final class RectangleRenderer extends Renderer2D
 {
     public function __construct(GameObject $gameObject, int $componentId)
     {

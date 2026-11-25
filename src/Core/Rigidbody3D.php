@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Lenga\Engine\Core;
 
 use Lenga\Engine\Enumerations\ForceMode;
+use Lenga\Engine\Enumerations\RigidbodyInterpolation;
 use function is_array;
 
 /**
@@ -189,6 +190,51 @@ final class Rigidbody3D extends Component
         }
     }
 
+    /** Pose smoothing mode applied between fixed physics steps. */
+    public RigidbodyInterpolation $interpolation {
+        get {
+            return RigidbodyInterpolation::tryFrom((string) ($this->getState()['interpolation'] ?? 'None'))
+                ?? RigidbodyInterpolation::None;
+        }
+
+        set(RigidbodyInterpolation $value) {
+            NativeEngine::call('rigidbody3d_set_interpolation', $this->componentId, $value->value);
+        }
+    }
+
+    /**
+     * Moves this body toward a target world position while respecting interpolation.
+     *
+     * Use this during `fixedUpdate()` for smooth kinematic motion instead of teleporting `Transform::$position`.
+     */
+    public function movePosition(Vector3 $position): void
+    {
+        NativeEngine::call(
+            'rigidbody3d_move_position',
+            $this->componentId,
+            $position->x,
+            $position->y,
+            $position->z,
+        );
+    }
+
+    /**
+     * Rotates this body toward a target world orientation while respecting interpolation.
+     *
+     * Use this during `fixedUpdate()` for smooth kinematic rotation instead of teleporting `Transform::$rotation`.
+     */
+    public function moveRotation(Quaternion $rotation): void
+    {
+        NativeEngine::call(
+            'rigidbody3d_move_rotation',
+            $this->componentId,
+            $rotation->x,
+            $rotation->y,
+            $rotation->z,
+            $rotation->w,
+        );
+    }
+
     /**
      * Applies a force to this body.
      *
@@ -275,6 +321,7 @@ final class Rigidbody3D extends Component
      *     freezeRotationY?: bool,
      *     freezeRotationZ?: bool,
      *     collisionDetection?: string,
+     *     interpolation?: string,
      *     enabled?: bool
      * }
      */

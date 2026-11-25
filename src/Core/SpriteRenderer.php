@@ -4,9 +4,11 @@ declare(strict_types=1);
 
 namespace Lenga\Engine\Core;
 
+use Lenga\Engine\Enumerations\SpriteDrawMode;
+
 use function is_array;
 
-final class SpriteRenderer extends Renderer
+final class SpriteRenderer extends Renderer2D
 {
     public function __construct(GameObject $gameObject, int $componentId)
     {
@@ -93,6 +95,39 @@ final class SpriteRenderer extends Renderer
         }
     }
 
+    /**
+     * How the sprite fills its size: stretched (Simple) or repeated every
+     * tile size (Tiled).
+     */
+    public SpriteDrawMode $drawMode {
+        get {
+            $value = (string) ($this->getState()['drawMode'] ?? SpriteDrawMode::Simple->value);
+            return SpriteDrawMode::tryFrom($value) ?? SpriteDrawMode::Simple;
+        }
+
+        set(SpriteDrawMode $value) {
+            NativeEngine::call('sprite_renderer_set_draw_mode', $this->componentId, $value->value);
+        }
+    }
+
+    /**
+     * One tile's size in world units, before the Transform's scale, used
+     * while the draw mode is Tiled.
+     */
+    public Vector2 $tileSize {
+        get {
+            $tileSize = $this->getState()['tileSize'] ?? [];
+            return new Vector2(
+                (float) ($tileSize['x'] ?? 1.0),
+                (float) ($tileSize['y'] ?? 1.0),
+            );
+        }
+
+        set(Vector2 $value) {
+            NativeEngine::call('sprite_renderer_set_tile_size', $this->componentId, $value->x, $value->y);
+        }
+    }
+
     public function setSize(float $width, float $height): void
     {
         NativeEngine::call('sprite_renderer_set_size', $this->componentId, $width, $height);
@@ -112,6 +147,8 @@ final class SpriteRenderer extends Renderer
      *     enabled?: bool,
      *     texturePath?: string,
      *     pivot?: array{x?: float, y?: float},
+     *     drawMode?: string,
+     *     tileSize?: array{x?: float, y?: float},
      * }
      */
     private function getState(): array
@@ -124,6 +161,8 @@ final class SpriteRenderer extends Renderer
          *     enabled?: bool,
          *     texturePath?: string,
          *     pivot?: array{x?: float, y?: float},
+         *     drawMode?: string,
+         *     tileSize?: array{x?: float, y?: float},
          * } $state
          */
         $state = NativeEngine::call('sprite_renderer_get_state', $this->componentId);

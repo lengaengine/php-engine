@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Lenga\Engine\Core;
 
 use Lenga\Engine\Enumerations\ForceMode2D;
+use Lenga\Engine\Enumerations\RigidbodyInterpolation;
 
 /**
  * 2D rigid body physics component bound to the native engine runtime.
@@ -88,6 +89,47 @@ final class Rigidbody2D extends Component
         set(string $value) {
             NativeEngine::call('rigidbody2d_set_collision_detection', $this->componentId, $value);
         }
+    }
+
+    /** Pose smoothing mode applied between fixed physics steps. */
+    public RigidbodyInterpolation $interpolation {
+        get {
+            return RigidbodyInterpolation::tryFrom((string) ($this->getState()['interpolation'] ?? 'None'))
+                ?? RigidbodyInterpolation::None;
+        }
+
+        set(RigidbodyInterpolation $value) {
+            NativeEngine::call('rigidbody2d_set_interpolation', $this->componentId, $value->value);
+        }
+    }
+
+    /**
+     * Moves this body toward a target 2D world position while respecting interpolation.
+     *
+     * Use this during `fixedUpdate()` for smooth kinematic motion instead of teleporting `Transform::$position`.
+     */
+    public function movePosition(Vector2 $position): void
+    {
+        NativeEngine::call(
+            'rigidbody2d_move_position',
+            $this->componentId,
+            $position->x,
+            $position->y,
+        );
+    }
+
+    /**
+     * Rotates this body toward a target 2D Z-axis angle in degrees while respecting interpolation.
+     *
+     * Use this during `fixedUpdate()` for smooth kinematic rotation instead of teleporting `Transform::$rotation`.
+     */
+    public function moveRotation(float $angleDegrees): void
+    {
+        NativeEngine::call(
+            'rigidbody2d_move_rotation',
+            $this->componentId,
+            $angleDegrees,
+        );
     }
 
     /** World-space linear velocity. */
@@ -194,6 +236,7 @@ final class Rigidbody2D extends Component
      *     linearDrag?: float,
      *     freezeRotation?: bool,
      *     collisionDetection?: string,
+     *     interpolation?: string,
      *     enabled?: bool
      * }
      */

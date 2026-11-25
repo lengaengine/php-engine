@@ -7,11 +7,8 @@ namespace Lenga\Engine\Core;
 use InvalidArgumentException;
 use Lenga\Engine\Interfaces\RendererInterface;
 use Lenga\Engine\Internal\ColorBridge;
-use LogicException;
-use function array_filter;
 use function array_map;
 use function array_values;
-use function count;
 use function is_array;
 use function is_string;
 use function preg_replace;
@@ -26,7 +23,12 @@ use function strtolower;
 abstract class Renderer extends Component implements RendererInterface
 {
     /**
-     * The first material assigned to this renderer, or null when no material is assigned.
+     * The material of the renderer's first slot, as Unity's Renderer.material.
+     *
+     * Reading gives the material the slot draws with: its material asset, or
+     * the renderer's default material in the renderer's colour when the slot
+     * has none. Assigning sets the first slot and leaves the others; null
+     * leaves the first slot to the default material, in the colour it has.
      */
     public ?Material $material {
         get {
@@ -36,31 +38,40 @@ abstract class Renderer extends Component implements RendererInterface
         }
 
         set(?Material $value) {
-            $this->materials = $value === null ? [] : [$value];
+            if ($value === null) {
+                NativeEngine::call('renderer_set_material', $this->componentId, 0, ['assetPath' => '', 'document' => null]);
+
+                return;
+            }
+
+            NativeEngine::call('renderer_set_material', $this->componentId, 0, $value->toRendererSlot());
+            $this->bindRendererMaterial($value, 0);
         }
     }
 
     /**
-     * The materials assigned to this renderer.
+     * The materials of the renderer's slots, as Unity's Renderer.materials.
+     *
+     * Reading gives one Material for each slot, with the values the slot
+     * draws with: its asset path, '' read as null for a slot without one, and
+     * every field. Assigning gives the renderer one slot for each Material,
+     * which draws with all of the Material's fields over its asset's; see
+     * {@see Material::toRendererSlot()}. Assigning a field of a Material read
+     * or assigned here changes its slot.
      *
      * @var list<Material>
      */
     public array $materials {
         get {
-            $state = $this->readRendererState();
-            $materialPaths = $this->getMaterialPathsFromState($state);
-            if ($materialPaths !== []) {
-                return array_values(array_map(
-                    fn (string $materialPath): Material => $this->bindRendererMaterial(Material::fromAssetPath($materialPath)),
-                    $materialPaths,
-                ));
+            $slots = NativeEngine::call('renderer_get_materials', $this->componentId);
+            $materials = [];
+            foreach (is_array($slots) ? array_values($slots) : [] as $slot => $description) {
+                if (is_array($description)) {
+                    $materials[] = $this->bindRendererMaterial(Material::fromRendererSlot($description), $slot);
+                }
             }
 
-            if (isset($state['color']) && is_array($state['color'])) {
-                return [$this->bindRendererMaterial(Material::fromRendererState($state))];
-            }
-
-            return [];
+            return $materials;
         }
 
         set(array $value) {
@@ -70,10 +81,17 @@ abstract class Renderer extends Component implements RendererInterface
                     throw new InvalidArgumentException('Renderer materials must be Material instances.');
                 }
 
-                $materials[] = $this->bindRendererMaterial($material);
+                $materials[] = $material;
             }
 
-            $this->applyMaterials($materials);
+            NativeEngine::call(
+                'renderer_set_materials',
+                $this->componentId,
+                array_map(static fn (Material $material): array => $material->toRendererSlot(), $materials),
+            );
+            foreach ($materials as $slot => $material) {
+                $this->bindRendererMaterial($material, $slot);
+            }
         }
     }
 
@@ -136,109 +154,10 @@ abstract class Renderer extends Component implements RendererInterface
         return is_array($state) ? $state : [];
     }
 
-    /**
-     * @param list<Material> $materials
-     */
-    private function applyMaterials(array $materials): void
+    private function bindRendererMaterial(Material $material, int $slot): Material
     {
-        $materialPaths = [];
-        foreach ($materials as $material) {
-            if ($material->assetPath !== null && $material->assetPath !== '') {
-                $materialPaths[] = $material->assetPath;
-            }
-        }
-
-        $singleMaterialBinding = $this->rendererBindingPrefix() . '_set_material_path';
-        $hasSingleMaterialBinding = NativeEngine::hasFunction($singleMaterialBinding);
-
-        if ($materialPaths === []) {
-            if ($hasSingleMaterialBinding) {
-                NativeEngine::call($singleMaterialBinding, $this->componentId, '');
-            }
-
-            if ($materials !== []) {
-                $this->applyMaterialColor($materials[0]);
-            }
-
-            return;
-        }
-
-        if (count($materialPaths) === 1) {
-            if (!$hasSingleMaterialBinding) {
-                throw new LogicException($this->type . ' cannot assign material assets because its native renderer material bridge is unavailable.');
-            }
-
-            NativeEngine::call($singleMaterialBinding, $this->componentId, $materialPaths[0]);
-            if (isset($materials[0]) && $this->shouldApplyMaterialColor($materials[0])) {
-                $this->applyMaterialColor($materials[0]);
-            }
-            return;
-        }
-
-        $multiMaterialBinding = $this->rendererBindingPrefix() . '_set_material_paths';
-        if (NativeEngine::hasFunction($multiMaterialBinding)) {
-            NativeEngine::call($multiMaterialBinding, $this->componentId, $materialPaths);
-            if (isset($materials[0]) && $this->shouldApplyMaterialColor($materials[0])) {
-                $this->applyMaterialColor($materials[0]);
-            }
-            return;
-        }
-
-        throw new LogicException($this->type . ' currently supports one material through the native renderer bridge.');
-    }
-
-    /**
-     * @return list<string>
-     */
-    private function getMaterialPathsFromState(array $state): array
-    {
-        $materialPaths = $state['materialPaths'] ?? null;
-        if (is_array($materialPaths)) {
-            $paths = [];
-            foreach ($materialPaths as $materialPath) {
-                if (is_string($materialPath) && $materialPath !== '') {
-                    $paths[] = $materialPath;
-                }
-            }
-
-            return array_values(array_filter($paths, static fn (string $path): bool => $path !== ''));
-        }
-
-        $materialPath = $state['materialPath'] ?? '';
-        if (!is_string($materialPath) || $materialPath === '') {
-            return [];
-        }
-
-        return [$materialPath];
-    }
-
-    private function applyMaterialColor(Material $material): void
-    {
-        $setColorBinding = $this->rendererBindingPrefix() . '_set_color';
-        if (!NativeEngine::hasFunction($setColorBinding)) {
-            return;
-        }
-
-        $color = $material->baseColor->toRGBA();
-        NativeEngine::call(
-            $setColorBinding,
-            $this->componentId,
-            $color['r'],
-            $color['g'],
-            $color['b'],
-            $color['a'],
-        );
-    }
-
-    private function shouldApplyMaterialColor(Material $material): bool
-    {
-        return $material->assetPath === null || $material->hasCustomBaseColor();
-    }
-
-    private function bindRendererMaterial(Material $material): Material
-    {
-        return $material->bindChangeListener(function (Material $changedMaterial): void {
-            $this->applyMaterials([$changedMaterial]);
+        return $material->bindChangeListener(function (Material $changedMaterial) use ($slot): void {
+            NativeEngine::call('renderer_set_material', $this->componentId, $slot, $changedMaterial->toRendererSlot());
         });
     }
 

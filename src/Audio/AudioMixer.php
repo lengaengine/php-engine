@@ -91,9 +91,22 @@ final class AudioMixer
     }
 
     /**
-     * Smoothly blends this mixer toward a saved preset.
+     * Moves this mixer to a saved preset over the given time.
      *
-     * The preset name or id must exist on the referenced AudioMixer asset.
+     * Channel volume, pitch and pan blend over the transition time. The cutoff
+     * of a low-pass or high-pass effect sweeps, linearly in Hz, when the effect
+     * is enabled with a mix above zero both before and after the transition and
+     * keeps its channel, effect ID and type. Every other effect setting, the
+     * equalizer, mute, solo, effect bypass and channel output switch to the
+     * preset's values when the transition starts.
+     *
+     * The transition runs in real time, so it continues while gameplay is
+     * paused with Time::pauseGameplay(). A transition time of zero applies the
+     * preset at once.
+     *
+     * @param string $targetPreset The name or id of a preset saved on the referenced AudioMixer asset.
+     * @param float $transitionTimeInSeconds How long the blend and sweep take. Zero applies the preset at once.
+     * @return bool False when the mixer asset or the preset cannot be found.
      */
     public function transitionToPreset(string $targetPreset, float $transitionTimeInSeconds = 0.0): bool
     {

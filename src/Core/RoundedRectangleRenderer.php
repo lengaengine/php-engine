@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Lenga\Engine\Core;
 
-final class RoundedRectangleRenderer extends Renderer
+final class RoundedRectangleRenderer extends Renderer2D
 {
     public function __construct(GameObject $gameObject, int $componentId)
     {

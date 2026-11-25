@@ -6,6 +6,7 @@ namespace Lenga\Engine\Core;
 
 use BackedEnum;
 use Generator;
+use Lenga\Engine\Attributes\HideInInspector;
 use Lenga\Engine\Attributes\ListOf;
 use Lenga\Engine\Attributes\RequireComponent;
 use Lenga\Engine\Attributes\SerializeReference;
@@ -70,6 +71,7 @@ abstract class Behaviour implements ComponentInterface
     // Owning GameObject
     // ---------------------------------------------------------------------
 
+    #[HideInInspector]
     public GameObject $gameObject {
         get {
             if ($this->gameObjectValue === null) {
@@ -86,6 +88,7 @@ abstract class Behaviour implements ComponentInterface
     // (always reflects this behaviour's GameObject)
     // ---------------------------------------------------------------------
 
+    #[HideInInspector]
     public Transform $transform {
         get {
             return $this->gameObject->transform;
@@ -158,6 +161,7 @@ abstract class Behaviour implements ComponentInterface
             . "reason='{$reason}'";
     }
 
+    #[HideInInspector]
     public bool $enabled {
         get {
             if ($this->componentId === null) {

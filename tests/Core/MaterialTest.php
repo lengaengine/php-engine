@@ -6,9 +6,22 @@ namespace Lenga\Engine\Tests\Core;
 
 use InvalidArgumentException;
 use Lenga\Engine\Core\Color;
+use Lenga\Engine\Core\HdrColor;
 use Lenga\Engine\Core\Material;
 use Lenga\Engine\Core\Vector2;
+use Lenga\Engine\Enumerations\MaterialBlendingMode;
+use Lenga\Engine\Enumerations\MaterialDepthTest;
+use Lenga\Engine\Enumerations\MaterialDepthWrite;
+use Lenga\Engine\Enumerations\MaterialRenderFace;
+use Lenga\Engine\Enumerations\MaterialShaderMode;
+use Lenga\Engine\Enumerations\MaterialSurfaceType;
+use Lenga\Engine\Enumerations\MaterialUvSet;
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
+use function array_column;
+use function dirname;
+use function file_get_contents;
+use function log;
 
 final class MaterialTest extends TestCase
 {
@@ -18,8 +31,10 @@ final class MaterialTest extends TestCase
 
         self::assertNull($material->assetPath);
         self::assertSame('Material', $material->name);
-        self::assertSame(Material::SHADER_LIT, $material->shader);
-        self::assertSame(Material::RENDERING_OPAQUE, $material->renderingMode);
+        self::assertSame(MaterialShaderMode::Lit, $material->shaderMode);
+        self::assertSame('Lit', $material->shader);
+        self::assertSame(MaterialUvSet::UV0, $material->secondaryUv);
+        self::assertSame('UV0', $material->secondaryUvSet);
         self::assertSame(['r' => 255, 'g' => 255, 'b' => 255, 'a' => 255], $material->baseColor->toRGBA());
         self::assertSame(0.0, $material->metallic);
         self::assertSame(0.5, $material->smoothness);
@@ -27,6 +42,341 @@ final class MaterialTest extends TestCase
         self::assertSame(1.0, $material->tiling->y);
         self::assertSame(0.0, $material->offset->x);
         self::assertSame(0.0, $material->offset->y);
+    }
+
+    public function testSurfaceOptionDefaultsMatchTheEngine(): void
+    {
+        $material = new Material();
+
+        self::assertSame(MaterialSurfaceType::Opaque, $material->surfaceType);
+        self::assertSame(MaterialBlendingMode::Alpha, $material->blendingMode);
+        self::assertSame(MaterialRenderFace::Front, $material->renderFace);
+        self::assertFalse($material->alphaClipping);
+        self::assertSame(0.5, $material->alphaClipThreshold);
+        self::assertSame(0, $material->sortingPriority);
+        self::assertSame(MaterialDepthWrite::Auto, $material->depthWrite);
+        self::assertSame(MaterialDepthTest::LessEqual, $material->depthTest);
+        self::assertSame(-50, Material::MIN_SORTING_PRIORITY);
+        self::assertSame(50, Material::MAX_SORTING_PRIORITY);
+    }
+
+    public function testEmissionDefaultsMatchTheEngine(): void
+    {
+        $material = new Material();
+
+        self::assertFalse($material->emissionEnabled);
+        self::assertSame(['r' => 0, 'g' => 0, 'b' => 0, 'a' => 255], $material->emissionColor->color->toRGBA());
+        self::assertSame(HdrColor::NEUTRAL_INTENSITY, $material->emissionColor->intensity);
+        self::assertNull($material->emissionMap);
+    }
+
+    /**
+     * @return array<string, array{list<\BackedEnum>, list<string>}>
+     */
+    public static function engineEnumNames(): array
+    {
+        return [
+            'surface type' => [MaterialSurfaceType::cases(), ['Opaque', 'Transparent']],
+            'blending mode' => [MaterialBlendingMode::cases(), ['Alpha', 'Premultiply', 'Additive', 'Multiply']],
+            'render face' => [MaterialRenderFace::cases(), ['Front', 'Back', 'Both']],
+            'depth write' => [MaterialDepthWrite::cases(), ['Auto', 'ForceEnabled', 'ForceDisabled']],
+            'depth test' => [
+                MaterialDepthTest::cases(),
+                ['Never', 'Less', 'Equal', 'LessEqual', 'Greater', 'NotEqual', 'GreaterEqual', 'Always'],
+            ],
+            'shader' => [MaterialShaderMode::cases(), ['Lit', 'Unlit']],
+            'uv set' => [MaterialUvSet::cases(), ['UV0', 'UV1']],
+        ];
+    }
+
+    /**
+     * The names and their order are those of the engine's name tables in
+     * src/Rendering/MaterialRenderState.cpp and MaterialAsset.cpp.
+     *
+     * @param list<\BackedEnum> $cases
+     * @param list<string> $names
+     */
+    #[DataProvider('engineEnumNames')]
+    public function testEnumValuesAreTheEngineNames(array $cases, array $names): void
+    {
+        self::assertSame($names, array_column($cases, 'value'));
+    }
+
+    public function testDeprecatedShaderAndUvSetConstantsHoldTheEnumValues(): void
+    {
+        self::assertSame('Lit', Material::SHADER_LIT);
+        self::assertSame('Unlit', Material::SHADER_UNLIT);
+        self::assertSame('UV0', Material::UV0);
+        self::assertSame('UV1', Material::UV1);
+        self::assertSame(MaterialShaderMode::Lit->value, Material::SHADER_LIT);
+        self::assertSame(MaterialShaderMode::Unlit->value, Material::SHADER_UNLIT);
+        self::assertSame(MaterialUvSet::UV0->value, Material::UV0);
+        self::assertSame(MaterialUvSet::UV1->value, Material::UV1);
+    }
+
+    public function testShaderAndUvSetAcceptTheirStringValues(): void
+    {
+        $material = new Material(shader: Material::SHADER_UNLIT, secondaryUvSet: Material::UV1);
+
+        self::assertSame(MaterialShaderMode::Unlit, $material->shaderMode);
+        self::assertSame(Material::SHADER_UNLIT, $material->shader);
+        self::assertSame(MaterialUvSet::UV1, $material->secondaryUv);
+        self::assertSame(Material::UV1, $material->secondaryUvSet);
+
+        $material->shader = 'Lit';
+        $material->secondaryUvSet = 'UV0';
+
+        self::assertSame(MaterialShaderMode::Lit, $material->shaderMode);
+        self::assertSame('Lit', $material->shader);
+        self::assertSame(MaterialUvSet::UV0, $material->secondaryUv);
+        self::assertSame('UV0', $material->secondaryUvSet);
+    }
+
+    public function testShaderAndUvSetNamesReadAndWriteTheEnumProperties(): void
+    {
+        $material = new Material(shader: MaterialShaderMode::Unlit, secondaryUvSet: MaterialUvSet::UV1);
+
+        self::assertSame('Unlit', $material->shader);
+        self::assertSame('UV1', $material->secondaryUvSet);
+
+        $material->shaderMode = MaterialShaderMode::Lit;
+        $material->secondaryUv = MaterialUvSet::UV0;
+
+        self::assertSame('Lit', $material->shader);
+        self::assertSame('UV0', $material->secondaryUvSet);
+
+        $material->shader = MaterialShaderMode::Unlit;
+        $material->secondaryUvSet = MaterialUvSet::UV1;
+
+        self::assertSame(MaterialShaderMode::Unlit, $material->shaderMode);
+        self::assertSame(MaterialUvSet::UV1, $material->secondaryUv);
+        self::assertTrue($material->shader === Material::SHADER_UNLIT);
+        self::assertTrue($material->secondaryUvSet === Material::UV1);
+    }
+
+    public function testShaderRejectsAnInvalidString(): void
+    {
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage("Invalid material shader 'UnknownShader'.");
+
+        new Material(shader: 'UnknownShader');
+    }
+
+    public function testSecondaryUvSetRejectsAnInvalidString(): void
+    {
+        $material = new Material();
+
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage("Invalid material secondary UV set 'UV2'.");
+
+        $material->secondaryUvSet = 'UV2';
+    }
+
+    public function testConstructorTakesTheParametersInTheirPreviousPositions(): void
+    {
+        $material = new Material(
+            'Assets/Materials/Ground.material.json',
+            'Ground',
+            'Unlit',
+            'Cutout',
+            'Assets/Shaders/Default.shader.json',
+            Color::fromRGBA(10, 20, 30, 40),
+            'Assets/Images/ground.png',
+            0.25,
+            0.75,
+            'Assets/Images/ground-normal.png',
+            'Assets/Images/ground-height.png',
+            'Assets/Images/ground-ao.png',
+            1.5,
+            'Assets/Images/detail-mask.png',
+            new Vector2(2.0, 3.0),
+            new Vector2(0.25, 0.5),
+            'Assets/Images/detail.png',
+            'Assets/Images/detail-normal.png',
+            new Vector2(4.0, 5.0),
+            new Vector2(0.75, 0.125),
+            'UV1',
+        );
+
+        self::assertSame('Assets/Materials/Ground.material.json', $material->assetPath);
+        self::assertSame('Ground', $material->name);
+        self::assertSame('Unlit', $material->shader);
+        self::assertSame(MaterialShaderMode::Unlit, $material->shaderMode);
+        self::assertSame(Material::RENDERING_CUTOUT, $material->renderingMode);
+        self::assertSame('Assets/Shaders/Default.shader.json', $material->shaderAssetPath);
+        self::assertSame(['r' => 10, 'g' => 20, 'b' => 30, 'a' => 40], $material->baseColor->toRGBA());
+        self::assertSame('Assets/Images/ground.png', $material->albedo);
+        self::assertSame(0.25, $material->metallic);
+        self::assertSame(0.75, $material->smoothness);
+        self::assertSame('Assets/Images/ground-normal.png', $material->normalMap);
+        self::assertSame('Assets/Images/ground-height.png', $material->heightMap);
+        self::assertSame('Assets/Images/ground-ao.png', $material->occlusion);
+        self::assertEqualsWithDelta(1.5, $material->emission, 1e-12);
+        self::assertSame('Assets/Images/ground.png', $material->emissionMap);
+        self::assertSame('Assets/Images/detail-mask.png', $material->detailMask);
+        self::assertSame([2.0, 3.0], [$material->tiling->x, $material->tiling->y]);
+        self::assertSame([0.25, 0.5], [$material->offset->x, $material->offset->y]);
+        self::assertSame('Assets/Images/detail.png', $material->detailAlbedo);
+        self::assertSame('Assets/Images/detail-normal.png', $material->detailNormalMap);
+        self::assertSame([4.0, 5.0], [$material->secondaryTiling->x, $material->secondaryTiling->y]);
+        self::assertSame([0.75, 0.125], [$material->secondaryOffset->x, $material->secondaryOffset->y]);
+        self::assertSame('UV1', $material->secondaryUvSet);
+        self::assertSame(MaterialUvSet::UV1, $material->secondaryUv);
+    }
+
+    /**
+     * @return array<string, array{string, MaterialSurfaceType, MaterialBlendingMode, bool}>
+     */
+    public static function renderingModes(): array
+    {
+        return [
+            'Opaque' => [Material::RENDERING_OPAQUE, MaterialSurfaceType::Opaque, MaterialBlendingMode::Alpha, false],
+            'Cutout' => [Material::RENDERING_CUTOUT, MaterialSurfaceType::Opaque, MaterialBlendingMode::Alpha, true],
+            'Fade' => [Material::RENDERING_FADE, MaterialSurfaceType::Transparent, MaterialBlendingMode::Alpha, false],
+            'Transparent' => [
+                Material::RENDERING_TRANSPARENT,
+                MaterialSurfaceType::Transparent,
+                MaterialBlendingMode::Premultiply,
+                false,
+            ],
+        ];
+    }
+
+    #[DataProvider('renderingModes')]
+    public function testRenderingModeSetsSurfaceOptionsAsTheEngineConvertsThem(
+        string $mode,
+        MaterialSurfaceType $surfaceType,
+        MaterialBlendingMode $blendingMode,
+        bool $alphaClipping,
+    ): void {
+        $material = new Material(
+            surfaceType: MaterialSurfaceType::Transparent,
+            blendingMode: MaterialBlendingMode::Multiply,
+            renderFace: MaterialRenderFace::Both,
+            alphaClipping: true,
+            alphaClipThreshold: 0.2,
+            sortingPriority: 7,
+            depthWrite: MaterialDepthWrite::ForceEnabled,
+            depthTest: MaterialDepthTest::Always,
+        );
+
+        $material->renderingMode = $mode;
+
+        self::assertSame($surfaceType, $material->surfaceType);
+        self::assertSame($blendingMode, $material->blendingMode);
+        self::assertSame($alphaClipping, $material->alphaClipping);
+        self::assertSame($mode === Material::RENDERING_CUTOUT ? 0.5 : 0.2, $material->alphaClipThreshold);
+        self::assertSame($mode, $material->renderingMode);
+        self::assertSame(MaterialRenderFace::Both, $material->renderFace);
+        self::assertSame(7, $material->sortingPriority);
+        self::assertSame(MaterialDepthWrite::ForceEnabled, $material->depthWrite);
+        self::assertSame(MaterialDepthTest::Always, $material->depthTest);
+    }
+
+    #[DataProvider('renderingModes')]
+    public function testRenderingModeConstructorParameterSetsSurfaceOptions(
+        string $mode,
+        MaterialSurfaceType $surfaceType,
+        MaterialBlendingMode $blendingMode,
+        bool $alphaClipping,
+    ): void {
+        $material = new Material(renderingMode: $mode);
+
+        self::assertSame($surfaceType, $material->surfaceType);
+        self::assertSame($blendingMode, $material->blendingMode);
+        self::assertSame($alphaClipping, $material->alphaClipping);
+        self::assertSame($mode, $material->renderingMode);
+    }
+
+    public function testRenderingModeReadsAdditiveAndMultiplyAsTransparent(): void
+    {
+        self::assertSame(
+            Material::RENDERING_TRANSPARENT,
+            (new Material(surfaceType: MaterialSurfaceType::Transparent, blendingMode: MaterialBlendingMode::Additive))->renderingMode,
+        );
+        self::assertSame(
+            Material::RENDERING_TRANSPARENT,
+            (new Material(surfaceType: MaterialSurfaceType::Transparent, blendingMode: MaterialBlendingMode::Multiply))->renderingMode,
+        );
+    }
+
+    public function testRenderingModeRejectsAnUnknownMode(): void
+    {
+        $material = new Material();
+
+        $this->expectException(InvalidArgumentException::class);
+
+        $material->renderingMode = 'Glass';
+    }
+
+    /**
+     * @return array<string, array{float, ?string}>
+     */
+    public static function scalarEmissions(): array
+    {
+        return [
+            'off without a base texture' => [0.0, null],
+            'off with a base texture' => [0.0, 'Assets/Images/lamp.png'],
+            'one without a base texture' => [1.0, null],
+            'one with a base texture' => [1.0, 'Assets/Images/lamp.png'],
+            'one and a half without a base texture' => [1.5, null],
+            'one and a half with a base texture' => [1.5, 'Assets/Images/lamp.png'],
+        ];
+    }
+
+    #[DataProvider('scalarEmissions')]
+    public function testEmissionSetsEmissionAsTheEngineConvertsVersionOneFiles(float $emission, ?string $albedo): void
+    {
+        $material = new Material(baseColor: Color::fromRGBA(200, 100, 50, 128), albedo: $albedo);
+
+        $material->emission = $emission;
+
+        self::assertEqualsWithDelta($emission, $material->emission, 1e-12);
+        if ($emission === 0.0) {
+            self::assertFalse($material->emissionEnabled);
+            self::assertSame(['r' => 0, 'g' => 0, 'b' => 0, 'a' => 255], $material->emissionColor->color->toRGBA());
+            self::assertNull($material->emissionMap);
+
+            return;
+        }
+
+        self::assertTrue($material->emissionEnabled);
+        self::assertSame(['r' => 200, 'g' => 100, 'b' => 50, 'a' => 255], $material->emissionColor->color->toRGBA());
+        self::assertEqualsWithDelta(log($emission, 2), $material->emissionColor->intensity, 1e-12);
+        self::assertSame($albedo, $material->emissionMap);
+    }
+
+    #[DataProvider('scalarEmissions')]
+    public function testEmissionConstructorParameterSetsEmission(float $emission, ?string $albedo): void
+    {
+        $material = new Material(baseColor: Color::fromRGBA(200, 100, 50), albedo: $albedo, emission: $emission);
+
+        self::assertSame($emission > 0.0, $material->emissionEnabled);
+        self::assertSame($emission > 0.0 ? $albedo : null, $material->emissionMap);
+        self::assertEqualsWithDelta($emission, $material->emission, 1e-12);
+    }
+
+    public function testEmissionOffKeepsTheEmissionColourAndMap(): void
+    {
+        $material = new Material(albedo: 'Assets/Images/lamp.png', emission: 2.0);
+
+        $material->emission = 0.0;
+
+        self::assertFalse($material->emissionEnabled);
+        self::assertSame(0.0, $material->emission);
+        self::assertSame(1.0, $material->emissionColor->intensity);
+        self::assertSame('Assets/Images/lamp.png', $material->emissionMap);
+    }
+
+    public function testEmissionReadsTheIntensityScaleWhenTheColourIsNotTheBaseColour(): void
+    {
+        $material = new Material(
+            baseColor: Color::red(),
+            emissionEnabled: true,
+            emissionColor: new HdrColor(Color::blue(), 2.0),
+        );
+
+        self::assertSame(4.0, $material->emission);
     }
 
     public function testMaterialCanReferenceAnAsset(): void
@@ -74,13 +424,231 @@ final class MaterialTest extends TestCase
         ], $calls);
     }
 
-    public function testMaterialSerializesShaderAndTextureState(): void
+    public function testMaterialWritesTheEngineMaterialFileLayout(): void
     {
-        $material = new Material(
+        self::assertSame([
+            'material' => [
+                'name' => 'Ground',
+                'version' => 2,
+                'shader' => 'Unlit',
+                'surfaceOptions' => [
+                    'surfaceType' => 'Transparent',
+                    'blendingMode' => 'Additive',
+                    'renderFace' => 'Both',
+                    'alphaClipping' => true,
+                    'alphaClipThreshold' => 0.25,
+                    'sortingPriority' => -3,
+                    'depthWrite' => 'ForceDisabled',
+                    'depthTest' => 'Greater',
+                ],
+            ],
+            'baseColor' => '#0A141E28',
+            'metallic' => 0.25,
+            'smoothness' => 0.75,
+            'emissionEnabled' => true,
+            'emissionColor' => ['color' => '#FF800A', 'intensity' => 2.5],
+            'shaderAssetPath' => 'Assets/Shaders/Default.shader.json',
+            'baseTexturePath' => 'Assets/Images/ground.png',
+            'normalMapPath' => 'Assets/Images/ground-normal.png',
+            'heightMapPath' => 'Assets/Images/ground-height.png',
+            'occlusionMapPath' => 'Assets/Images/ground-ao.png',
+            'detailMaskPath' => 'Assets/Images/detail-mask.png',
+            'detailAlbedoPath' => 'Assets/Images/detail.png',
+            'detailNormalMapPath' => 'Assets/Images/detail-normal.png',
+            'emissionMapPath' => 'Assets/Images/ground-emission.png',
+            'tiling' => ['x' => 2.0, 'y' => 3.0],
+            'offset' => ['x' => 0.25, 'y' => 0.5],
+            'secondaryTiling' => ['x' => 4.0, 'y' => 5.0],
+            'secondaryOffset' => ['x' => 0.75, 'y' => 0.125],
+            'secondaryUvSet' => 'UV1',
+        ], self::groundMaterial()->toAssetDocument());
+    }
+
+    public function testMaterialWritesEmptyStringsForTexturesThatAreNotSet(): void
+    {
+        $document = (new Material())->toAssetDocument();
+
+        self::assertSame('#FFFFFF', $document['baseColor']);
+        self::assertSame(['color' => '#000000', 'intensity' => 0.0], $document['emissionColor']);
+        self::assertSame('', $document['baseTexturePath']);
+        self::assertSame('', $document['emissionMapPath']);
+        self::assertSame('', $document['shaderAssetPath']);
+    }
+
+    public function testMaterialReadsTheDocumentItWrites(): void
+    {
+        $material = Material::fromAssetDocument(
+            self::groundMaterial()->toAssetDocument(),
+            'Assets/Materials/Ground.material.json',
+        );
+
+        self::assertSame(self::groundMaterial()->toAssetDocument(), $material->toAssetDocument());
+        self::assertSame('Assets/Materials/Ground.material.json', $material->assetPath);
+        self::assertTrue($material->hasCustomBaseColor());
+    }
+
+    public function testMaterialDocumentReadsMissingAndUnknownValuesAsDefaults(): void
+    {
+        $material = Material::fromAssetDocument([
+            'material' => [
+                'version' => 2,
+                'shader' => 'Toon',
+                'surfaceOptions' => ['surfaceType' => 'Glass', 'sortingPriority' => 'high'],
+            ],
+            'emissionColor' => '#336699',
+            'metallic' => 'shiny',
+        ]);
+
+        self::assertSame((new Material())->toAssetDocument()['material'], $material->toAssetDocument()['material']);
+        self::assertSame(0.0, $material->metallic);
+        self::assertSame(['r' => 51, 'g' => 102, 'b' => 153, 'a' => 255], $material->emissionColor->color->toRGBA());
+        self::assertSame(HdrColor::NEUTRAL_INTENSITY, $material->emissionColor->intensity);
+        self::assertFalse($material->hasCustomBaseColor());
+    }
+
+    public function testMaterialDocumentRejectsVersionOne(): void
+    {
+        $this->expectException(InvalidArgumentException::class);
+
+        Material::fromAssetDocument(['material' => ['version' => 1, 'renderingMode' => 'Fade']]);
+    }
+
+    public function testMaterialSerializesEveryField(): void
+    {
+        $roundTripped = unserialize(
+            serialize(self::groundMaterial()),
+            ['allowed_classes' => [Material::class, Color::class, HdrColor::class, Vector2::class]],
+        );
+
+        self::assertInstanceOf(Material::class, $roundTripped);
+        self::assertSame('Assets/Materials/Ground.material.json', $roundTripped->assetPath);
+        self::assertSame(self::groundMaterial()->toAssetDocument(), $roundTripped->toAssetDocument());
+    }
+
+    public function testSerializationPreservesWhatEachMaterialSendsToTheRenderer(): void
+    {
+        $reference = Material::fromAssetPath('Assets/Glass.material.json');
+        $overridden = clone $reference;
+        $overridden->surfaceType = MaterialSurfaceType::Opaque;
+        $overridden->albedo = null;
+        $overridden->metallic = 0.4;
+
+        foreach ([
+            $reference,
+            $overridden,
+            Material::fromColor(Color::blue()),
+            Material::fromRendererSlot([
+                'assetPath' => '',
+                'document' => (new Material(shader: MaterialShaderMode::Unlit, baseColor: Color::blue()))->toAssetDocument(),
+                'defaultSlot' => true,
+            ]),
+            self::groundMaterial(),
+            Material::fromAssetDocument(self::groundMaterial()->toAssetDocument()),
+        ] as $material) {
+            $restored = unserialize(serialize($material), ['allowed_classes' => [Material::class]]);
+
+            self::assertInstanceOf(Material::class, $restored);
+            self::assertSame($material->toRendererSlot(), $restored->toRendererSlot());
+            self::assertSame($material->hasCustomBaseColor(), $restored->hasCustomBaseColor());
+        }
+    }
+
+    public function testVersionTwoSerializationStillRestoresItsMaterialDocument(): void
+    {
+        $data = [
+            'version' => 2,
+            'assetPath' => 'Assets/Glass.material.json',
+            'document' => self::groundMaterial()->toAssetDocument(),
+        ];
+        $restored = new Material();
+        $restored->__unserialize($data);
+
+        self::assertSame(
+            ['assetPath' => $data['assetPath'], 'document' => $data['document']],
+            $restored->toRendererSlot(),
+        );
+    }
+
+    /**
+     * The fixture is serialize() output of the Material class at php-engine
+     * 6d6b79d, the last commit before Surface Options and Emission.
+     */
+    public function testMaterialUnserializesDataFromThePreviousVersion(): void
+    {
+        $materials = unserialize(
+            (string) file_get_contents(dirname(__DIR__) . '/Fixtures/material-6d6b79d.serialized'),
+            ['allowed_classes' => [Material::class]],
+        );
+
+        self::assertIsArray($materials);
+        $ground = $materials['cutoutEmissive'];
+        self::assertInstanceOf(Material::class, $ground);
+        self::assertSame('Assets/Materials/Ground.material.json', $ground->assetPath);
+        self::assertSame('Ground', $ground->name);
+        self::assertSame('Unlit', $ground->shader);
+        self::assertSame(MaterialShaderMode::Unlit, $ground->shaderMode);
+        self::assertSame(MaterialSurfaceType::Opaque, $ground->surfaceType);
+        self::assertTrue($ground->alphaClipping);
+        self::assertSame(0.5, $ground->alphaClipThreshold);
+        self::assertSame('Assets/Shaders/Default.shader.json', $ground->shaderAssetPath);
+        self::assertSame(['r' => 10, 'g' => 20, 'b' => 30, 'a' => 40], $ground->baseColor->toRGBA());
+        self::assertSame('Assets/Images/ground.png', $ground->albedo);
+        self::assertSame(0.25, $ground->metallic);
+        self::assertSame(0.75, $ground->smoothness);
+        self::assertSame('Assets/Images/ground-ao.png', $ground->occlusion);
+        self::assertTrue($ground->emissionEnabled);
+        self::assertSame(['r' => 10, 'g' => 20, 'b' => 30, 'a' => 255], $ground->emissionColor->color->toRGBA());
+        self::assertEqualsWithDelta(log(1.5, 2), $ground->emissionColor->intensity, 1e-12);
+        self::assertSame('Assets/Images/ground.png', $ground->emissionMap);
+        self::assertSame([2.0, 3.0], [$ground->tiling->x, $ground->tiling->y]);
+        self::assertSame('Assets/Images/detail-normal.png', $ground->detailNormalMap);
+        self::assertSame([0.75, 0.125], [$ground->secondaryOffset->x, $ground->secondaryOffset->y]);
+        self::assertSame('UV1', $ground->secondaryUvSet);
+        self::assertSame(MaterialUvSet::UV1, $ground->secondaryUv);
+
+        $inline = $materials['fadeInline'];
+        self::assertInstanceOf(Material::class, $inline);
+        self::assertNull($inline->assetPath);
+        self::assertSame(MaterialSurfaceType::Transparent, $inline->surfaceType);
+        self::assertSame(MaterialBlendingMode::Alpha, $inline->blendingMode);
+        self::assertFalse($inline->emissionEnabled);
+        self::assertSame(['r' => 200, 'g' => 100, 'b' => 50, 'a' => 128], $inline->baseColor->toRGBA());
+
+        $plain = $materials['whiteAsset'];
+        self::assertInstanceOf(Material::class, $plain);
+        self::assertSame('Assets/Materials/Plain.material.json', $plain->assetPath);
+        self::assertSame(['r' => 255, 'g' => 255, 'b' => 255, 'a' => 255], $plain->baseColor->toRGBA());
+
+        foreach ($materials as $material) {
+            self::assertTrue($material->hasCustomBaseColor(), 'Unserialized data from 6d6b79d marks its base colour custom.');
+        }
+
+        self::assertFalse(Material::fromAssetPath('Assets/Materials/Plain.material.json')->hasCustomBaseColor());
+    }
+
+    public function testMaterialRejectsAnUnknownSerializationVersion(): void
+    {
+        $this->expectException(InvalidArgumentException::class);
+
+        unserialize(
+            'O:26:"Lenga\\Engine\\Core\\Material":1:{s:7:"version";i:9;}',
+            ['allowed_classes' => [Material::class]],
+        );
+    }
+
+    public function testMaterialRequiresNonEmptyAssetPath(): void
+    {
+        $this->expectException(InvalidArgumentException::class);
+
+        Material::fromAssetPath('   ');
+    }
+
+    private static function groundMaterial(): Material
+    {
+        return new Material(
             assetPath: 'Assets/Materials/Ground.material.json',
             name: 'Ground',
-            shader: Material::SHADER_UNLIT,
-            renderingMode: Material::RENDERING_TRANSPARENT,
+            shader: MaterialShaderMode::Unlit,
             shaderAssetPath: 'Assets/Shaders/Default.shader.json',
             baseColor: Color::fromRGBA(10, 20, 30, 40),
             albedo: 'Assets/Images/ground.png',
@@ -89,7 +657,9 @@ final class MaterialTest extends TestCase
             normalMap: 'Assets/Images/ground-normal.png',
             heightMap: 'Assets/Images/ground-height.png',
             occlusion: 'Assets/Images/ground-ao.png',
-            emission: 0.5,
+            emissionEnabled: true,
+            emissionColor: new HdrColor(Color::fromRGBA(255, 128, 10), 2.5),
+            emissionMap: 'Assets/Images/ground-emission.png',
             detailMask: 'Assets/Images/detail-mask.png',
             tiling: new Vector2(2.0, 3.0),
             offset: new Vector2(0.25, 0.5),
@@ -97,33 +667,15 @@ final class MaterialTest extends TestCase
             detailNormalMap: 'Assets/Images/detail-normal.png',
             secondaryTiling: new Vector2(4.0, 5.0),
             secondaryOffset: new Vector2(0.75, 0.125),
-            secondaryUvSet: Material::UV1,
+            secondaryUvSet: MaterialUvSet::UV1,
+            surfaceType: MaterialSurfaceType::Transparent,
+            blendingMode: MaterialBlendingMode::Additive,
+            renderFace: MaterialRenderFace::Both,
+            alphaClipping: true,
+            alphaClipThreshold: 0.25,
+            sortingPriority: -3,
+            depthWrite: MaterialDepthWrite::ForceDisabled,
+            depthTest: MaterialDepthTest::Greater,
         );
-
-        $roundTripped = unserialize(serialize($material), ['allowed_classes' => [Material::class, Color::class, Vector2::class]]);
-
-        self::assertInstanceOf(Material::class, $roundTripped);
-        self::assertSame('Ground', $roundTripped->name);
-        self::assertSame(Material::SHADER_UNLIT, $roundTripped->shader);
-        self::assertSame(Material::RENDERING_TRANSPARENT, $roundTripped->renderingMode);
-        self::assertSame('Assets/Images/ground.png', $roundTripped->albedo);
-        self::assertSame(['r' => 10, 'g' => 20, 'b' => 30, 'a' => 40], $roundTripped->baseColor->toRGBA());
-        self::assertSame(2.0, $roundTripped->tiling->x);
-        self::assertSame(3.0, $roundTripped->tiling->y);
-        self::assertSame(Material::UV1, $roundTripped->secondaryUvSet);
-    }
-
-    public function testMaterialRejectsInvalidEnums(): void
-    {
-        $this->expectException(InvalidArgumentException::class);
-
-        new Material(shader: 'UnknownShader');
-    }
-
-    public function testMaterialRequiresNonEmptyAssetPath(): void
-    {
-        $this->expectException(InvalidArgumentException::class);
-
-        Material::fromAssetPath('   ');
     }
 }

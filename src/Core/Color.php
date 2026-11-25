@@ -4,14 +4,19 @@ declare(strict_types=1);
 
 namespace Lenga\Engine\Core;
 
+use InvalidArgumentException;
 use Stringable;
 use function abs;
 use function fmod;
+use function hexdec;
 use function json_encode;
 use function max;
 use function min;
+use function preg_match;
 use function round;
 use function sprintf;
+use function strlen;
+use function substr;
 
 /**
  * Represents an RGBA color using normalized 0.0 to 1.0 channels.
@@ -347,6 +352,51 @@ final class Color implements Stringable
             self::clampByte($blue) / self::MAX_BYTE_VALUE,
             self::clampByte($alpha) / self::MAX_BYTE_VALUE,
         );
+    }
+
+    /**
+     * Creates a color from a `#RRGGBB` or `#RRGGBBAA` hex string, as asset files store colours.
+     *
+     * `#RRGGBB` is opaque. Hex digits may be either case.
+     *
+     * @throws InvalidArgumentException When the string is not one of the two forms.
+     */
+    public static function fromHex(string $hex): self
+    {
+        return self::tryFromHex($hex)
+            ?? throw new InvalidArgumentException("Invalid hex color '{$hex}'. Use #RRGGBB or #RRGGBBAA.");
+    }
+
+    /**
+     * Creates a color from a `#RRGGBB` or `#RRGGBBAA` hex string, or returns null when the string is neither.
+     */
+    public static function tryFromHex(string $hex): ?self
+    {
+        if (preg_match('/^#(?:[0-9A-Fa-f]{6}|[0-9A-Fa-f]{8})$/', $hex) !== 1) {
+            return null;
+        }
+
+        $digits = substr($hex, 1);
+
+        return self::fromRGBA(
+            (int) hexdec(substr($digits, 0, 2)),
+            (int) hexdec(substr($digits, 2, 2)),
+            (int) hexdec(substr($digits, 4, 2)),
+            strlen($digits) === 8 ? (int) hexdec(substr($digits, 6, 2)) : self::MAX_BYTE_VALUE,
+        );
+    }
+
+    /**
+     * Returns the color as an uppercase hex string, as asset files store colours.
+     *
+     * An opaque color is `#RRGGBB` and any other is `#RRGGBBAA`.
+     */
+    public function toHex(): string
+    {
+        $channels = $this->toRGBA();
+        $hex = sprintf('#%02X%02X%02X', $channels['r'], $channels['g'], $channels['b']);
+
+        return $channels['a'] === self::MAX_BYTE_VALUE ? $hex : $hex . sprintf('%02X', $channels['a']);
     }
 
     /**

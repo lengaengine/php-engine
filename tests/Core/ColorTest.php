@@ -175,4 +175,27 @@ final class ColorTest extends TestCase
 
         ColorBridge::toNative(255);
     }
+
+    public function testHexWritesAlphaOnlyWhenTheColorIsNotOpaque(): void
+    {
+        self::assertSame('#0A141E', Color::fromRGBA(10, 20, 30)->toHex());
+        self::assertSame('#0A141E28', Color::fromRGBA(10, 20, 30, 40)->toHex());
+    }
+
+    public function testHexReadsBothFormsInEitherCase(): void
+    {
+        self::assertSame(['r' => 10, 'g' => 20, 'b' => 30, 'a' => 255], Color::fromHex('#0a141e')->toRGBA());
+        self::assertSame(['r' => 10, 'g' => 20, 'b' => 30, 'a' => 40], Color::fromHex('#0A141E28')->toRGBA());
+    }
+
+    public function testHexRejectsOtherStrings(): void
+    {
+        self::assertNull(Color::tryFromHex('0A141E'));
+        self::assertNull(Color::tryFromHex('#0A141'));
+        self::assertNull(Color::tryFromHex('#0G141E'));
+
+        $this->expectException(InvalidArgumentException::class);
+
+        Color::fromHex('red');
+    }
 }
