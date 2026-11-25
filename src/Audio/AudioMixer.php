@@ -118,6 +118,20 @@ final class AudioMixer
         );
     }
 
+    /**
+     * Applies a runtime gain to all sounds routed through this channel.
+     * Use 0 for silence and 1 for the authored level. Finite gains are clamped
+     * to that range. The gain persists across preset changes for this run.
+     *
+     * @param string $channelId Channel ID saved on the mixer asset.
+     * @param float $gain Linear volume multiplier.
+     * @return bool False if the mixer or channel cannot be found or the gain is not finite.
+     */
+    public function setChannelGain(string $channelId, float $gain): bool
+    {
+        return (bool) NativeEngine::call('audio_mixer_set_channel_gain', $this->__serialize(), $channelId, $gain);
+    }
+
     private static function readAssetPath(mixed $value): string
     {
         if ($value instanceof self) {
