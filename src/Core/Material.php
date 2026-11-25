@@ -55,7 +55,7 @@ final class Material implements Stringable
      * The version of the data {@see __serialize()} writes. Data without a
      * version was written before 0.10 and holds the fields flat.
      */
-    private const int SERIALIZATION_VERSION = 2;
+    private const int SERIALIZATION_VERSION = 3;
 
     /**
      * The Alpha Clipping threshold of a new material.
@@ -310,6 +310,9 @@ final class Material implements Stringable
      * read with them, rather than only the values a script gave.
      */
     private bool $documentBacked = false;
+
+    /** The native slot had no material; its document describes inherited draw values. */
+    private bool $defaultSlot = false;
 
     /**
      * The fields assigned since the material was made or read.
@@ -730,13 +733,16 @@ final class Material implements Stringable
      *
      * @internal
      *
-     * @param array{assetPath?: mixed, document?: mixed} $slot
+     * @param array{assetPath?: mixed, document?: mixed, defaultSlot?: mixed} $slot
      */
     public static function fromRendererSlot(array $slot): self
     {
         $document = is_array($slot['document'] ?? null) ? $slot['document'] : [];
 
-        return self::fromAssetDocument($document, self::normalizeNullablePath($slot['assetPath'] ?? null));
+        $material = self::fromAssetDocument($document, self::normalizeNullablePath($slot['assetPath'] ?? null));
+        $material->defaultSlot = $material->assetPath === null && ($slot['defaultSlot'] ?? false) === true;
+
+        return $material;
     }
 
     /**
@@ -745,9 +751,11 @@ final class Material implements Stringable
      * With an asset path, the slot takes the asset, and `document` holds the
      * fields that go over the asset's: every field for a material read with
      * its values, and the fields a script set otherwise. Without one, a
-     * material that sets no field but its base colour leaves the slot to the
-     * renderer's default material in that colour, as Material::fromColor()
-     * always has; any other material is drawn with all of its fields.
+     * script-made material that sets no field but its base colour leaves the
+     * slot to the renderer's default material in that colour, as
+     * Material::fromColor() always has. This also applies to a slot that was
+     * already using the renderer's default. Inline materials read from the
+     * renderer keep their full documents.
      *
      * @internal
      *
@@ -761,7 +769,7 @@ final class Material implements Stringable
             return ['assetPath' => $this->assetPath, 'document' => $document === [] ? null : $document];
         }
 
-        if (array_diff($this->changedFields(), ['baseColor']) === []) {
+        if ((!$this->documentBacked || $this->defaultSlot) && array_diff($this->changedFields(), ['baseColor']) === []) {
             return ['assetPath' => '', 'document' => null, 'baseColor' => $this->baseColor->toHex()];
         }
 
@@ -769,9 +777,9 @@ final class Material implements Stringable
     }
 
     /**
-     * Serializes the material as its asset path and its material file document.
+     * Serializes the material and preserves which fields override its asset.
      *
-     * @return array{version: int, assetPath: ?string, document: array<string, mixed>}
+     * @return array{version: int, assetPath: ?string, document: array<string, mixed>, documentBacked: bool, defaultSlot: bool, assignedFields: list<string>}
      */
     public function __serialize(): array
     {
@@ -779,6 +787,9 @@ final class Material implements Stringable
             'version' => self::SERIALIZATION_VERSION,
             'assetPath' => $this->assetPath,
             'document' => $this->toAssetDocument(),
+            'documentBacked' => $this->documentBacked,
+            'defaultSlot' => $this->defaultSlot,
+            'assignedFields' => array_keys($this->assignedFields),
         ];
     }
 
@@ -790,6 +801,9 @@ final class Material implements Stringable
      * deprecated {@see $renderingMode} and {@see $emission} convert them, and
      * its base colour counts as custom, as it did when that data was
      * unserialized before.
+     *
+     * Version 2 recorded only the full document and cannot recover which
+     * fields were overrides. It is restored as a complete material.
      *
      * @param array<string, mixed> $data
      *
@@ -804,12 +818,21 @@ final class Material implements Stringable
             return;
         }
 
-        if ($version !== self::SERIALIZATION_VERSION) {
+        if ($version !== 2 && $version !== self::SERIALIZATION_VERSION) {
             throw new InvalidArgumentException("Unsupported material serialization version '{$version}'.");
         }
 
         $this->assetPathValue = self::normalizeNullablePath($data['assetPath'] ?? null);
         $this->readAssetDocument(is_array($data['document'] ?? null) ? $data['document'] : []);
+        if ($version === self::SERIALIZATION_VERSION) {
+            $this->documentBacked = ($data['documentBacked'] ?? true) === true;
+            $this->defaultSlot = $this->documentBacked && ($data['defaultSlot'] ?? false) === true;
+            foreach (is_array($data['assignedFields'] ?? null) ? $data['assignedFields'] : [] as $field) {
+                if (is_string($field) && isset(self::DOCUMENT_PATHS[$field])) {
+                    $this->assignedFields[$field] = true;
+                }
+            }
+        }
     }
 
     /**
@@ -862,6 +885,7 @@ final class Material implements Stringable
         $this->recordingChanges = false;
         $this->readAssetDocumentFields($document);
         $this->documentBacked = true;
+        $this->defaultSlot = false;
         $this->assignedFields = [];
         $this->recordingChanges = true;
     }

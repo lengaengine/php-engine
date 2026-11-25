@@ -525,6 +525,50 @@ final class MaterialTest extends TestCase
         self::assertSame(self::groundMaterial()->toAssetDocument(), $roundTripped->toAssetDocument());
     }
 
+    public function testSerializationPreservesWhatEachMaterialSendsToTheRenderer(): void
+    {
+        $reference = Material::fromAssetPath('Assets/Glass.material.json');
+        $overridden = clone $reference;
+        $overridden->surfaceType = MaterialSurfaceType::Opaque;
+        $overridden->albedo = null;
+        $overridden->metallic = 0.4;
+
+        foreach ([
+            $reference,
+            $overridden,
+            Material::fromColor(Color::blue()),
+            Material::fromRendererSlot([
+                'assetPath' => '',
+                'document' => (new Material(shader: MaterialShaderMode::Unlit, baseColor: Color::blue()))->toAssetDocument(),
+                'defaultSlot' => true,
+            ]),
+            self::groundMaterial(),
+            Material::fromAssetDocument(self::groundMaterial()->toAssetDocument()),
+        ] as $material) {
+            $restored = unserialize(serialize($material), ['allowed_classes' => [Material::class]]);
+
+            self::assertInstanceOf(Material::class, $restored);
+            self::assertSame($material->toRendererSlot(), $restored->toRendererSlot());
+            self::assertSame($material->hasCustomBaseColor(), $restored->hasCustomBaseColor());
+        }
+    }
+
+    public function testVersionTwoSerializationStillRestoresItsMaterialDocument(): void
+    {
+        $data = [
+            'version' => 2,
+            'assetPath' => 'Assets/Glass.material.json',
+            'document' => self::groundMaterial()->toAssetDocument(),
+        ];
+        $restored = new Material();
+        $restored->__unserialize($data);
+
+        self::assertSame(
+            ['assetPath' => $data['assetPath'], 'document' => $data['document']],
+            $restored->toRendererSlot(),
+        );
+    }
+
     /**
      * The fixture is serialize() output of the Material class at php-engine
      * 6d6b79d, the last commit before Surface Options and Emission.

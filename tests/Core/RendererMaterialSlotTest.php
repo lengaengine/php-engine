@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace {
     /**
-     * @return list<array{assetPath: string, document: array<string, mixed>}>
+     * @return list<array{assetPath: string, document: array<string, mixed>, defaultSlot?: bool}>
      */
     function lenga_internal_renderer_get_materials(int $componentId): array
     {
@@ -166,6 +166,30 @@ namespace Lenga\Engine\Tests\Core {
             self::assertSame('Greater', $calls[1][3]['document']['material']['surfaceOptions']['depthTest']);
         }
 
+        public function testCopyingOrTintingAnInlineSlotKeepsItsMaterialDocument(): void
+        {
+            $glass = new Material(
+                albedo: 'Assets/Glass.png',
+                surfaceType: MaterialSurfaceType::Transparent,
+                blendingMode: MaterialBlendingMode::Premultiply,
+                emissionEnabled: true,
+            );
+            $document = $glass->toAssetDocument();
+            $this->nativeSlots([['assetPath' => '', 'document' => $document, 'defaultSlot' => false]]);
+            $renderer = $this->model();
+            $material = $renderer->materials[0];
+
+            $material->baseColor = Color::blue();
+            $renderer->materials = $renderer->materials;
+
+            $tinted = $document;
+            $tinted['baseColor'] = '#0000FF';
+            self::assertSame([
+                ['set_material', self::COMPONENT_ID, 0, ['assetPath' => '', 'document' => $tinted]],
+                ['set_materials', self::COMPONENT_ID, [['assetPath' => '', 'document' => $document]]],
+            ], $this->calls());
+        }
+
         public function testTheFirstMaterialSetsTheFirstSlotOnly(): void
         {
             $renderer = $this->cube();
@@ -183,7 +207,7 @@ namespace Lenga\Engine\Tests\Core {
         public function testAnUnchangedDefaultSlotGoesBackAsTheDefaultMaterial(): void
         {
             $this->nativeSlots([
-                ['assetPath' => '', 'document' => (new Material(baseColor: Color::green()))->toAssetDocument()],
+                ['assetPath' => '', 'document' => (new Material(baseColor: Color::green()))->toAssetDocument(), 'defaultSlot' => true],
             ]);
             $renderer = $this->model();
 
@@ -226,7 +250,7 @@ namespace Lenga\Engine\Tests\Core {
         }
 
         /**
-         * @param list<array{assetPath: string, document: array<string, mixed>}> $slots
+         * @param list<array{assetPath: string, document: array<string, mixed>, defaultSlot?: bool}> $slots
          */
         private function nativeSlots(array $slots): void
         {

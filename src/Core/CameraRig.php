@@ -20,6 +20,12 @@ use Lenga\Engine\Attributes\Tooltip;
  */
 final class CameraRig extends Component
 {
+    /**
+     * Wraps an existing camera rig on a GameObject.
+     *
+     * @param GameObject $gameObject The object that owns the rig and its camera.
+     * @param int $componentId The engine ID of the existing rig component.
+     */
     public function __construct(GameObject $gameObject, int $componentId)
     {
         parent::__construct($gameObject, $componentId, 'CameraRig');
@@ -49,6 +55,7 @@ final class CameraRig extends Component
         }
     }
 
+    /** Offset from the target in world units. Defaults to zero on each axis. */
     #[Tooltip('Added to the target\'s position: where the camera looks, in world units.')]
     public Vector3 $offset {
         get {
@@ -60,6 +67,7 @@ final class CameraRig extends Component
         }
     }
 
+    /** Follow damping per axis in seconds. Defaults to 0.15 per axis; zero follows immediately. */
     #[Tooltip('Seconds the camera takes to catch up, per axis. 0 follows at once.')]
     public Vector3 $dampingTime {
         get {
@@ -71,6 +79,7 @@ final class CameraRig extends Component
         }
     }
 
+    /** Follow speed cap per axis in world units per second. Zero, the default, is unlimited. */
     #[Tooltip('Fastest the camera moves on an axis, in world units a second. 0 leaves it unlimited.')]
     #[Min(0)]
     public float $maxSpeed {
@@ -83,6 +92,7 @@ final class CameraRig extends Component
         }
     }
 
+    /** Dead-zone size in world units. Target motion inside it does not move the camera; zero disables it on an axis. */
     #[Tooltip('A box around the followed point, in world units, inside which the target moves without moving the camera. 0 turns it off on an axis.')]
     public Vector2 $deadZone {
         get {
@@ -94,6 +104,7 @@ final class CameraRig extends Component
         }
     }
 
+    /** Lead distance along the target's last direction of travel, in world units. Defaults to zero. */
     #[Tooltip('How far ahead of the target the camera looks, in the direction it last moved, in world units.')]
     #[Min(0)]
     public float $lookaheadDistance {
@@ -106,6 +117,7 @@ final class CameraRig extends Component
         }
     }
 
+    /** Time in seconds for the lead direction to settle after a turn. Defaults to 0.3. */
     #[Tooltip('Seconds the lookahead takes to settle when the target turns.')]
     #[Min(0)]
     public float $lookaheadDampingTime {
@@ -118,6 +130,7 @@ final class CameraRig extends Component
         }
     }
 
+    /** Constrains a 2D view to the configured bounds. Defaults to false. */
     #[Tooltip('Keep a 2D view inside Bounds Min and Bounds Max. A view larger than the bounds is centred on them.')]
     public bool $boundsEnabled {
         get {
@@ -129,6 +142,7 @@ final class CameraRig extends Component
         }
     }
 
+    /** One corner of the 2D follow bounds in world units. Defaults to (0, 0). */
     #[Tooltip('One corner of the bounds, in world units.')]
     public Vector2 $boundsMin {
         get {
@@ -140,6 +154,7 @@ final class CameraRig extends Component
         }
     }
 
+    /** The opposite corner of the 2D follow bounds in world units. Defaults to (0, 0). */
     #[Tooltip('The opposite corner of the bounds, in world units.')]
     public Vector2 $boundsMax {
         get {
@@ -151,6 +166,7 @@ final class CameraRig extends Component
         }
     }
 
+    /** Target camera Size in world units. Zero leaves Size unchanged. Pixel Perfect cameras keep their calculated Size. */
     #[Tooltip('The Size the camera eases toward. 0 leaves Size alone; a Pixel Perfect camera keeps the Size its settings give.')]
     #[Min(0)]
     public float $targetSize {
@@ -163,6 +179,7 @@ final class CameraRig extends Component
         }
     }
 
+    /** Zoom damping in seconds. Defaults to 0.25. */
     #[Tooltip('Seconds the camera takes to reach the target Size.')]
     #[Min(0)]
     public float $zoomDampingTime {
