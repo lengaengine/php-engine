@@ -23,6 +23,7 @@ All notable changes to `lenga/engine` will be documented in this file.
 
 ### Added
 
+- `AudioMixer::setChannelGain()` sets a runtime volume multiplier for a mixer channel and the channels routed through it. Use `0.0` to silence the channel and `1.0` to restore its authored level. The gain carries through preset transitions.
 - `SpriteRenderer::$drawMode` (`SpriteDrawMode::Simple` or `SpriteDrawMode::Tiled`) and `SpriteRenderer::$tileSize`. A Tiled sprite repeats its image across its size, one tile every `tileSize` world units.
 - `Tween::spriteColorTo()`, which tweens a sprite's colour.
 - `CameraRig`, a component that moves the camera on its GameObject. It follows `$target` with per-axis `$dampingTime`, an optional `$deadZone` and `$lookaheadDistance`, keeps a 2D view inside `$boundsMin` and `$boundsMax` when `$boundsEnabled` is set, and eases the camera's Size toward `$targetSize`. `shake()` shakes the view without moving the Transform, and `snapToTarget()` jumps to the followed point. In a 2D scene the rig follows on X and Y and keeps the camera's Z; in a 3D scene it follows on X, Y and Z. The rig runs while the game runs.
