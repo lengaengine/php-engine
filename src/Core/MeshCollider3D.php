@@ -8,10 +8,27 @@ use Lenga\Engine\Attributes\Min;
 use function is_array;
 
 /**
- * Represents a static triangle-mesh collider attached to a GameObject.
+ * A 3D collider that uses the triangles of a mesh or model asset as its shape.
+ *
+ * Use it for static level geometry such as floors, ramps, terrain, race tracks
+ * and level shells. Moving objects should use primitive colliders such as
+ * {@see BoxCollider3D}, {@see SphereCollider3D}, {@see CapsuleCollider3D} or
+ * {@see CylinderCollider3D}.
+ *
+ * ```php
+ * $collider = $this->gameObject->getComponent(MeshCollider3D::class);
+ * $collider->meshPath = 'Assets/Models/Track.glb';
+ * $collider->meshIndex = 0;
+ * ```
  */
 final class MeshCollider3D extends Component
 {
+    /**
+     * Wraps the mesh collider component with the given id.
+     *
+     * @internal The engine creates component objects. Scripts get them from
+     *     {@see GameObject::addComponent()} or {@see GameObject::getComponent()}.
+     */
     public function __construct(GameObject $gameObject, int $componentId)
     {
         parent::__construct($gameObject, $componentId, 'MeshCollider3D');
@@ -19,6 +36,8 @@ final class MeshCollider3D extends Component
 
     /**
      * The project-relative path to the 3D mesh or model asset used for collision.
+     *
+     * Defaults to `''`.
      */
     public string $meshPath {
         get {
@@ -32,6 +51,9 @@ final class MeshCollider3D extends Component
 
     /**
      * The zero-based mesh index to use when the asset contains multiple meshes.
+     *
+     * Use {@see MeshCollider3D::getMeshCount()} to see how many meshes the asset has.
+     * Defaults to `0`.
      */
     #[Min(0)]
     public int $meshIndex {
@@ -45,7 +67,9 @@ final class MeshCollider3D extends Component
     }
 
     /**
-     * The collider offset relative to the GameObject transform.
+     * The collider offset from the GameObject's position, in local space.
+     *
+     * Defaults to `(0, 0, 0)`.
      */
     public Vector3 $offset {
         get {
@@ -65,6 +89,8 @@ final class MeshCollider3D extends Component
 
     /**
      * Whether this collider reports overlaps without producing physical collision response.
+     *
+     * Defaults to `false`.
      */
     public bool $isTrigger {
         get {
@@ -78,6 +104,8 @@ final class MeshCollider3D extends Component
 
     /**
      * The project-relative path to the 3D physics material asset assigned to this collider.
+     *
+     * Defaults to `''`, which means no material asset is assigned.
      */
     public string $materialPath {
         get {
@@ -91,6 +119,9 @@ final class MeshCollider3D extends Component
 
     /**
      * The resolved 3D physics material values currently applied to this collider.
+     *
+     * Assigning a material that has an asset path assigns that asset. Assigning
+     * one without an asset path applies its friction and bounce values directly.
      */
     public PhysicsMaterial3D $material {
         get {
@@ -132,7 +163,8 @@ final class MeshCollider3D extends Component
     /**
      * Returns the number of meshes loaded from the assigned asset.
      *
-     * Returns 0 when no mesh asset is assigned or the asset could not be loaded.
+     * Returns 0 when no mesh asset is assigned, the asset could not be loaded,
+     * or the runtime has not loaded the mesh data yet.
      */
     public function getMeshCount(): int
     {
@@ -142,8 +174,8 @@ final class MeshCollider3D extends Component
     /**
      * Returns true when this collider is currently touching another 3D collider.
      *
-     * Trigger contacts are counted when $includeTriggers is true. $layerMask filters
-     * other colliders by their GameObject layer.
+     * @param bool $includeTriggers Whether contacts with trigger colliders count.
+     * @param int|null $layerMask Bit mask of the GameObject layers to check; `null` checks all layers.
      */
     public function isTouching(bool $includeTriggers = true, ?int $layerMask = null): bool
     {
@@ -157,8 +189,8 @@ final class MeshCollider3D extends Component
     /**
      * Returns the current 3D contacts involving this collider.
      *
-     * Trigger contacts are included when $includeTriggers is true. $layerMask filters
-     * other colliders by their GameObject layer.
+     * @param bool $includeTriggers Whether contacts with trigger colliders are included.
+     * @param int|null $layerMask Bit mask of the GameObject layers to include; `null` includes all layers.
      *
      * @return list<Collision3D>
      */

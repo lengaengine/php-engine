@@ -11,23 +11,63 @@ use Lenga\Engine\Core\NativeEngine;
 use function is_array;
 
 /**
- * Plays audio from a GameObject.
+ * Plays an audio clip from a GameObject.
  *
- * Attach an AudioSource to an object, assign an AudioClip in the Inspector or
- * through script, then call play() when the sound should be heard.
+ * Add an Audio Source to a GameObject, assign its clip in the Inspector or
+ * from a script, then call {@see AudioSource::play()} when the sound should be
+ * heard. Turn on {@see AudioSource::$playOnAwake} and {@see AudioSource::$loop}
+ * for music and ambience that should start with the scene and repeat.
+ *
+ * ```php
+ * use Lenga\Engine\Audio\AudioSource;
+ * use Lenga\Engine\Core\Behaviour;
+ * use Lenga\Engine\Core\Input;
+ * use Lenga\Engine\Enumerations\KeyCode;
+ *
+ * final class JumpSound extends Behaviour
+ * {
+ *     private ?AudioSource $audio = null;
+ *
+ *     public function start(): void
+ *     {
+ *         $this->audio = $this->gameObject->getComponent(AudioSource::class);
+ *     }
+ *
+ *     public function update(): void
+ *     {
+ *         if (Input::getKeyDown(KeyCode::SPACE)) {
+ *             $this->audio?->play();
+ *         }
+ *     }
+ * }
+ * ```
+ *
+ * Route the source through an {@see AudioMixer} with
+ * {@see AudioSource::setOutput()} to balance groups of sounds such as music
+ * and effects together.
  */
 final class AudioSource extends Component
 {
+    /**
+     * Wraps the native component with the given instance ID.
+     *
+     * @internal The engine creates component wrappers. Get one with
+     *     {@see GameObject::getComponent()} or add one with {@see GameObject::addComponent()}.
+     *
+     * @param GameObject $gameObject GameObject the component is attached to.
+     * @param int $componentId Native instance ID of the component.
+     */
     public function __construct(GameObject $gameObject, int $componentId)
     {
         parent::__construct($gameObject, $componentId, 'AudioSource');
     }
 
     /**
-     * The audio clip currently assigned to this source.
+     * The audio clip this source plays, or null when none is assigned.
      *
-     * Set this to one of your serialized AudioClip references before calling
-     * play() when a source needs to choose sounds dynamically.
+     * To choose between several sounds from a script, expose {@see AudioClip}
+     * fields on your Behaviour, assign them in the Inspector, then set this
+     * property to one of them before calling {@see AudioSource::play()}.
      */
     public ?AudioClip $clip {
         get {
@@ -40,10 +80,11 @@ final class AudioSource extends Component
     }
 
     /**
-     * The mixer asset that receives this source's output.
+     * The audio mixer this source plays through, or null to play through the default output.
      *
-     * Leave this null to send the source directly to the engine's default
-     * master output.
+     * Setting it keeps the current {@see AudioSource::$outputChannelId}. To
+     * change the mixer and the channel together, call
+     * {@see AudioSource::setOutput()}.
      */
     public ?AudioMixer $outputAudioMixer {
         get {
@@ -61,7 +102,10 @@ final class AudioSource extends Component
     }
 
     /**
-     * The mixer channel that receives this source's output.
+     * The ID of the mixer channel this source plays through.
+     *
+     * Setting it keeps the current {@see AudioSource::$outputAudioMixer}.
+     * Defaults to `master`.
      */
     public string $outputChannelId {
         get {
@@ -79,8 +123,10 @@ final class AudioSource extends Component
     }
 
     /**
-     * @var bool When enabled the AudioSource will begin to play as soon as the
-     * component/GameObject becomes active.
+     * Whether the source starts playing on its own when the scene starts.
+     *
+     * Turn it on for background music and ambience. Leave it off for sounds
+     * your scripts start with {@see AudioSource::play()}. Defaults to `false`.
      */
     public bool $playOnAwake {
         get {
@@ -93,7 +139,9 @@ final class AudioSource extends Component
     }
 
     /**
-     * Whether playback should restart automatically after reaching the end.
+     * Whether the clip starts again from the beginning each time it ends.
+     *
+     * Defaults to `false`.
      */
     public bool $loop {
         get {
@@ -106,7 +154,9 @@ final class AudioSource extends Component
     }
 
     /**
-     * Playback volume from 0.0 to 1.0.
+     * How loud this source plays, from `0.0` for silence to `1.0` for the clip's full volume.
+     *
+     * Values outside that range are clamped. Defaults to `1.0`.
      */
     #[Range(0, 1)]
     public float $volume {
@@ -120,7 +170,11 @@ final class AudioSource extends Component
     }
 
     /**
-     * Playback pitch multiplier. Values above 1.0 play faster and higher.
+     * How fast and how high the clip plays, as a multiplier of its original pitch.
+     *
+     * `1.0` plays the clip as recorded. Higher values play faster and higher,
+     * lower values slower and lower. Values below `0.01` are raised to `0.01`.
+     * Defaults to `1.0`.
      */
     #[Range(0.01, 3)]
     public float $pitch {
@@ -134,7 +188,9 @@ final class AudioSource extends Component
     }
 
     /**
-     * Returns true while the assigned clip is currently playing.
+     * Whether the source is playing its clip right now.
+     *
+     * False while the source is paused or stopped.
      */
     public bool $isPlaying {
         get {
@@ -143,9 +199,9 @@ final class AudioSource extends Component
     }
 
     /**
-     * Returns true while the assigned clip is currently playing.
+     * Returns whether the source is playing its clip right now.
      *
-     * @deprecated Use the $isPlaying property instead.
+     * @deprecated Use the {@see AudioSource::$isPlaying} property instead.
      */
     public function isPlaying(): bool
     {
@@ -153,7 +209,7 @@ final class AudioSource extends Component
     }
 
     /**
-     * Returns true when playback is paused on this source.
+     * Whether playback on this source is paused.
      */
     public bool $isPaused {
         get {
@@ -162,8 +218,7 @@ final class AudioSource extends Component
     }
 
     /**
-     * Returns true when playback is stopped on this source. Playback is considered stopped when this source is
-     * not playing and is not paused.
+     * Whether the source is neither playing nor paused.
      */
     public bool $isStopped {
         get {
@@ -172,7 +227,11 @@ final class AudioSource extends Component
     }
 
     /**
-     * Starts playback from the beginning of the assigned clip.
+     * Starts the assigned clip from the beginning.
+     *
+     * A clip that is already playing restarts.
+     *
+     * @return bool False when the source is disabled or its clip cannot be played, for example when no clip is assigned.
      */
     public function play(): bool
     {
@@ -180,7 +239,9 @@ final class AudioSource extends Component
     }
 
     /**
-     * Pauses playback without resetting the clip position.
+     * Pauses playback and keeps the clip position, so {@see AudioSource::resume()} continues from there.
+     *
+     * @return bool True when the source is now paused, including when it was paused already. False when nothing was playing.
      */
     public function pause(): bool
     {
@@ -188,7 +249,9 @@ final class AudioSource extends Component
     }
 
     /**
-     * Resumes playback from the paused clip position.
+     * Continues playback from where {@see AudioSource::pause()} stopped it.
+     *
+     * @return bool False when the clip could not be loaded. True otherwise, including when the source was not paused.
      */
     public function resume(): bool
     {
@@ -196,7 +259,11 @@ final class AudioSource extends Component
     }
 
     /**
-     * Stops playback and resets the source.
+     * Stops playback and moves the clip back to the start.
+     *
+     * The next {@see AudioSource::play()} starts from the beginning.
+     *
+     * @return bool False when the component no longer exists.
      */
     public function stop(): bool
     {
@@ -204,7 +271,15 @@ final class AudioSource extends Component
     }
 
     /**
-     * Routes this source to a mixer channel in one operation.
+     * Sends this source through a mixer channel, setting the mixer and the channel together.
+     *
+     * ```php
+     * $this->source?->setOutput($this->mainMixer, 'channel-1');
+     * ```
+     *
+     * @param AudioMixer|null $mixer The mixer to play through, or null for the default output.
+     * @param string $channelId ID of a channel saved on the mixer. An empty string uses `master`. Defaults to `master`.
+     * @return bool False when the component no longer exists.
      */
     public function setOutput(?AudioMixer $mixer, string $channelId = 'master'): bool
     {

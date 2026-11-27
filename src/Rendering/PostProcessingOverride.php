@@ -11,11 +11,26 @@ use Lenga\Engine\Enumerations\TonemappingMode;
 /**
  * One temporary layer of scene post-processing. Null modules and fields leave
  * the authored scene settings or lower-priority layers intact.
+ *
+ * Apply it with {@see PostProcessing::setOverride()}. Layers apply in order of
+ * `priority`, lowest first; layers with the same priority apply in the order
+ * they were first added. Most numeric settings blend from the current value
+ * toward the layer's value by `weight`. Tonemapping settings, `rounded` and
+ * `phase` switch as soon as the layer's weight is above 0.
+ *
+ * ```php
+ * PostProcessing::setOverride('damage-flash', new PostProcessingOverride(
+ *     weight: 0.6,
+ *     vignette: new VignetteOverride(enabled: true, color: Color::red(), intensity: 0.45),
+ * ));
+ * ```
  */
 final readonly class PostProcessingOverride
 {
     /**
-     * @param float $weight Layer influence from 0 (no effect) to 1 (full override).
+     * Creates a post-processing layer. Pass only the modules you want to change.
+     *
+     * @param float $weight Layer influence from 0 (no effect) to 1 (full override). Values outside that range are clamped.
      * @param int $priority Higher values apply after lower ones.
      * @param TonemappingOverride|null $tonemapping Display color mapping.
      * @param ColorAdjustmentsOverride|null $colorAdjustments Exposure and color adjustments.

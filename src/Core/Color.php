@@ -19,30 +19,49 @@ use function strlen;
 use function substr;
 
 /**
- * Represents an RGBA color using normalized 0.0 to 1.0 channels.
+ * A color with red, green, blue and alpha (opacity) channels, each from 0.0 to 1.0.
  *
- * Use the constructor for normalized color values and {@see fromRGBA()} when
- * working with byte-channel colors from native engine state.
+ * Use colors for renderer tints, materials, lights and UI. Create one with
+ * the constructor from 0.0 to 1.0 values, with {@see Color::fromRGBA()} from
+ * 0 to 255 values, with {@see Color::fromHex()} from a `#RRGGBB` string, or
+ * with a named color such as {@see Color::red()}. Values outside the range
+ * are clamped.
+ *
+ * A Color cannot be changed after it is created. To change a color, create
+ * a new one, for example with {@see Color::lerp()}.
+ *
+ * ```php
+ * $renderer->color = Color::fromRGBA(35, 221, 246);
+ * $faded = Color::lerp(Color::white(), Color::clear(), 0.5);
+ * ```
  */
 final class Color implements Stringable
 {
+    /** Smallest channel value, `0.0`. */
     public const float MIN_VALUE = 0.0;
+    /** Largest channel value, `1.0`. */
     public const float MAX_VALUE = 1.0;
+    /** Smallest channel value in 0 to 255 form, `0`. */
     public const int MIN_BYTE_VALUE = 0;
+    /** Largest channel value in 0 to 255 form, `255`. */
     public const int MAX_BYTE_VALUE = 255;
 
+    /** Red channel, from 0.0 to 1.0. Read-only. */
     public float $r {
         get => $this->red;
     }
 
+    /** Green channel, from 0.0 to 1.0. Read-only. */
     public float $g {
         get => $this->green;
     }
 
+    /** Blue channel, from 0.0 to 1.0. Read-only. */
     public float $b {
         get => $this->blue;
     }
 
+    /** Alpha (opacity) channel, from 0.0 (transparent) to 1.0 (opaque). Read-only. */
     public float $a {
         get => $this->alpha;
     }
@@ -53,7 +72,15 @@ final class Color implements Stringable
     private float $alpha;
 
     /**
-     * Creates a normalized RGBA color.
+     * Creates a color from channel values between 0.0 and 1.0.
+     *
+     * Values outside that range are clamped. With no arguments the color is
+     * opaque black.
+     *
+     * @param float $r Red, from 0.0 to 1.0.
+     * @param float $g Green, from 0.0 to 1.0.
+     * @param float $b Blue, from 0.0 to 1.0.
+     * @param float $a Alpha (opacity), from 0.0 (transparent) to 1.0 (opaque).
      */
     public function __construct(
         float $r = self::MIN_VALUE,
@@ -179,12 +206,16 @@ final class Color implements Stringable
     }
 
     /**
-     * Converts normalized RGB channels to HSV values.
+     * Converts red, green and blue values to hue, saturation and value (HSV).
      *
-     * Input channels are clamped to `0.0` through `1.0`. Hue is returned in
-     * degrees, while saturation and value are returned as percentages.
+     * Input channels are clamped to `0.0` through `1.0`. The results are
+     * rounded to whole numbers.
      *
-     * @return array{h: int, s: int, v: int}
+     * @param float $r Red, from 0.0 to 1.0.
+     * @param float $g Green, from 0.0 to 1.0.
+     * @param float $b Blue, from 0.0 to 1.0.
+     * @return array{h: int, s: int, v: int} Hue in degrees from 0 to 359, and saturation and value
+     *     as percentages from 0 to 100.
      */
     public static function rgbToHsv(float $r, float $g, float $b): array
     {
@@ -214,12 +245,15 @@ final class Color implements Stringable
     }
 
     /**
-     * Converts HSV values to byte-channel RGB values.
+     * Converts hue, saturation and value (HSV) to red, green and blue values from 0 to 255.
      *
      * Hue wraps around the 360-degree color wheel. Saturation and value are
      * clamped to percentage values from `0.0` through `100.0`.
      *
-     * @return array{r: int, g: int, b: int}
+     * @param float $h Hue in degrees. Values outside 0 to 360 wrap around.
+     * @param float $s Saturation as a percentage, from 0 to 100.
+     * @param float $v Value (brightness) as a percentage, from 0 to 100.
+     * @return array{r: int, g: int, b: int} Red, green and blue, each from 0 to 255.
      */
     public static function hsvToRgb(float $h, float $s, float $v): array
     {
@@ -262,7 +296,7 @@ final class Color implements Stringable
     }
 
     /**
-     * Returns a compact string useful for debugging.
+     * Returns the color as text in the form `rgba(255, 128, 0, 255)`, useful for logging.
      */
     public function __toString(): string
     {
@@ -296,7 +330,7 @@ final class Color implements Stringable
     }
 
     /**
-     * Converts this color to 0 to 255 byte-channel RGBA values.
+     * Converts this color to red, green, blue and alpha values from 0 to 255.
      *
      * @return array{r: int, g: int, b: int, a: int}
      */
@@ -325,9 +359,14 @@ final class Color implements Stringable
     }
 
     /**
-     * Creates a color from native engine color state.
+     * Creates a color from an array of 0 to 255 values.
+     *
+     * The array can use the keys `r`, `g`, `b` and `a`, or the indexes 0 to 3
+     * in that order. A missing channel is 255. Values are converted to whole
+     * numbers and clamped to 0 through 255.
      *
      * @param array{r?: int|float, g?: int|float, b?: int|float, a?: int|float, 0?: int|float, 1?: int|float, 2?: int|float, 3?: int|float} $value
+     *     The channel values, for example `['r' => 255, 'g' => 128, 'b' => 0]`.
      */
     public static function fromRGBAArray(array $value): self
     {
@@ -340,9 +379,14 @@ final class Color implements Stringable
     }
 
     /**
-     * Creates a color from 0 to 255 byte-channel RGBA values.
+     * Creates a color from red, green, blue and alpha values from 0 to 255.
      *
-     * Values outside the byte range are clamped before conversion.
+     * Values outside that range are clamped.
+     *
+     * @param int $red Red, from 0 to 255.
+     * @param int $green Green, from 0 to 255.
+     * @param int $blue Blue, from 0 to 255.
+     * @param int $alpha Alpha (opacity), from 0 (transparent) to 255 (opaque).
      */
     public static function fromRGBA(int $red, int $green, int $blue, int $alpha = self::MAX_BYTE_VALUE): self
     {
@@ -359,6 +403,7 @@ final class Color implements Stringable
      *
      * `#RRGGBB` is opaque. Hex digits may be either case.
      *
+     * @param string $hex The color, for example `#FF8800` or `#FF880080`.
      * @throws InvalidArgumentException When the string is not one of the two forms.
      */
     public static function fromHex(string $hex): self
@@ -369,6 +414,10 @@ final class Color implements Stringable
 
     /**
      * Creates a color from a `#RRGGBB` or `#RRGGBBAA` hex string, or returns null when the string is neither.
+     *
+     * Use it for text that may not be a valid color, such as player input.
+     *
+     * @param string $hex The color, for example `#FF8800` or `#FF880080`.
      */
     public static function tryFromHex(string $hex): ?self
     {
@@ -400,7 +449,7 @@ final class Color implements Stringable
     }
 
     /**
-     * JSON-encodes the byte-channel RGBA representation.
+     * Returns the color as JSON with 0 to 255 channel values, for example `{"r":255,"g":128,"b":0,"a":255}`.
      */
     public function toJson(): string
     {

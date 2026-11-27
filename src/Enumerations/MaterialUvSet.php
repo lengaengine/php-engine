@@ -11,6 +11,9 @@ namespace Lenga\Engine\Enumerations;
  */
 enum MaterialUvSet: string
 {
+    /** The mesh's first UV channel. */
     case UV0 = 'UV0';
+
+    /** The mesh's second UV channel. */
     case UV1 = 'UV1';
 }

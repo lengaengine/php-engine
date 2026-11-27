@@ -9,17 +9,31 @@ use Lenga\Engine\Attributes\Min;
 use function is_array;
 
 /**
- * Renders a 3D capsule primitive using the GameObject's Transform.
+ * Draws a 3D capsule, a cylinder with rounded ends, at the GameObject's position.
+ *
+ * The capsule stands upright along the GameObject's Y axis and moves,
+ * rotates and scales with its Transform. Set its look with the material
+ * inherited from {@see Renderer}. Drawing a capsule does not make it
+ * collide; add a {@see CapsuleCollider3D} for that.
  */
 final class CapsuleRenderer extends Renderer
 {
+    /**
+     * Wraps the native component with the given instance ID.
+     *
+     * @internal The engine creates component wrappers. Get one with
+     *     {@see GameObject::getComponent()} or add one with {@see GameObject::addComponent()}.
+     *
+     * @param GameObject $gameObject GameObject the component is attached to.
+     * @param int $componentId Native instance ID of the component.
+     */
     public function __construct(GameObject $gameObject, int $componentId)
     {
         parent::__construct($gameObject, $componentId, 'CapsuleRenderer');
     }
 
     /**
-     * Local-space offset of the capsule center.
+     * Position of the capsule's centre relative to the GameObject, in local units. Defaults to `(0, 0, 0)`.
      */
     public Vector3 $center {
         get {
@@ -38,7 +52,7 @@ final class CapsuleRenderer extends Renderer
     }
 
     /**
-     * Capsule radius in local units.
+     * Radius of the capsule's body and rounded ends, in local units. Defaults to `0.5`.
      */
     #[Min(0)]
     public float $radius {
@@ -52,7 +66,7 @@ final class CapsuleRenderer extends Renderer
     }
 
     /**
-     * Total capsule height in local units, including both rounded ends.
+     * Height of the capsule from end to end, including both rounded ends, in local units. Defaults to `2`.
      */
     #[Min(0)]
     public float $height {
@@ -66,7 +80,9 @@ final class CapsuleRenderer extends Renderer
     }
 
     /**
-     * Number of horizontal subdivisions around the capsule.
+     * Number of segments around the capsule. More segments look rounder and cost more to draw.
+     *
+     * The Inspector accepts 3 or more. Defaults to `16`.
      */
     #[Min(3)]
     public int $totalSlices {
@@ -80,7 +96,9 @@ final class CapsuleRenderer extends Renderer
     }
 
     /**
-     * Number of vertical subdivisions used to shape each rounded cap.
+     * Number of segments that shape each rounded end. More segments look smoother.
+     *
+     * The Inspector accepts 1 or more. Defaults to `8`.
      */
     #[Min(1)]
     public int $totalRings {

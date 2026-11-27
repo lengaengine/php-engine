@@ -5,11 +5,18 @@ declare(strict_types=1);
 namespace Lenga\Engine\Core;
 
 /**
- * Engine/application-level utilities.
+ * Controls the running game as a whole: quitting and pausing.
  *
- * Application pause is gameplay-level pause: Update and UI remain alive while
- * gameplay time is stopped. Engine pause is the editor/debug transport pause
- * that freezes simulation more aggressively.
+ * Use {@see Application::pause()} for pause menus. It stops gameplay time:
+ * {@see Time::deltaTime()} becomes zero, `fixedUpdate()` and physics stop,
+ * and `WaitForSeconds` stops counting down. `update()`, `lateUpdate()`, input
+ * and UI keep running, so a pause menu can still respond.
+ *
+ * The engine pause ({@see Application::pauseEngine()}) is the pause the
+ * editor's Pause button uses. It also stops the simulation, and the editor's
+ * Step button can advance it one frame at a time. Use it for debugging tools.
+ *
+ * All members are static; there is no Application instance.
  */
 final class Application
 {
@@ -19,10 +26,9 @@ final class Application
     }
 
     /**
-     * Request the running game to shut down.
+     * Closes the game.
      *
-     * This maps to the native engine quit flag and will cause the main
-     * loop to exit cleanly at the end of the current frame.
+     * The game shuts down cleanly once the current frame has finished.
      */
     public static function quit(): void
     {
@@ -30,8 +36,10 @@ final class Application
     }
 
     /**
-     * Full engine/editor transport pause. Use this for debugging/tooling, not
-     * normal pause menus.
+     * Pauses the engine, the same as the editor's Pause button.
+     *
+     * The fixed simulation and physics stop. Use it in debugging tools; for
+     * pause menus use {@see Application::pause()}.
      */
     public static function pauseEngine(): void
     {
@@ -39,7 +47,7 @@ final class Application
     }
 
     /**
-     * Resume from full engine/editor transport pause.
+     * Resumes the engine after {@see Application::pauseEngine()}.
      */
     public static function resumeEngine(): void
     {
@@ -47,7 +55,7 @@ final class Application
     }
 
     /**
-     * Toggle full engine/editor transport pause.
+     * Pauses the engine when it is running, and resumes it when it is paused.
      */
     public static function toggleEnginePause(): void
     {
@@ -55,7 +63,10 @@ final class Application
     }
 
     /**
-     * True only when the low-level engine/editor transport pause is active.
+     * Returns true while the engine pause is on, from {@see Application::pauseEngine()} or the editor's Pause button.
+     *
+     * A gameplay pause from {@see Application::pause()} does not count; use
+     * {@see Application::isPaused()} to check for any pause.
      */
     public static function isEnginePaused(): bool
     {
@@ -63,7 +74,12 @@ final class Application
     }
 
     /**
-     * Gameplay/application pause. Update and UI continue to run.
+     * Pauses gameplay, for example while a pause menu is open.
+     *
+     * Gameplay time stops: {@see Time::deltaTime()} returns zero, `fixedUpdate()`
+     * and physics stop, and `WaitForSeconds` stops counting down. `update()`,
+     * `lateUpdate()`, input and UI keep running. Use
+     * {@see Time::unscaledDeltaTime()} to animate menus while paused.
      */
     public static function pause(): void
     {
@@ -71,7 +87,7 @@ final class Application
     }
 
     /**
-     * Resume gameplay/application pause.
+     * Resumes gameplay after {@see Application::pause()}.
      */
     public static function resume(): void
     {
@@ -79,7 +95,7 @@ final class Application
     }
 
     /**
-     * Toggle gameplay/application pause.
+     * Pauses gameplay when it is running, and resumes it when it is paused.
      */
     public static function togglePause(): void
     {
@@ -87,9 +103,13 @@ final class Application
     }
 
     /**
-     * True when the application is effectively paused from user code. This
-     * includes gameplay pause, explicit engine pause, and a zero effective time
-     * scale because all three mean gameplay time is stopped.
+     * Returns true when gameplay time is stopped for any reason.
+     *
+     * That is a gameplay pause from {@see Application::pause()}, the engine
+     * pause, or a time scale of zero set with {@see Time::setTimeScale()}.
+     * While the editor steps a paused game one frame at a time, it still
+     * returns true, so a script that returns early when paused also skips
+     * stepped frames.
      */
     public static function isPaused(): bool
     {

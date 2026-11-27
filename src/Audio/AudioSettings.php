@@ -8,7 +8,10 @@ use Lenga\Engine\Core\NativeEngine;
 use function is_array;
 
 /**
- * Provides access to runtime audio configuration.
+ * A holder for the game's audio configuration.
+ *
+ * It has no public members, so scripts cannot read or change audio settings
+ * through it.
  */
 final class AudioSettings
 {
