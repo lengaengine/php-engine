@@ -47,41 +47,6 @@ use const JSON_UNESCAPED_UNICODE;
  * A sent request keeps running until it finishes, times out or is cancelled,
  * even when the script no longer holds it.
  *
- * ```php
- * use Lenga\Engine\Core\Behaviour;
- * use Lenga\Engine\Core\Debug;
- * use Lenga\Engine\Enumerations\WebRequestMethod;
- * use Lenga\Engine\Enumerations\WebRequestResult;
- * use Lenga\Engine\Networking\WebRequest;
- *
- * final class ScoreUploader extends Behaviour
- * {
- *     public string $playerToken = '';
- *
- *     public function submit(int $score): void
- *     {
- *         $this->startCoroutine($this->post($score));
- *     }
- *
- *     private function post(int $score): \Generator
- *     {
- *         $request = new WebRequest('leaderboard', '/v1/scores', WebRequestMethod::Post);
- *         $request->headers['Authorization'] = 'Bearer ' . $this->playerToken;
- *         $request->encodeJsonBody(['score' => $score]);
- *         $request->timeout = 10.0;
- *
- *         yield $request->send();
- *
- *         if ($request->result === WebRequestResult::Success) {
- *             $rank = $request->decodeJsonResponse()['rank'] ?? null;
- *             Debug::log("Score saved, rank {$rank}");
- *         } else {
- *             Debug::log("Score not saved: {$request->error}");
- *         }
- *     }
- * }
- * ```
- *
  * Without a coroutine, connect a listener before sending:
  *
  * ```php
@@ -102,6 +67,8 @@ use const JSON_UNESCAPED_UNICODE;
  * are on different origins, so the service must allow the game's origin with
  * CORS headers, including a preflight answer for any header the game sets,
  * such as Authorization or a JSON Content-Type.
+ *
+ * @example examples/Networking/WebRequest.php Load the top ten scores and submit a score to an online leaderboard
  */
 final class WebRequest
 {
@@ -297,6 +264,8 @@ final class WebRequest
     /**
      * Decodes the response body as JSON. Objects become associative arrays.
      *
+     * @return mixed The decoded value: an array for a JSON object or list, or
+     *     a string, number, bool or null.
      * @throws JsonException When the body is not valid JSON.
      */
     public function decodeJsonResponse(): mixed

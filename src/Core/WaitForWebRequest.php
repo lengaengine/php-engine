@@ -33,6 +33,9 @@ final class WaitForWebRequest extends YieldInstruction
 
     /**
      * Returns true while the request is still in progress.
+     *
+     * @return bool True until the request succeeds, fails, times out or is
+     *     cancelled.
      */
     public function keepWaiting(): bool
     {
