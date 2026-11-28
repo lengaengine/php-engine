@@ -7,13 +7,19 @@ namespace Lenga\Engine\Core;
 use Lenga\Engine\Internal\ColorBridge;
 
 /**
- * Base class for 2D renderers with a per-renderer tint color multiplied with
- * the assigned material color, matching Unity's SpriteRenderer.color.
+ * Base class for 2D renderers, which add a tint colour on top of their material.
+ *
+ * The tint in {@see Renderer2D::$color} is multiplied with the material's
+ * colour, so several renderers can share one material and still have their
+ * own colours.
  */
 abstract class Renderer2D extends Renderer
 {
     /**
-     * Per-renderer tint color multiplied with the renderer's material color.
+     * The tint colour multiplied with this renderer's material colour.
+     *
+     * White leaves the material's colour unchanged. Lower the alpha to fade
+     * the renderer out. Reads as white when the engine reports no tint.
      */
     public Color $color {
         get => ColorBridge::fromState(

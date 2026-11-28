@@ -4,8 +4,42 @@ declare(strict_types=1);
 
 namespace Lenga\Engine\Core;
 
+/**
+ * Describes one contact between two 2D colliders.
+ *
+ * The engine passes a Collision2D to the collision and trigger methods of
+ * your Behaviours, such as `onCollisionEnter2D(Collision2D $collision)`, and the
+ * `getContacts()` methods of colliders return a list of them. "Self" is the GameObject that received the call or
+ * owns the queried collider; "other" is the object it touched.
+ *
+ * ```php
+ * public function onCollisionEnter2D(Collision2D $collision): void
+ * {
+ *     if ($collision->gameObject?->compareTag('Enemy')) {
+ *         Debug::log('Hit ' . $collision->gameObject->name . ' at ' . $collision->point);
+ *     }
+ * }
+ * ```
+ */
 final class Collision2D
 {
+    /**
+     * Creates a contact description.
+     *
+     * @internal The engine creates contact descriptions for collision callbacks and contact queries.
+     *
+     * @param GameObject|null $gameObjectValue The other GameObject.
+     * @param Component|null $colliderValue The other collider.
+     * @param GameObject|null $otherGameObjectValue The other GameObject, for {@see Collision2D::$otherGameObject}.
+     * @param Component|null $otherColliderValue The other collider, for {@see Collision2D::$otherCollider}.
+     * @param Vector3|null $pointValue Contact point in world space.
+     * @param Vector3|null $normalValue Contact normal in world space.
+     * @param Vector3|null $relativeVelocityValue Velocity of the other collider relative to this one.
+     * @param float $separationValue Distance between the colliders; negative while they overlap.
+     * @param bool $isTriggerValue True when the contact involves a trigger collider.
+     * @param GameObject|null $selfGameObjectValue The GameObject that received the call.
+     * @param Component|null $selfColliderValue The receiving GameObject's collider.
+     */
     public function __construct(
         private ?GameObject $gameObjectValue = null,
         private ?Component $colliderValue = null,
@@ -21,24 +55,36 @@ final class Collision2D
     ) {
     }
 
+    /**
+     * The other GameObject in the contact: the one this GameObject touched, or null when the engine reports none.
+     */
     public ?GameObject $gameObject {
         get {
             return $this->gameObjectValue;
         }
     }
 
+    /**
+     * The other GameObject's collider in the contact, such as a {@see BoxCollider2D}.
+     */
     public ?Component $collider {
         get {
             return $this->colliderValue;
         }
     }
 
+    /**
+     * The GameObject that received the callback or owns the queried collider.
+     */
     public ?GameObject $selfGameObject {
         get {
             return $this->selfGameObjectValue;
         }
     }
 
+    /**
+     * This GameObject's collider that took part in the contact.
+     */
     public ?Component $selfCollider {
         get {
             return $this->selfColliderValue;
@@ -46,7 +92,9 @@ final class Collision2D
     }
 
     /**
-     * @deprecated Use $gameObject instead. This property is retained for backward compatibility and will be removed in 0.9.0.
+     * The other GameObject in the contact. Same as {@see Collision2D::$gameObject}.
+     *
+     * @deprecated Use {@see Collision2D::$gameObject}.
      */
     public ?GameObject $otherGameObject {
         get {
@@ -55,7 +103,9 @@ final class Collision2D
     }
 
     /**
-     * @deprecated Use $collider instead. This property is retained for backward compatibility and will be removed in 0.9.0.
+     * The other GameObject's collider. Same as {@see Collision2D::$collider}.
+     *
+     * @deprecated Use {@see Collision2D::$collider}.
      */
     public ?Component $otherCollider {
         get {
@@ -63,30 +113,54 @@ final class Collision2D
         }
     }
 
+    /**
+     * Where the colliders touch, in world space. Defaults to `(0, 0, 0)`.
+     */
     public Vector3 $point {
         get {
             return $this->pointValue ?? new Vector3();
         }
     }
 
+    /**
+     * Unit-length direction of the contact, in world space, pointing from this collider toward the other.
+     *
+     * In a 2D scene positive Y points down the screen, so a normal with a
+     * large positive Y means the other collider is below, as when landing on
+     * the ground. Defaults to `(0, 0, 0)`.
+     */
     public Vector3 $normal {
         get {
             return $this->normalValue ?? new Vector3();
         }
     }
 
+    /**
+     * Velocity of the other collider relative to this one, in world units per second.
+     *
+     * It is the other collider's velocity minus this collider's velocity. Its
+     * length tells you how hard the two met. Defaults to `(0, 0, 0)`.
+     */
     public Vector3 $relativeVelocity {
         get {
             return $this->relativeVelocityValue ?? new Vector3();
         }
     }
 
+    /**
+     * Distance between the two colliders at the contact, in world units.
+     *
+     * Negative while they overlap, by the depth of the overlap.
+     */
     public float $separation {
         get {
             return $this->separationValue;
         }
     }
 
+    /**
+     * Whether the contact involves a trigger collider, so the colliders overlap without blocking each other.
+     */
     public bool $isTrigger {
         get {
             return $this->isTriggerValue;
@@ -94,6 +168,10 @@ final class Collision2D
     }
 
     /**
+     * Builds a Collision2D from the contact data the engine reports.
+     *
+     * @internal The engine calls this to build the contacts it passes to scripts.
+     *
      * @param array{
      *     selfGameObject?: array<string, mixed>,
      *     selfCollider?: mixed,
@@ -106,7 +184,7 @@ final class Collision2D
      *     relativeVelocity?: array{x?: float|int, y?: float|int, z?: float|int},
      *     separation?: float|int,
      *     isTrigger?: bool
-     * } $data
+     * } $data Contact data from the engine.
      */
     public static function fromNativeData(array $data): self
     {

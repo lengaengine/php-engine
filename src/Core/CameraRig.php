@@ -23,6 +23,9 @@ final class CameraRig extends Component
     /**
      * Wraps an existing camera rig on a GameObject.
      *
+     * @internal The engine creates component wrappers. Get one with
+     *     {@see GameObject::getComponent()} or add one with {@see GameObject::addComponent()}.
+     *
      * @param GameObject $gameObject The object that owns the rig and its camera.
      * @param int $componentId The engine ID of the existing rig component.
      */
@@ -199,6 +202,12 @@ final class CameraRig extends Component
      * degrees. While another shake is still running, the stronger value of
      * each kind and the longer remaining time are kept, so repeated small
      * hits do not stack into a large shake.
+     *
+     * @param Vector2 $amplitude Largest offset of the view on X and Y, in world units.
+     * @param float $duration How long the shake lasts, in seconds.
+     * @param float $frequency How many times a second the shake changes direction.
+     * @param float $rollDegrees Largest rotation of the view, in degrees. Zero shakes without rotating.
+     * @return bool True when the shake started.
      */
     public function shake(
         Vector2 $amplitude,

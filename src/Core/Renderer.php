@@ -15,10 +15,13 @@ use function preg_replace;
 use function strtolower;
 
 /**
- * Base class for components that draw visible scene geometry.
+ * Base class for components that draw something visible in the scene.
  *
- * The renderer API owns material assignment while each concrete renderer
- * provides the strategy for drawing a specific kind of geometry.
+ * Every renderer draws with one or more materials, one for each slot. Use
+ * {@see Renderer::$material} to read or replace the first slot's material and
+ * {@see Renderer::$materials} for all of them. Each renderer subclass, such
+ * as {@see SpriteRenderer} or {@see PlaneRenderer}, decides what shape it
+ * draws.
  */
 abstract class Renderer extends Component implements RendererInterface
 {
@@ -96,9 +99,12 @@ abstract class Renderer extends Component implements RendererInterface
     }
 
     /**
-     * Assigns materials to this renderer.
+     * Assigns materials to this renderer, one for each slot.
      *
-     * @param list<Material> $materials
+     * Does the same as assigning {@see Renderer::$materials}.
+     *
+     * @param list<Material> $materials The materials in slot order.
+     * @throws InvalidArgumentException When an entry is not a {@see Material}.
      */
     public function setMaterials(array $materials): void
     {
@@ -106,7 +112,12 @@ abstract class Renderer extends Component implements RendererInterface
     }
 
     /**
-     * Assigns the primary material to this renderer.
+     * Assigns the material of this renderer's first slot.
+     *
+     * Does the same as assigning {@see Renderer::$material}. Pass null to
+     * draw the first slot with the renderer's default material.
+     *
+     * @param Material|null $material The material for the first slot, or null for the default material.
      */
     public function setMaterial(?Material $material): void
     {
@@ -114,7 +125,7 @@ abstract class Renderer extends Component implements RendererInterface
     }
 
     /**
-     * Gets the primary material color as byte-channel RGBA values.
+     * Gets the colour of the renderer's first material as red, green, blue and alpha values from 0 to 255.
      *
      * @deprecated Use `$renderer->material?->color` or assign a `Material` with the desired base color.
      *
@@ -131,9 +142,14 @@ abstract class Renderer extends Component implements RendererInterface
     }
 
     /**
-     * Sets the primary material color.
+     * Replaces the renderer's first material with a plain material of the given colour.
      *
      * @deprecated Assign `$renderer->material = Material::fromColor(...)` instead.
+     *
+     * @param Color|array|int $red A Color, an array of channels, or the red channel from 0 to 255.
+     * @param int|null $green The green channel from 0 to 255, when `$red` is a number.
+     * @param int|null $blue The blue channel from 0 to 255, when `$red` is a number.
+     * @param int $alpha The alpha channel from 0 to 255, when `$red` is a number.
      */
     public function setColor(Color|array|int $red, ?int $green = null, ?int $blue = null, int $alpha = 255): void
     {
@@ -143,7 +159,9 @@ abstract class Renderer extends Component implements RendererInterface
     }
 
     /**
-     * Reads the renderer state array from the native runtime.
+     * Reads the renderer's current settings from the engine.
+     *
+     * @internal Used by the engine's renderer classes.
      *
      * @return array<string, mixed>
      */

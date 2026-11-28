@@ -6,13 +6,30 @@ namespace Lenga\Engine\Attributes;
 
 use Attribute;
 
+/**
+ * Names an icon image for a class.
+ *
+ * Put the attribute on the class:
+ *
+ * ```php
+ * use Lenga\Engine\Attributes\Icon;
+ * use Lenga\Engine\Core\Behaviour;
+ *
+ * #[Icon('Icons/enemy.png')]
+ * final class Enemy extends Behaviour
+ * {
+ * }
+ * ```
+ *
+ * The editor does not read this attribute, so it has no visible effect.
+ */
 #[Attribute(Attribute::TARGET_CLASS)]
 class Icon
 {
     /**
-     * Use the Icon attribute to set a custom icon for a class in the Editor.
+     * Creates the attribute with the path of the icon image.
      *
-     * @param string $iconPath The path to the icon file.
+     * @param string $iconPath Path of the icon image file.
      */
     public function __construct(
         public readonly string $iconPath,
