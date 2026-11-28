@@ -16,16 +16,36 @@ use function sin;
 use function sqrt;
 
 /**
- * 3D vector value type with mutating and pure helper operations.
+ * 3D vector for positions, directions, velocities, Euler angles and scales.
  *
- * Supports array-style component access using offsets 0 (x), 1 (y), and 2 (z).
+ * Lenga uses Vector3 for {@see Transform} positions, rotations in degrees and scales, in
+ * both 2D and 3D scenes. It has two kinds of operations:
+ *
+ * - Instance methods such as {@see Vector3::add()} and {@see Vector3::scale()} change the
+ *   vector itself and return it, so calls can be chained.
+ * - Static methods such as {@see Vector3::sum()} and {@see Vector3::distance()} leave their
+ *   inputs alone and return a new value.
+ *
+ * Components can also be read and written like an array, with `0`, `1` and `2` or `'x'`,
+ * `'y'` and `'z'`.
+ *
+ * Properties such as {@see Transform::$position} return a copy. Change the copy and assign
+ * it back:
+ *
+ * ```php
+ * $position = $this->transform->position;
+ * $position->add(new Vector3(0.0, $this->jumpHeight, 0.0));
+ * $this->transform->position = $position;
+ * ```
  */
 final class Vector3 implements ArrayAccess
 {
     private const float EPSILON = 0.000001;
     private const float RAD2DEG = 57.29577951308232;
 
-    /** X-axis component. */
+    /**
+     * X component.
+     */
     public float $x {
         get {
             return $this->x;
@@ -35,7 +55,9 @@ final class Vector3 implements ArrayAccess
         }
     }
 
-    /** Y-axis component. */
+    /**
+     * Y component.
+     */
     public float $y {
         get {
             return $this->y;
@@ -45,7 +67,9 @@ final class Vector3 implements ArrayAccess
         }
     }
 
-    /** Z-axis component. */
+    /**
+     * Z component.
+     */
     public float $z {
         get {
             return $this->z;
@@ -55,21 +79,33 @@ final class Vector3 implements ArrayAccess
         }
     }
 
-    /** Squared length of the vector (avoids sqrt when only relative lengths are needed). */
+    /**
+     * Squared length of the vector. Read-only.
+     *
+     * Cheaper than {@see Vector3::$magnitude} because it skips the square root. Use it to
+     * compare lengths, for example `$offset->sqrMagnitude < $range * $range`.
+     */
     public float $sqrMagnitude {
         get {
             return $this->x * $this->x + $this->y * $this->y + $this->z * $this->z;
         }
     }
 
-    /** Euclidean length of the vector. */
+    /**
+     * Length of the vector. Read-only.
+     */
     public float $magnitude {
         get {
             return sqrt($this->sqrMagnitude);
         }
     }
 
-    /** Returns a normalized copy of this vector, or zero when the vector has zero length. */
+    /**
+     * Copy of this vector with a length of 1, pointing the same way. Read-only.
+     *
+     * Returns `(0, 0, 0)` when the vector is shorter than about `0.001`. The vector itself does
+     * not change. Use {@see Vector3::normalize()} to change it in place.
+     */
     public Vector3 $normalized {
         get {
             if ($this->sqrMagnitude <= self::EPSILON) {
@@ -87,9 +123,11 @@ final class Vector3 implements ArrayAccess
     }
 
     /**
-     * @param float $x
-     * @param float $y
-     * @param float $z
+     * Creates a vector from its components.
+     *
+     * @param float $x X component. Defaults to `0`.
+     * @param float $y Y component. Defaults to `0`.
+     * @param float $z Z component. Defaults to `0`.
      */
     public function __construct(
         float $x = 0.0,
@@ -102,53 +140,84 @@ final class Vector3 implements ArrayAccess
         $this->z = $z;
     }
 
-    /** Vector with all components set to 1. */
+    /**
+     * Returns a new vector with all components set to 1.
+     */
     public static function one(): self
     {
         return new self(1.0, 1.0, 1.0);
     }
 
-    /** Unit vector pointing down (0, -1, 0). */
+    /**
+     * Returns a new unit vector pointing down, `(0, -1, 0)`.
+     */
     public static function down(): self
     {
         return new self(0.0, -1.0, 0.0);
     }
 
-    /** Unit vector pointing left (-1, 0, 0). */
+    /**
+     * Returns a new unit vector pointing left, `(-1, 0, 0)`.
+     */
     public static function left(): self
     {
         return new self(-1.0, 0.0, 0.0);
     }
 
-    /** Unit vector pointing back (0, 0, -1). */
+    /**
+     * Returns a new unit vector pointing along -Z, `(0, 0, -1)`.
+     *
+     * A {@see Transform} faces its local -Z axis, so this is the local direction of
+     * {@see Transform::$forward}.
+     */
     public static function back(): self
     {
         return new self(0.0, 0.0, -1.0);
     }
 
-    /** Shorthand for Vector3(-INF, -INF, -INF). */
+    /**
+     * Returns a new vector with all components set to negative infinity.
+     */
     public static function negativeInfinity(): self
     {
         return new self(-INF, -INF, -INF);
     }
 
-    /** Shorthand for Vector3(INF, INF, INF). */
+    /**
+     * Returns a new vector with all components set to positive infinity.
+     */
     public static function positiveInfinity(): self
     {
         return new self(INF, INF, INF);
     }
 
+    /**
+     * Returns a new Vector3 with the X and Y of a Vector2.
+     *
+     * @param Vector2 $vector Vector to convert.
+     * @param float $z Z component of the result. Defaults to `0`.
+     */
     public static function fromVector2(Vector2 $vector, float $z = 0.0): self
     {
         return new self($vector->x, $vector->y, $z);
     }
 
+    /**
+     * Returns a new Vector3 with the X, Y and Z of a Vector4, dropping W.
+     *
+     * @param Vector4 $vector Vector to convert.
+     */
     public static function fromVector4(Vector4 $vector): self
     {
         return new self($vector->x, $vector->y, $vector->z);
     }
 
-    /** Returns the sum of two vectors. */
+    /**
+     * Returns the sum of two vectors as a new vector.
+     *
+     * @param Vector3 $a First vector.
+     * @param Vector3 $b Second vector.
+     */
     public static function sum(Vector3 $a, Vector3 $b): self
     {
         return new self(
@@ -158,7 +227,15 @@ final class Vector3 implements ArrayAccess
         );
     }
 
-    /** Returns the difference of two vectors. */
+    /**
+     * Returns `$a` minus `$b` as a new vector.
+     *
+     * The result points from `$b` to `$a`, so `Vector3::difference($target, $position)` is
+     * the offset from an object to its target.
+     *
+     * @param Vector3 $a Vector to subtract from.
+     * @param Vector3 $b Vector to subtract.
+     */
     public static function difference(Vector3 $a, Vector3 $b): self
     {
         return new self(
@@ -172,7 +249,12 @@ final class Vector3 implements ArrayAccess
     // In-place operations (mutate this instance; return self for chaining)
     // ---------------------------------------------------------------------
 
-    /** Multiplies two vectors component-wise and returns the result. */
+    /**
+     * Returns a new vector made by multiplying two vectors component by component.
+     *
+     * @param Vector3 $a First vector.
+     * @param Vector3 $b Second vector.
+     */
     public static function product(Vector3 $a, Vector3 $b): self
     {
         return new self(
@@ -182,7 +264,13 @@ final class Vector3 implements ArrayAccess
         );
     }
 
-    /** Returns the quotient of two vectors. */
+    /**
+     * Returns a new vector made by dividing `$a` by `$b` component by component.
+     *
+     * @param Vector3 $a Vector to divide.
+     * @param Vector3 $b Vector to divide by.
+     * @throws \DivisionByZeroError When a component of `$b` is `0`.
+     */
     public static function quotient(Vector3 $a, Vector3 $b): self
     {
         return new self(
@@ -192,7 +280,12 @@ final class Vector3 implements ArrayAccess
         );
     }
 
-    /** Returns a new vector scaled by a scalar. */
+    /**
+     * Returns a new vector equal to a vector multiplied by a number.
+     *
+     * @param Vector3 $vector Vector to scale.
+     * @param float $scalar Number to multiply by.
+     */
     public static function scaleNew(Vector3 $vector, float $scalar): self
     {
         return new self(
@@ -202,7 +295,17 @@ final class Vector3 implements ArrayAccess
         );
     }
 
-    /** Returns the signed angle in degrees between two vectors around an axis. */
+    /**
+     * Returns the angle between two vectors in degrees, from -180 to 180, measured around an axis.
+     *
+     * The sign tells which way the turn goes around `$axis`: positive when the turn from
+     * `$from` to `$to` is counter-clockwise looking down the axis toward the origin.
+     *
+     * @param Vector3 $from Direction the angle is measured from.
+     * @param Vector3 $to Direction the angle is measured to.
+     * @param Vector3 $axis Axis that decides the sign, such as {@see Vector3::up()} for a turn
+     *     left or right.
+     */
     public static function signedAngle(Vector3 $from, Vector3 $to, Vector3 $axis): float
     {
         $unsigned = self::angle($from, $to);
@@ -211,7 +314,14 @@ final class Vector3 implements ArrayAccess
         return self::dot($axis, $cross) < 0.0 ? -$unsigned : $unsigned;
     }
 
-    /** Returns the unsigned angle in degrees between two vectors. */
+    /**
+     * Returns the angle between two vectors in degrees, from 0 to 180.
+     *
+     * Returns `0` when either vector has zero length.
+     *
+     * @param Vector3 $from Direction the angle is measured from.
+     * @param Vector3 $to Direction the angle is measured to.
+     */
     public static function angle(Vector3 $from, Vector3 $to): float
     {
         $denominator = sqrt($from->sqrMagnitude * $to->sqrMagnitude);
@@ -233,7 +343,15 @@ final class Vector3 implements ArrayAccess
     // Instance convenience methods
     // ---------------------------------------------------------------------
 
-    /** Returns the dot product of two vectors. */
+    /**
+     * Returns the dot product of two vectors.
+     *
+     * For unit vectors the result is `1` when they point the same way, `0` when they are at
+     * right angles and `-1` when they point in opposite directions.
+     *
+     * @param Vector3 $a First vector.
+     * @param Vector3 $b Second vector.
+     */
     public static function dot(Vector3 $a, Vector3 $b): float
     {
         return $a->x * $b->x
@@ -241,7 +359,15 @@ final class Vector3 implements ArrayAccess
             + $a->z * $b->z;
     }
 
-    /** Returns the cross-product of two vectors. */
+    /**
+     * Returns the cross product of two vectors.
+     *
+     * The result is at right angles to both inputs, and its length is the area of the
+     * parallelogram they span. Use it to find a surface normal or a sideways direction.
+     *
+     * @param Vector3 $a First vector.
+     * @param Vector3 $b Second vector.
+     */
     public static function cross(Vector3 $a, Vector3 $b): self
     {
         return new self(
@@ -251,7 +377,12 @@ final class Vector3 implements ArrayAccess
         );
     }
 
-    /** Returns the distance between two points. */
+    /**
+     * Returns the distance between two points.
+     *
+     * @param Vector3 $a First point.
+     * @param Vector3 $b Second point.
+     */
     public static function distance(Vector3 $a, Vector3 $b): float
     {
         $dx = $a->x - $b->x;
@@ -262,8 +393,16 @@ final class Vector3 implements ArrayAccess
     }
 
     /**
-     * Linearly interpolates between two vectors by t, clamped to [0, 1],
-     * using the native engine implementation.
+     * Returns the point a fraction of the way from `$a` to `$b`.
+     *
+     * `$t` is clamped to the range 0 to 1, so the result never goes past either end. The
+     * calculation runs in the Lenga runtime, so it works only inside the editor or a game.
+     *
+     * @param Vector3 $a Value at `$t = 0`.
+     * @param Vector3 $b Value at `$t = 1`.
+     * @param float $t Fraction of the way from `$a` to `$b`, from 0 to 1.
+     * @return Vector3 The interpolated vector.
+     * @throws \Lenga\Engine\Exceptions\LengaRuntimeUnavailableException When the Lenga runtime is not loaded.
      */
     public static function lerp(Vector3 $a, Vector3 $b, float $t): self
     {
@@ -277,7 +416,11 @@ final class Vector3 implements ArrayAccess
     }
 
     /**
-     * @param array{x?: float, y?: float, z?: float} $data
+     * Creates a vector from an array with `x`, `y` and `z` keys.
+     *
+     * Missing keys become `0`.
+     *
+     * @param array{x?: float, y?: float, z?: float} $data Component values.
      */
     public static function fromArray(array $data): self
     {
@@ -290,8 +433,16 @@ final class Vector3 implements ArrayAccess
 
     /**
      * Spherically interpolates between two vectors, treating them as directions.
-     * The direction is interpolated on the sphere, and the magnitude is
-     * interpolated linearly for stable gameplay-friendly results.
+     *
+     * The direction turns along the shortest arc and the length changes linearly, so it suits
+     * turning one direction into another. `$t` is clamped to the range 0 to 1. The calculation
+     * runs in the Lenga runtime, so it works only inside the editor or a game.
+     *
+     * @param Vector3 $a Value at `$t = 0`.
+     * @param Vector3 $b Value at `$t = 1`.
+     * @param float $t Fraction of the turn from `$a` to `$b`, from 0 to 1.
+     * @return Vector3 The interpolated vector.
+     * @throws \Lenga\Engine\Exceptions\LengaRuntimeUnavailableException When the Lenga runtime is not loaded.
      */
     public static function slerp(Vector3 $a, Vector3 $b, float $t): self
     {
@@ -304,7 +455,17 @@ final class Vector3 implements ArrayAccess
         return self::fromArray($result);
     }
 
-    /** Spherically interpolates between two vectors, without clamping t. */
+    /**
+     * Spherically interpolates between two vectors without clamping `$t`.
+     *
+     * Works like {@see Vector3::slerp()}. Values of `$t` outside 0 to 1 keep turning past `$a`
+     * or `$b`. When either vector has zero length, it interpolates linearly instead.
+     *
+     * @param Vector3 $a Value at `$t = 0`.
+     * @param Vector3 $b Value at `$t = 1`.
+     * @param float $t Fraction of the turn from `$a` to `$b`.
+     * @return Vector3 The interpolated vector.
+     */
     public static function slerpUnclamped(Vector3 $a, Vector3 $b, float $t): self
     {
         return self::slerpUnclampedInternal($a, $b, $t);
@@ -374,7 +535,16 @@ final class Vector3 implements ArrayAccess
         );
     }
 
-    /** Linearly interpolates between two vectors by t, without clamping. */
+    /**
+     * Returns the point a fraction of the way from `$a` to `$b`, without clamping `$t`.
+     *
+     * Values of `$t` below 0 or above 1 extend past `$a` or `$b`.
+     *
+     * @param Vector3 $a Value at `$t = 0`.
+     * @param Vector3 $b Value at `$t = 1`.
+     * @param float $t Fraction of the way from `$a` to `$b`.
+     * @return Vector3 The interpolated vector.
+     */
     public static function lerpUnclamped(Vector3 $a, Vector3 $b, float $t): self
     {
         return new self(
@@ -384,7 +554,9 @@ final class Vector3 implements ArrayAccess
         );
     }
 
-    /** Unit vector pointing right (1, 0, 0). */
+    /**
+     * Returns a new unit vector pointing right, `(1, 0, 0)`.
+     */
     public static function right(): self
     {
         return new self(1.0, 0.0, 0.0);
@@ -394,19 +566,31 @@ final class Vector3 implements ArrayAccess
     // Static pure helpers (return new vectors; no mutation)
     // ---------------------------------------------------------------------
 
-    /** Unit vector pointing up (0, 1, 0). */
+    /**
+     * Returns a new unit vector pointing up, `(0, 1, 0)`.
+     */
     public static function up(): self
     {
         return new self(0.0, 1.0, 0.0);
     }
 
-    /** Unit vector pointing forward (0, 0, 1). */
+    /**
+     * Returns a new unit vector pointing along +Z, `(0, 0, 1)`.
+     *
+     * A {@see Transform} faces its local -Z axis, so {@see Transform::$forward} points along
+     * {@see Vector3::back()} rotated by the Transform's rotation.
+     */
     public static function forward(): self
     {
         return new self(0.0, 0.0, 1.0);
     }
 
-    /** Returns a vector made from the largest components of two vectors. */
+    /**
+     * Returns a new vector made from the largest X, Y and Z of two vectors.
+     *
+     * @param Vector3 $a First vector.
+     * @param Vector3 $b Second vector.
+     */
     public static function max(Vector3 $a, Vector3 $b): self
     {
         return new self(
@@ -416,7 +600,12 @@ final class Vector3 implements ArrayAccess
         );
     }
 
-    /** Returns a vector made from the smallest components of two vectors. */
+    /**
+     * Returns a new vector made from the smallest X, Y and Z of two vectors.
+     *
+     * @param Vector3 $a First vector.
+     * @param Vector3 $b Second vector.
+     */
     public static function min(Vector3 $a, Vector3 $b): self
     {
         return new self(
@@ -429,8 +618,10 @@ final class Vector3 implements ArrayAccess
     /**
      * Returns a copy of a vector with its magnitude clamped to maxLength.
      *
+     * Vectors already within the limit are returned unchanged. Use it to cap speeds.
+     *
      * @param Vector3 $vector The vector to clamp.
-     * @param float $maxLength The maximum magnitude of the vector.
+     * @param float $maxLength The maximum magnitude of the vector. Negative values are treated as `0`.
      *
      * @return Vector3 A new vector with the same direction as the original, but clamped to maxLength.
      */
@@ -450,8 +641,15 @@ final class Vector3 implements ArrayAccess
     }
 
     /**
-     * Moves current towards target by at most maxDelta.
-     * Will not overshoot the target when maxDelta is positive.
+     * Returns a point moved from `$current` toward `$target` by at most `$maxDelta`.
+     *
+     * The result never passes the target. Call it every frame with
+     * `$speed * Time::deltaTime()` to move at a steady speed.
+     *
+     * @param Vector3 $current Starting point.
+     * @param Vector3 $target Point to move toward.
+     * @param float $maxDelta Largest distance to move. A negative value moves away from the target.
+     * @return Vector3 The new point.
      */
     public static function moveTowards(Vector3 $current, Vector3 $target, float $maxDelta): self
     {
@@ -475,7 +673,15 @@ final class Vector3 implements ArrayAccess
         );
     }
 
-    /** Reflects a vector off the plane defined by a normal vector. */
+    /**
+     * Reflects a vector off the plane defined by a normal vector.
+     *
+     * Use it to bounce a ball or projectile off a surface.
+     *
+     * @param Vector3 $inDirection The incoming direction.
+     * @param Vector3 $inNormal The surface normal. It should have a length of 1.
+     * @return Vector3 The reflected direction.
+     */
     public static function reflect(Vector3 $inDirection, Vector3 $inNormal): self
     {
         $dot = self::dot($inDirection, $inNormal);
@@ -488,8 +694,18 @@ final class Vector3 implements ArrayAccess
     }
 
     /**
-     * Rotates current towards the target by an angular step, while also moving the
-     * magnitude towards the target magnitude.
+     * Turns one vector toward another by a limited angle, and moves its length toward the other's length.
+     *
+     * Use it to turn a direction gradually, for example a homing missile's heading. Call it
+     * every frame with steps multiplied by {@see Time::deltaTime()}. The result never turns
+     * past the target direction.
+     *
+     * @param Vector3 $current Vector to turn.
+     * @param Vector3 $target Vector to turn toward.
+     * @param float $maxRadiansDelta Largest angle to turn, in radians. A negative value turns
+     *     toward the opposite of `$target`.
+     * @param float $maxMagnitudeDelta Largest change in length.
+     * @return Vector3 The turned vector.
      */
     public static function rotateTowards(
         Vector3 $current,
@@ -569,22 +785,38 @@ final class Vector3 implements ArrayAccess
         return $current + $signedStep;
     }
 
-    /** Vector with all components set to 0. */
+    /**
+     * Returns a new vector with all components set to 0.
+     */
     public static function zero(): self
     {
         return new self(0.0, 0.0, 0.0);
     }
 
     /**
-     * Gradually changes a vector towards a target over time using a spring-like damper.
+     * Moves a value toward a target smoothly, slowing down as it gets close.
      *
-     * @param Vector3 $current
-     * @param Vector3 $target
-     * @param Vector3 &$currentVelocity Modified in place on each call.
-     * @param float $smoothTime
-     * @param float $maxSpeed
-     * @param float|null $deltaTime Defaults to the current frame delta time.
-     * @return Vector3
+     * Use it for camera follow and other motion that should ease in. Call it every frame and
+     * keep the same `$currentVelocity` variable between calls.
+     *
+     * ```php
+     * $this->transform->position = Vector3::smoothDamp(
+     *     $this->transform->position,
+     *     $targetPosition,
+     *     $this->followVelocity,
+     *     0.25,
+     * );
+     * ```
+     *
+     * @param Vector3 $current Current position.
+     * @param Vector3 $target Target position.
+     * @param Vector3 &$currentVelocity Current velocity. Modified in place on each call.
+     * @param float $smoothTime Approximate time in seconds to reach the target.
+     * @param float $maxSpeed Highest speed allowed, in units per second. Defaults to no limit.
+     * @param float|null $deltaTime Time in seconds since the last call. Defaults to
+     *     {@see Time::deltaTime()}. When it is `0` or less, `$current` is returned unchanged.
+     * @return Vector3 The new position.
+     * @throws \Lenga\Engine\Exceptions\LengaRuntimeUnavailableException When the Lenga runtime is not loaded.
      */
     public static function smoothDamp(
         Vector3 $current,
@@ -637,11 +869,13 @@ final class Vector3 implements ArrayAccess
 
     /**
      * Makes normal and tangent orthogonal and normalized using Gram-Schmidt.
-     * If the tangent collapses, an arbitrary orthogonal tangent is chosen.
      *
-     * @param Vector3 $normal
-     * @param Vector3 $tangent
-     * @return void/
+     * `$normal` is normalized. `$tangent` is then made perpendicular to it and normalized.
+     * If the tangent is parallel to the normal, an arbitrary perpendicular tangent is chosen.
+     * Use it to build a set of axes from a surface normal.
+     *
+     * @param Vector3 &$normal Normal to normalize. Replaced with the result.
+     * @param Vector3 &$tangent Tangent to straighten. Replaced with the result.
      */
     public static function orthoNormalize(Vector3 &$normal, Vector3 &$tangent): void
     {
@@ -657,9 +891,12 @@ final class Vector3 implements ArrayAccess
     /**
      * Projects a vector onto a plane defined by the given normal.
      *
-     * @param Vector3 $vector
-     * @param Vector3 $planeNormal
-     * @return Vector3
+     * The result is the part of `$vector` that lies along the plane. Use it to keep movement
+     * on the ground, for example a camera's forward direction without its up or down tilt.
+     *
+     * @param Vector3 $vector Vector to project.
+     * @param Vector3 $planeNormal Normal of the plane. It does not need to be normalized.
+     * @return Vector3 The projected vector.
      */
     public static function projectOnPlane(Vector3 $vector, Vector3 $planeNormal): self
     {
@@ -672,7 +909,15 @@ final class Vector3 implements ArrayAccess
         );
     }
 
-    /** Projects a vector onto another vector. */
+    /**
+     * Projects a vector onto another vector.
+     *
+     * The result is the part of `$vector` that points along `$onNormal`.
+     *
+     * @param Vector3 $vector Vector to project.
+     * @param Vector3 $onNormal Direction to project onto. It does not need to be normalized.
+     * @return Vector3 The projected vector, or `(0, 0, 0)` when `$onNormal` has zero length.
+     */
     public static function project(Vector3 $vector, Vector3 $onNormal): self
     {
         $denominator = $onNormal->sqrMagnitude;
@@ -707,7 +952,12 @@ final class Vector3 implements ArrayAccess
         return $orthogonal->normalized;
     }
 
-    /** Adds another vector to this vector in place. */
+    /**
+     * Adds another vector to this vector in place.
+     *
+     * @param Vector3 $other Vector to add.
+     * @return self This vector, for chaining.
+     */
     public function add(Vector3 $other): self
     {
         $this->x += $other->x;
@@ -717,7 +967,12 @@ final class Vector3 implements ArrayAccess
         return $this;
     }
 
-    /** Subtracts another vector from this vector in place. */
+    /**
+     * Subtracts another vector from this vector in place.
+     *
+     * @param Vector3 $other Vector to subtract.
+     * @return self This vector, for chaining.
+     */
     public function subtract(Vector3 $other): self
     {
         $this->x -= $other->x;
@@ -727,7 +982,12 @@ final class Vector3 implements ArrayAccess
         return $this;
     }
 
-    /** Multiplies this vector component-wise by another vector in place. */
+    /**
+     * Multiplies this vector component by component with another vector, in place.
+     *
+     * @param Vector3 $other Vector whose components multiply this vector's components.
+     * @return self This vector, for chaining.
+     */
     public function multiply(Vector3 $other): self
     {
         $this->x *= $other->x;
@@ -737,7 +997,13 @@ final class Vector3 implements ArrayAccess
         return $this;
     }
 
-    /** Divides this vector component-wise by another vector in place. */
+    /**
+     * Divides this vector component by component by another vector, in place.
+     *
+     * @param Vector3 $other Vector whose components divide this vector's components.
+     * @return self This vector, for chaining.
+     * @throws \DivisionByZeroError When a component of `$other` is `0`.
+     */
     public function divide(Vector3 $other): self
     {
         $this->x /= $other->x;
@@ -747,7 +1013,12 @@ final class Vector3 implements ArrayAccess
         return $this;
     }
 
-    /** Scales this vector by a scalar in place. */
+    /**
+     * Multiplies all components by a number, in place.
+     *
+     * @param float $scalar Number to multiply by.
+     * @return self This vector, for chaining.
+     */
     public function scale(float $scalar): self
     {
         $this->x *= $scalar;
@@ -758,7 +1029,12 @@ final class Vector3 implements ArrayAccess
     }
 
     /**
-     * Normalizes the vector to have a magnitude of 1 in place.
+     * Changes this vector to a length of 1, keeping its direction.
+     *
+     * A vector shorter than about `0.000001` stays unchanged. Use {@see Vector3::$normalized}
+     * to get a normalized copy instead.
+     *
+     * @return self This vector, for chaining.
      */
     public function normalize(): self
     {
@@ -774,7 +1050,13 @@ final class Vector3 implements ArrayAccess
         return $this;
     }
 
-    /** Sets the x, y, and z components of this vector. */
+    /**
+     * Sets the x, y, and z components of this vector.
+     *
+     * @param float $x New X component.
+     * @param float $y New Y component.
+     * @param float $z New Z component.
+     */
     public function set(float $x, float $y, float $z): void
     {
         $this->x = $x;
@@ -782,13 +1064,24 @@ final class Vector3 implements ArrayAccess
         $this->z = $z;
     }
 
-    /** Creates and returns a clone of this vector. */
+    /**
+     * Returns a copy of this vector.
+     *
+     * Change the copy without affecting the original.
+     */
     public function clone(): self
     {
         return clone $this;
     }
 
-    /** Checks if this vector is exactly equal to another vector. */
+    /**
+     * Returns whether all components exactly equal those of another vector.
+     *
+     * The comparison is exact, so results of calculations that differ by rounding are not
+     * equal. Compare {@see Vector3::distance()} against a small tolerance for those.
+     *
+     * @param Vector3 $other Vector to compare with.
+     */
     public function equals(Vector3 $other): bool
     {
         return $this->x === $other->x
@@ -796,23 +1089,35 @@ final class Vector3 implements ArrayAccess
             && $this->z === $other->z;
     }
 
-    /** Returns a formatted string representation of this vector. */
+    /**
+     * Returns the vector as text in the form `(x, y, z)`, for logging.
+     */
     public function __toString(): string
     {
         return "($this->x, $this->y, $this->z)";
     }
 
+    /**
+     * Returns a new Vector2 with this vector's X and Y, dropping Z.
+     */
     public function toVector2(): Vector2
     {
         return new Vector2($this->x, $this->y);
     }
 
+    /**
+     * Returns a new Vector4 with this vector's X, Y and Z.
+     *
+     * @param float $w W component of the result. Defaults to `0`.
+     */
     public function toVector4(float $w = 0.0): Vector4
     {
         return new Vector4($this->x, $this->y, $this->z, $w);
     }
 
     /**
+     * Returns the components as an array with `x`, `y` and `z` keys.
+     *
      * @return array{x: float, y: float, z: float}
      */
     public function toArray(): array
@@ -821,11 +1126,11 @@ final class Vector3 implements ArrayAccess
     }
 
     /**
-     * Gets a vector component by index: 0|'x' => x, 1|'y' => y, 2|'z' => z.
+     * Reads a component with array syntax, as in `$vector[0]` or `$vector['z']`.
      *
-     * @param mixed $offset
-     * @return float
-     * @throws OutOfBoundsException
+     * @param mixed $offset `0` or `'x'`, `1` or `'y'`, `2` or `'z'`.
+     * @return float The component value.
+     * @throws OutOfBoundsException When the offset does not name a component.
      */
     public function offsetGet(mixed $offset): float
     {
@@ -850,12 +1155,11 @@ final class Vector3 implements ArrayAccess
     }
 
     /**
-     * Sets a vector component by index: 0|'x' => x, 1|'y' => y, 2|'z' => z.
+     * Writes a component with array syntax, as in `$vector['y'] = 2.0`.
      *
-     * @param mixed $offset
-     * @param mixed $value
-     * @return void
-     * @throws OutOfBoundsException
+     * @param mixed $offset `0` or `'x'`, `1` or `'y'`, `2` or `'z'`.
+     * @param mixed $value New component value.
+     * @throws OutOfBoundsException When the offset does not name a component.
      */
     public function offsetSet(mixed $offset, mixed $value): void
     {
@@ -879,11 +1183,10 @@ final class Vector3 implements ArrayAccess
     }
 
     /**
-     * Checks whether an array offset maps to a valid vector component.
-     * Supports 0/'x', 1/'y', and 2/'z'.
+     * Returns whether an array offset names a component, for `isset($vector[...])`.
      *
-     * @param mixed $offset
-     * @return bool
+     * @param mixed $offset `0` or `'x'`, `1` or `'y'`, `2` or `'z'`.
+     * @return bool `true` for a valid component offset.
      */
     public function offsetExists(mixed $offset): bool
     {
@@ -893,11 +1196,13 @@ final class Vector3 implements ArrayAccess
     }
 
     /**
-     * Unsets a vector component by index.
+     * Handles `unset($vector[...])`. A vector always has all three components, so this cannot remove one.
      *
-     * @param mixed $offset
-     * @return void
-     * @throws OutOfBoundsException
+     * Unsetting a valid component throws an `Error`, because the components cannot be
+     * unset. Set the component to `0.0` instead.
+     *
+     * @param mixed $offset `0` or `'x'`, `1` or `'y'`, `2` or `'z'`.
+     * @throws OutOfBoundsException When the offset does not name a component.
      */
     public function offsetUnset(mixed $offset): void
     {

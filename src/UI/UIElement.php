@@ -7,6 +7,27 @@ namespace Lenga\Engine\UI;
 use Lenga\Engine\Core\NativeEngine;
 use RuntimeException;
 
+/**
+ * The base class of every UI element on a {@see Canvas}: {@see Text}, {@see Image}, {@see Button} and {@see Slider}.
+ *
+ * It holds what all elements share: a name, visibility, draw order, a place in
+ * the UI hierarchy and a {@see RectTransform} for layout. Elements are created
+ * in the editor or with the `create...()` methods; scripts never construct them.
+ *
+ * Get an element by assigning it to a typed public field of your Behaviour in
+ * the Inspector, or look it up by name:
+ *
+ * ```php
+ * $canvas = Scene::getActive()?->findCanvas('HUD');
+ * $panel = $canvas?->findElementByName('Inventory Panel');
+ * if ($panel !== null) {
+ *     $panel->visible = true;
+ * }
+ * ```
+ *
+ * Each property read asks the engine for the element's current state, so keep
+ * the element object and read properties when you need them.
+ */
 abstract class UIElement
 {
     /**
@@ -24,6 +45,12 @@ abstract class UIElement
 
     private readonly RectTransform $rectTransformValue;
 
+    /**
+     * @internal
+     * @param string $nameValue The element name.
+     * @param int $elementId The engine ID of the element.
+     * @param int|null $canvasId The engine ID of the canvas the element belongs to.
+     */
     public function __construct(
         private string $nameValue,
         private readonly int $elementId,
@@ -32,9 +59,7 @@ abstract class UIElement
         $this->rectTransformValue = new RectTransform($elementId);
     }
 
-    /**
-     * The element's name, as shown in the Hierarchy.
-     */
+    /** The element's name, as shown in the Hierarchy. */
     public string $name {
         get {
             $this->nameValue = (string) ($this->getState()['name'] ?? $this->nameValue);
@@ -43,7 +68,11 @@ abstract class UIElement
     }
 
     /**
-     * Whether the element and its children take part in the UI. A disabled element is hidden and cannot be interacted with.
+     * Whether the element is active.
+     *
+     * Disabling an element also deactivates its children; read
+     * {@see UIElement::$activeInHierarchy} to see the combined result.
+     * Defaults to `true`.
      */
     public bool $enabled {
         get {
@@ -56,7 +85,9 @@ abstract class UIElement
     }
 
     /**
-     * Whether the element is drawn. A hidden element keeps its place and its children's settings.
+     * Whether the element is drawn on screen.
+     *
+     * Use it to show and hide HUD parts such as hearts, prompts and panels. Defaults to `true`.
      */
     public bool $visible {
         get {
@@ -69,7 +100,9 @@ abstract class UIElement
     }
 
     /**
-     * Whether the element and every parent above it are enabled.
+     * Whether this element and all of its parents are enabled.
+     *
+     * Defaults to `false`.
      */
     public bool $activeInHierarchy {
         get {
@@ -78,7 +111,9 @@ abstract class UIElement
     }
 
     /**
-     * Drawing order among its siblings: higher values draw on top and are hit first by the pointer.
+     * Draw order among sibling elements. Elements with a higher value are drawn on top.
+     *
+     * Defaults to `0`.
      */
     public int $sortOrder {
         get {
@@ -90,9 +125,7 @@ abstract class UIElement
         }
     }
 
-    /**
-     * The element's position, size, anchors, pivot, scale and rotation in its parent.
-     */
+    /** The element's position, size, anchors, pivot, scale and rotation. */
     public RectTransform $rectTransform {
         get {
             return $this->rectTransformValue;
@@ -100,7 +133,10 @@ abstract class UIElement
     }
 
     /**
-     * The id the engine knows this element by.
+     * Returns the element's runtime ID.
+     *
+     * Most scripts do not need it; use element references, names, parents and
+     * children for normal UI work. The ID is valid while the scene is loaded.
      */
     public function getId(): int
     {
@@ -108,7 +144,12 @@ abstract class UIElement
     }
 
     /**
-     * Whether the element has keyboard or gamepad focus.
+     * Returns whether the element has keyboard and gamepad focus.
+     *
+     * A {@see Button}, {@see Slider} or {@see InputField} is focused while it
+     * is the selected element of its canvas. Keyboard and gamepad navigation
+     * move the selection, and {@see Canvas::selectElement()} sets it from a
+     * script. Text and Image elements always return false.
      */
     public function isFocused(): bool
     {
@@ -116,7 +157,7 @@ abstract class UIElement
     }
 
     /**
-     * The Canvas the element belongs to.
+     * Returns the Canvas this element belongs to, or null when it has none.
      */
     public function getCanvas(): ?Canvas
     {
@@ -127,7 +168,7 @@ abstract class UIElement
     }
 
     /**
-     * The element this one is a child of, or null for a root element of its Canvas.
+     * Returns the parent element, or null when the element sits directly on its canvas.
      */
     public function getParent(): ?self
     {
@@ -138,7 +179,12 @@ abstract class UIElement
     }
 
     /**
-     * Moves the element under another element of the same Canvas, or to the Canvas's root with null. Returns whether it moved.
+     * Moves the element under another element in the UI hierarchy.
+     *
+     * The element's layout is then calculated inside its new parent's rectangle.
+     *
+     * @param UIElement|null $parent The new parent, or null to place the element directly on its canvas.
+     * @return bool Whether the element was moved.
      */
     public function setParent(?self $parent): bool
     {
@@ -146,9 +192,9 @@ abstract class UIElement
     }
 
     /**
-     * The element's direct children, in Hierarchy order.
+     * Returns the element's direct children.
      *
-     * @return list<UIElement>
+     * @return list<UIElement> The children, or an empty list when the element has none.
      */
     public function getChildren(): array
     {
@@ -165,7 +211,12 @@ abstract class UIElement
     }
 
     /**
-     * Creates a Text element as a child of this one.
+     * Creates a Text element as a child of this element.
+     *
+     * The new element is positioned inside this element's rectangle.
+     *
+     * @param string $name The name of the new element.
+     * @throws RuntimeException When this element is not attached to a canvas, or the element cannot be created.
      */
     public function createText(string $name): Text
     {
@@ -178,7 +229,12 @@ abstract class UIElement
     }
 
     /**
-     * Creates an Image element as a child of this one.
+     * Creates a Image element as a child of this element.
+     *
+     * The new element is positioned inside this element's rectangle.
+     *
+     * @param string $name The name of the new element.
+     * @throws RuntimeException When this element is not attached to a canvas, or the element cannot be created.
      */
     public function createImage(string $name): Image
     {
@@ -191,7 +247,12 @@ abstract class UIElement
     }
 
     /**
-     * Creates a Button element as a child of this one.
+     * Creates a Button element as a child of this element.
+     *
+     * The new element is positioned inside this element's rectangle.
+     *
+     * @param string $name The name of the new element.
+     * @throws RuntimeException When this element is not attached to a canvas, or the element cannot be created.
      */
     public function createButton(string $name): Button
     {
@@ -204,7 +265,12 @@ abstract class UIElement
     }
 
     /**
-     * Creates a Slider element as a child of this one.
+     * Creates a Slider element as a child of this element.
+     *
+     * The new element is positioned inside this element's rectangle.
+     *
+     * @param string $name The name of the new element.
+     * @throws RuntimeException When this element is not attached to a canvas, or the element cannot be created.
      */
     public function createSlider(string $name): Slider
     {
@@ -217,7 +283,12 @@ abstract class UIElement
     }
 
     /**
-     * Creates an Input Field as a child of this one.
+     * Creates an {@see InputField} as a child of this element.
+     *
+     * The new element is positioned inside this element's rectangle.
+     *
+     * @param string $name The name of the new element.
+     * @throws RuntimeException When this element is not attached to a canvas, or the element cannot be created.
      */
     public function createInputField(string $name): InputField
     {
@@ -230,7 +301,12 @@ abstract class UIElement
     }
 
     /**
-     * The first element under this one, at any depth, with the given name.
+     * Returns the first element with the given name among this element's children and their descendants.
+     *
+     * The search checks each child, then that child's descendants, before
+     * moving to the next child. Returns null when nothing matches.
+     *
+     * @param string $name The element name. The match is exact and case-sensitive.
      */
     public function findDescendantByName(string $name): ?self
     {
@@ -249,11 +325,16 @@ abstract class UIElement
     }
 
     /**
-     * The object that stands for a native UI element. Every lookup of the
-     * same element returns the same object, until the engine destroys the
-     * element.
+     * Returns the element described by a UI lookup array, such as the `current`
+     * and `previous` entries of an {@see \Lenga\Engine\Core\EventBus::UI_SELECTION_CHANGED} payload.
      *
-     * @param array{id?: int, name?: string, type?: string, canvasId?: int|null} $data
+     * The returned object is a {@see Text}, {@see Image}, {@see Button},
+     * {@see Slider} or {@see InputField}, matching the array's `type`. Every
+     * lookup of the same element returns the same object until the engine
+     * destroys the element, so listeners added to its Signals stay.
+     *
+     * @param array{id?: int, name?: string, type?: string, canvasId?: int|null} $data The lookup array.
+     * @throws RuntimeException When the array has no valid `id`, or its `type` is not one of the classes above.
      */
     public static function fromNativeLookupData(array $data): self
     {
@@ -315,7 +396,11 @@ abstract class UIElement
     }
 
     /**
-     * The element with the given id from the scene file, or null.
+     * Finds a UI element in the active scene by the ID the scene file stores for it.
+     *
+     * Returns null when no element has that ID.
+     *
+     * @param string $sceneElementId The element's ID in the scene file.
      */
     public static function findBySceneId(string $sceneElementId): ?self
     {
@@ -329,11 +414,8 @@ abstract class UIElement
     }
 
     /**
-     * The element a serialized behaviour property refers to, by its scene id
-     * or, failing that, its engine id. Null when the element no longer
-     * exists.
-     *
-     * @param array{elementId?: string, instanceId?: int, type?: string, name?: string, canvasId?: int|null} $data
+     * @internal
+     * @param array<string, mixed> $data A UI element reference saved with a Behaviour field.
      */
     public static function fromSerializedReference(array $data): ?self
     {
@@ -363,8 +445,7 @@ abstract class UIElement
     }
 
     /**
-     * The element's current values, read from the engine.
-     *
+     * @internal
      * @return array{
      *     id?: int,
      *     type?: string,

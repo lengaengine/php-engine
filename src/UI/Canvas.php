@@ -9,14 +9,37 @@ use Lenga\Engine\Core\Vector2;
 use Lenga\Engine\Enumerations\CanvasRenderMode;
 use RuntimeException;
 
+/**
+ * A container for UI elements such as HUDs, menus and overlays.
+ *
+ * Canvases are created in the editor or with {@see \Lenga\Engine\SceneManagement\Scene::createCanvas()}.
+ * Get one with {@see \Lenga\Engine\SceneManagement\Scene::findCanvas()} or by assigning it
+ * to a typed public field of your Behaviour in the Inspector, then find its
+ * elements by name:
+ *
+ * ```php
+ * $hud = Scene::getActive()?->findCanvas('HUD');
+ * $scoreLabel = $hud?->findTextByName('Score Label');
+ * ```
+ *
+ * Elements are laid out at {@see Canvas::$referenceResolution}, and the canvas
+ * scales that layout to fit the screen. The canvas also tracks the selected
+ * element used for keyboard and gamepad navigation.
+ */
 final class Canvas
 {
+    /**
+     * @internal
+     * @param string $nameValue The canvas name.
+     * @param int $canvasId The engine ID of the canvas.
+     */
     public function __construct(
         private string $nameValue,
         private readonly int $canvasId,
     ) {
     }
 
+    /** The canvas name, as shown in the Hierarchy. */
     public string $name {
         get {
             $this->nameValue = (string) ($this->getState()['name'] ?? $this->nameValue);
@@ -24,6 +47,7 @@ final class Canvas
         }
     }
 
+    /** Whether the canvas is active. Defaults to `true`. */
     public bool $enabled {
         get {
             return (bool) ($this->getState()['enabled'] ?? true);
@@ -34,6 +58,11 @@ final class Canvas
         }
     }
 
+    /**
+     * Whether the canvas and its elements are drawn. Use it to show and hide whole menus.
+     *
+     * Defaults to `true`.
+     */
     public bool $visible {
         get {
             return (bool) ($this->getState()['visible'] ?? true);
@@ -44,6 +73,7 @@ final class Canvas
         }
     }
 
+    /** Draw order among canvases. Canvases with a higher value are drawn on top. Defaults to `0`. */
     public int $sortOrder {
         get {
             return (int) ($this->getState()['sortOrder'] ?? 0);
@@ -54,6 +84,11 @@ final class Canvas
         }
     }
 
+    /**
+     * How the canvas is placed: as an overlay on the screen, in front of a camera, or in the world.
+     *
+     * Defaults to {@see CanvasRenderMode::ScreenSpaceOverlay}.
+     */
     public CanvasRenderMode $renderMode {
         get {
             $value = (string) ($this->getState()['renderMode'] ?? CanvasRenderMode::ScreenSpaceOverlay->value);
@@ -65,6 +100,12 @@ final class Canvas
         }
     }
 
+    /**
+     * The screen size, in pixels, the canvas layout is designed for.
+     *
+     * Element positions and sizes use this resolution. On a different screen
+     * size the canvas scales the layout uniformly and centers it. Defaults to `(1280, 720)`.
+     */
     public Vector2 $referenceResolution {
         get {
             $value = $this->getState()['referenceResolution'] ?? [];
@@ -80,6 +121,11 @@ final class Canvas
         }
     }
 
+    /**
+     * Whether the canvas scales to match the screen width (0), the screen height (1), or a blend of both.
+     *
+     * Values are clamped to 0 to 1. Defaults to `0.0`.
+     */
     public float $matchWidthOrHeight {
         get {
             return (float) ($this->getState()['matchWidthOrHeight'] ?? 0.0);
@@ -90,11 +136,23 @@ final class Canvas
         }
     }
 
+    /**
+     * Returns the canvas's runtime ID.
+     *
+     * Most scripts do not need it; use canvas references and names for normal UI work.
+     */
     public function getId(): int
     {
         return $this->canvasId;
     }
 
+    /**
+     * Creates a Text element on this canvas.
+     *
+     * @param string $name The name of the new element.
+     * @param UIElement|null $parent The element to create it under, or null to place it directly on the canvas.
+     * @throws RuntimeException When the element cannot be created.
+     */
     public function createText(string $name, ?UIElement $parent = null): Text
     {
         /** @var array{id?: int, name?: string, type?: string, canvasId?: int|null}|false $data */
@@ -111,6 +169,13 @@ final class Canvas
         return $element;
     }
 
+    /**
+     * Creates a Image element on this canvas.
+     *
+     * @param string $name The name of the new element.
+     * @param UIElement|null $parent The element to create it under, or null to place it directly on the canvas.
+     * @throws RuntimeException When the element cannot be created.
+     */
     public function createImage(string $name, ?UIElement $parent = null): Image
     {
         /** @var array{id?: int, name?: string, type?: string, canvasId?: int|null}|false $data */
@@ -127,6 +192,13 @@ final class Canvas
         return $element;
     }
 
+    /**
+     * Creates a Button element on this canvas.
+     *
+     * @param string $name The name of the new element.
+     * @param UIElement|null $parent The element to create it under, or null to place it directly on the canvas.
+     * @throws RuntimeException When the element cannot be created.
+     */
     public function createButton(string $name, ?UIElement $parent = null): Button
     {
         /** @var array{id?: int, name?: string, type?: string, canvasId?: int|null}|false $data */
@@ -143,6 +215,13 @@ final class Canvas
         return $element;
     }
 
+    /**
+     * Creates a Slider element on this canvas.
+     *
+     * @param string $name The name of the new element.
+     * @param UIElement|null $parent The element to create it under, or null to place it directly on the canvas.
+     * @throws RuntimeException When the element cannot be created.
+     */
     public function createSlider(string $name, ?UIElement $parent = null): Slider
     {
         /** @var array{id?: int, name?: string, type?: string, canvasId?: int|null}|false $data */
@@ -159,6 +238,16 @@ final class Canvas
         return $element;
     }
 
+    /**
+     * Creates an {@see InputField} on this canvas.
+     *
+     * The new field has an empty placeholder; set {@see InputField::$placeholder}
+     * to show a hint.
+     *
+     * @param string $name The name of the new element.
+     * @param UIElement|null $parent The element to create it under, or null to place it directly on the canvas.
+     * @throws RuntimeException When the element cannot be created.
+     */
     public function createInputField(string $name, ?UIElement $parent = null): InputField
     {
         /** @var array{id?: int, name?: string, type?: string, canvasId?: int|null}|false $data */
@@ -176,7 +265,9 @@ final class Canvas
     }
 
     /**
-     * @return list<UIElement>
+     * Returns the elements placed directly on the canvas, without their children.
+     *
+     * @return list<UIElement> The top-level elements, or an empty list when the canvas has none.
      */
     public function getRootElements(): array
     {
@@ -192,6 +283,14 @@ final class Canvas
         ));
     }
 
+    /**
+     * Returns the first element on this canvas with the given name, or null when there is none.
+     *
+     * The search covers every element on the canvas, including children. Call
+     * it once, for example in `start()`, and keep the result.
+     *
+     * @param string $name The element name, as shown in the Hierarchy. The match is exact and case-sensitive.
+     */
     public function findElementByName(string $name): ?UIElement
     {
         foreach ($this->getRootElements() as $element) {
@@ -208,30 +307,66 @@ final class Canvas
         return null;
     }
 
+    /**
+     * Returns the first Text on this canvas with the given name, or null when there is none.
+     *
+     * Works like {@see Canvas::findElementByName()} and returns null when the
+     * first element with that name is a different type.
+     *
+     * @param string $name The element name. The match is exact and case-sensitive.
+     */
     public function findTextByName(string $name): ?Text
     {
         $element = $this->findElementByName($name);
         return $element instanceof Text ? $element : null;
     }
 
+    /**
+     * Returns the first Button on this canvas with the given name, or null when there is none.
+     *
+     * Works like {@see Canvas::findElementByName()} and returns null when the
+     * first element with that name is a different type.
+     *
+     * @param string $name The element name. The match is exact and case-sensitive.
+     */
     public function findButtonByName(string $name): ?Button
     {
         $element = $this->findElementByName($name);
         return $element instanceof Button ? $element : null;
     }
 
+    /**
+     * Returns the first Slider on this canvas with the given name, or null when there is none.
+     *
+     * Works like {@see Canvas::findElementByName()} and returns null when the
+     * first element with that name is a different type.
+     *
+     * @param string $name The element name. The match is exact and case-sensitive.
+     */
     public function findSliderByName(string $name): ?Slider
     {
         $element = $this->findElementByName($name);
         return $element instanceof Slider ? $element : null;
     }
 
+    /**
+     * Returns the first {@see InputField} with the given name on this canvas, or null when none matches.
+     *
+     * The search covers every element on the canvas, at any depth. Looking the
+     * same field up again returns the same object, so listeners added to its
+     * Signals stay.
+     *
+     * @param string $name The element name. The match is exact and case-sensitive.
+     */
     public function findInputFieldByName(string $name): ?InputField
     {
         $element = $this->findElementByName($name);
         return $element instanceof InputField ? $element : null;
     }
 
+    /**
+     * Returns the element that has keyboard and gamepad focus on this canvas, or null when nothing is selected.
+     */
     public function getSelectedElement(): ?UIElement
     {
         /** @var array{id?: int, name?: string, type?: string, canvasId?: int|null}|null|false $data */
@@ -240,6 +375,18 @@ final class Canvas
         return \is_array($data) ? UIElement::fromNativeLookupData($data) : null;
     }
 
+    /**
+     * Returns the element set as **First Selected** for this canvas in the Inspector, or null when none is set.
+     *
+     * Select it when a menu opens so keyboard and gamepad players start on the right button:
+     *
+     * ```php
+     * $first = $menu->getFirstSelectedElement();
+     * if ($first !== null) {
+     *     $menu->selectElement($first);
+     * }
+     * ```
+     */
     public function getFirstSelectedElement(): ?UIElement
     {
         $data = $this->getState()['firstSelectedElement'] ?? null;
@@ -247,23 +394,47 @@ final class Canvas
         return \is_array($data) ? UIElement::fromNativeLookupData($data) : null;
     }
 
+    /**
+     * Makes an element the selected element of this canvas, giving it keyboard and gamepad focus.
+     *
+     * The previous selection loses focus, and {@see \Lenga\Engine\Core\EventBus::UI_SELECTION_CHANGED}
+     * is emitted when the selection changes.
+     *
+     * @param UIElement $element The element to select.
+     * @param bool $viaPointer Whether the selection came from the pointer. It is passed on as `viaPointer` in the event payload.
+     * @return bool Whether the canvas and element were found.
+     */
     public function selectElement(UIElement $element, bool $viaPointer = false): bool
     {
         return NativeEngine::call('ui_canvas_select_element', $this->canvasId, $element->getId(), $viaPointer);
     }
 
+    /**
+     * Removes the selection from this canvas, so no element has keyboard and gamepad focus.
+     *
+     * @return bool Whether the canvas was found.
+     */
     public function clearSelection(): bool
     {
         return NativeEngine::call('ui_canvas_clear_selection', $this->canvasId);
     }
 
+    /**
+     * Clicks the selected element, as if the player pressed it. Does nothing when nothing is selected.
+     *
+     * @return bool Whether the canvas was found.
+     */
     public function submitSelected(): bool
     {
         return NativeEngine::call('ui_canvas_submit_selected', $this->canvasId);
     }
 
     /**
-     * @param array{id?: int, name?: string} $data
+     * Returns the canvas described by a canvas lookup array, such as the `canvas`
+     * entry of an {@see \Lenga\Engine\Core\EventBus::UI_SELECTION_CHANGED} payload.
+     *
+     * @param array{id?: int, name?: string} $data The lookup array.
+     * @throws RuntimeException When the array has no valid `id`.
      */
     public static function fromNativeLookupData(array $data): self
     {
@@ -278,6 +449,13 @@ final class Canvas
         );
     }
 
+    /**
+     * Finds a canvas in the active scene by the ID the scene file stores for it.
+     *
+     * Returns null when no canvas has that ID.
+     *
+     * @param string $sceneCanvasId The canvas's ID in the scene file.
+     */
     public static function findBySceneId(string $sceneCanvasId): ?self
     {
         /** @var array{id?: int, name?: string}|false $data */
@@ -289,6 +467,10 @@ final class Canvas
         return self::fromNativeLookupData($data);
     }
 
+    /**
+     * @internal
+     * @param array<string, mixed> $data A canvas reference saved with a Behaviour field.
+     */
     public static function fromSerializedReference(array $data): ?self
     {
         $sceneCanvasId = isset($data['canvasId']) && \is_string($data['canvasId'])

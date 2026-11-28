@@ -5,17 +5,32 @@ declare(strict_types=1);
 namespace Lenga\Engine\Core;
 
 /**
- * Lightweight debug logging utility used by the engine and user scripts.
+ * Writes messages to the editor's Console while the game runs.
  *
- * Messages are forwarded to the native logger when available and otherwise
- * written to PHP's default error log with a mapped severity label.
+ * Use it to trace what your scripts do and to report problems. Each message
+ * ends with the file and line of the call, for example
+ * `Player spawned (at /path/to/Player.php:42)`. Choose the method by
+ * severity: {@see Debug::log()} and {@see Debug::info()} for information,
+ * {@see Debug::warn()} for something that may be wrong, and
+ * {@see Debug::error()} for a failure.
+ *
+ * When the game runs without the engine's logger, messages go to PHP's
+ * error log with a `Debug:`, `Info:`, `Warning:` or `Error:` prefix.
+ *
+ * ```php
+ * Debug::log('Player spawned');
+ * Debug::warn("No spawn point found, using the origin");
+ * Debug::error(['state' => $this->state, 'health' => $this->health]);
+ * ```
  */
 final class Debug
 {
     /**
-     * Writes a generic debug log entry.
+     * Writes a debug message.
      *
-     * @param mixed $message Message payload to log.
+     * @param mixed $message A string, or an object with a `__toString()` method, which is
+     *     converted to its string. Other values raise a `TypeError`; log arrays and
+     *     numbers with {@see Debug::info()}.
      */
     public static function log(mixed $message): void
     {
@@ -23,9 +38,10 @@ final class Debug
     }
 
     /**
-     * Writes an informational log entry.
+     * Writes an informational message.
      *
-     * @param mixed $message Message payload to log.
+     * @param mixed $message The value to write. Strings are written as they are, arrays and
+     *     objects in `print_r()` form, and other values in `var_export()` form.
      */
     public static function info(mixed $message): void
     {
@@ -33,9 +49,10 @@ final class Debug
     }
 
     /**
-     * Writes a warning log entry.
+     * Writes a warning, for something that may be wrong but does not stop the game.
      *
-     * @param mixed $message Message payload to log.
+     * @param mixed $message The value to write. Strings are written as they are, arrays and
+     *     objects in `print_r()` form, and other values in `var_export()` form.
      */
     public static function warn(mixed $message): void
     {
@@ -43,9 +60,10 @@ final class Debug
     }
 
     /**
-     * Writes an error log entry.
+     * Writes an error, for a failure that needs fixing.
      *
-     * @param mixed $message Message payload to log.
+     * @param mixed $message The value to write. Strings are written as they are, arrays and
+     *     objects in `print_r()` form, and other values in `var_export()` form.
      */
     public static function error(mixed $message): void
     {
