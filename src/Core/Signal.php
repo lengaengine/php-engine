@@ -4,6 +4,9 @@ declare(strict_types=1);
 
 namespace Lenga\Engine\Core;
 
+use Lenga\Engine\Internal\ScriptExceptions;
+use Throwable;
+
 /**
  * A list of callbacks that one object exposes and calls when something happens to it.
  *
@@ -165,6 +168,10 @@ final class Signal
      * runs from the next dispatch on, and a listener removed during a
      * dispatch is not called if it has not run yet.
      *
+     * A listener that throws an exception it does not catch does not stop the
+     * others: the exception is logged with its trace and the next listener
+     * runs. The exception does not reach the caller of `dispatch()`.
+     *
      * @param mixed ...$arguments The values to pass to each listener.
      */
     public function dispatch(mixed ...$arguments): void
@@ -183,7 +190,15 @@ final class Signal
                 unset($this->listeners[$listenerId]);
             }
 
-            ($entry['listener'])(...$arguments);
+            // A listener that throws is reported, and the next listener runs.
+            try {
+                ($entry['listener'])(...$arguments);
+            } catch (Throwable $throwable) {
+                ScriptExceptions::report(
+                    $throwable,
+                    'Signal listener ' . ScriptExceptions::describeListener($entry['listener'])
+                );
+            }
         }
     }
 

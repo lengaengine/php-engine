@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace Lenga\Engine\Core;
 
 use InvalidArgumentException;
+use Lenga\Engine\Internal\ScriptExceptions;
+use Throwable;
 
 /**
  * A global event channel that lets scripts react to gameplay events without
@@ -177,6 +179,10 @@ final class EventBus
      * Listeners run immediately, in the order they were added. Nothing happens
      * when the event has no listeners.
      *
+     * A listener that throws an exception it does not catch does not stop the
+     * others: the exception is logged with its trace and the next listener
+     * runs. The exception does not reach the caller of `emit()`.
+     *
      * @param string $eventName The event to send.
      * @param mixed $payload Data passed to every listener, such as an array of details.
      */
@@ -207,7 +213,15 @@ final class EventBus
                 unset(self::$listeners[$eventName][$listenerId]);
             }
 
-            ($entry['listener'])($payload, $eventName);
+            // A listener that throws is reported, and the next listener runs.
+            try {
+                ($entry['listener'])($payload, $eventName);
+            } catch (Throwable $throwable) {
+                ScriptExceptions::report(
+                    $throwable,
+                    "EventBus listener for '{$eventName}' " . ScriptExceptions::describeListener($entry['listener'])
+                );
+            }
         }
 
         if (isset(self::$listeners[$eventName]) && self::$listeners[$eventName] === []) {
