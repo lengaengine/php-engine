@@ -1,0 +1,214 @@
+<?php
+
+declare(strict_types=1);
+
+namespace {
+    /**
+     * @return array<string, mixed>|false
+     */
+    function lenga_internal_ui_element_get_state(int $elementId): array|false
+    {
+        return $GLOBALS['lenga_input_field_test_state']['elements'][$elementId] ?? false;
+    }
+
+    /**
+     * @return array<string, mixed>|false
+     */
+    function lenga_internal_ui_canvas_create_input_field(int $canvasId, string $name, ?int $parentId = null): array|false
+    {
+        $state = &$GLOBALS['lenga_input_field_test_state'];
+        $id = ++$state['nextId'];
+        $state['elements'][$id] = ['id' => $id, 'type' => 'InputField', 'name' => $name, 'canvasId' => $canvasId];
+        $state['created'][] = compact('canvasId', 'name', 'parentId');
+
+        return ['id' => $id, 'type' => 'InputField', 'name' => $name, 'canvasId' => $canvasId];
+    }
+
+    function lenga_input_field_test_record(string $binding, int $elementId, mixed ...$values): bool
+    {
+        $state = &$GLOBALS['lenga_input_field_test_state'];
+        $state['calls'][] = [$binding, $elementId, ...$values];
+
+        return isset($state['elements'][$elementId]);
+    }
+
+    foreach ([
+        'text', 'placeholder', 'font_path', 'content_type', 'background_image', 'font_size', 'caret_width',
+        'caret_blink_rate', 'outline_width', 'character_limit', 'caret_position', 'interactable',
+        'restore_on_cancel', 'editing', 'text_color', 'placeholder_color', 'caret_color', 'background_color',
+        'hover_color', 'editing_color', 'disabled_color', 'outline_color',
+    ] as $property) {
+        eval(sprintf(
+            'function lenga_internal_ui_input_field_set_%1$s(int $elementId, mixed ...$values): bool'
+            . ' { return lenga_input_field_test_record(%2$s, $elementId, ...$values); }',
+            $property,
+            var_export($property, true),
+        ));
+    }
+}
+
+namespace Lenga\Engine\Tests\UI {
+    use Lenga\Engine\Core\Color;
+    use Lenga\Engine\Enumerations\InputFieldContentType;
+    use Lenga\Engine\UI\Canvas;
+    use Lenga\Engine\UI\InputField;
+    use Lenga\Engine\UI\UIElement;
+    use PHPUnit\Framework\TestCase;
+
+    final class InputFieldTest extends TestCase
+    {
+        protected function setUp(): void
+        {
+            $GLOBALS['lenga_input_field_test_state'] = ['nextId' => 40, 'elements' => [], 'calls' => [], 'created' => []];
+        }
+
+        private function makeField(array $state = []): InputField
+        {
+            $GLOBALS['lenga_input_field_test_state']['elements'][7] = ['id' => 7, 'type' => 'InputField', 'name' => 'Name'] + $state;
+
+            $field = UIElement::fromNativeLookupData(['id' => 7, 'type' => 'InputField', 'name' => 'Name', 'canvasId' => 3]);
+            self::assertInstanceOf(InputField::class, $field);
+
+            return $field;
+        }
+
+        /**
+         * @return list<array<int, mixed>>
+         */
+        private function calls(): array
+        {
+            return $GLOBALS['lenga_input_field_test_state']['calls'];
+        }
+
+        public function testNativeLookupDataOfTypeInputFieldBuildsAnInputField(): void
+        {
+            self::assertSame(7, $this->makeField()->getId());
+        }
+
+        public function testCanvasCreatesInputFieldsUnderAParent(): void
+        {
+            $canvas = Canvas::fromNativeLookupData(['id' => 3, 'name' => 'Menu']);
+            $parent = $this->makeField();
+
+            $field = $canvas->createInputField('Player Name', $parent);
+
+            self::assertInstanceOf(InputField::class, $field);
+            self::assertSame(
+                [['canvasId' => 3, 'name' => 'Player Name', 'parentId' => 7]],
+                $GLOBALS['lenga_input_field_test_state']['created'],
+            );
+        }
+
+        public function testValuesReadFromNativeState(): void
+        {
+            $field = $this->makeField([
+                'text' => 'Ada99',
+                'placeholder' => 'Your name',
+                'characterLimit' => 16,
+                'contentType' => 'Alphanumeric',
+                'caretPosition' => 3,
+                'editing' => true,
+                'restoreOnCancel' => false,
+                'valueChangedThisFrame' => true,
+                'submittedThisFrame' => true,
+                'cancelledThisFrame' => false,
+                'editEndedThisFrame' => true,
+                'caretBlinkRate' => 0.0,
+                'textColor' => ['r' => 10, 'g' => 20, 'b' => 30, 'a' => 255],
+            ]);
+
+            self::assertSame('Ada99', $field->text);
+            self::assertSame('Your name', $field->placeholder);
+            self::assertSame(16, $field->characterLimit);
+            self::assertSame(InputFieldContentType::Alphanumeric, $field->contentType);
+            self::assertSame(3, $field->caretPosition);
+            self::assertTrue($field->editing);
+            self::assertFalse($field->restoreOnCancel);
+            self::assertTrue($field->valueChangedThisFrame);
+            self::assertTrue($field->submittedThisFrame);
+            self::assertFalse($field->cancelledThisFrame);
+            self::assertTrue($field->editEndedThisFrame);
+            self::assertSame(0.0, $field->caretBlinkRate);
+            self::assertSame(['r' => 10, 'g' => 20, 'b' => 30, 'a' => 255], $field->textColor->toRGBA());
+        }
+
+        public function testDefaultsWhenNativeStateLeavesValuesOut(): void
+        {
+            $field = $this->makeField();
+
+            self::assertSame('', $field->text);
+            self::assertSame(0, $field->characterLimit);
+            self::assertSame(InputFieldContentType::Standard, $field->contentType);
+            self::assertFalse($field->editing);
+            self::assertTrue($field->restoreOnCancel);
+            self::assertTrue($field->interactable);
+            self::assertSame(0.85, $field->caretBlinkRate);
+            self::assertSame(1.0, $field->outlineWidth);
+        }
+
+        public function testUnknownContentTypeReadsAsStandard(): void
+        {
+            self::assertSame(InputFieldContentType::Standard, $this->makeField(['contentType' => 'Hexadecimal'])->contentType);
+        }
+
+        public function testSettersSendValuesToTheEngine(): void
+        {
+            $field = $this->makeField();
+
+            $field->text = 'Grace';
+            $field->placeholder = 'Name';
+            $field->characterLimit = 16;
+            $field->contentType = InputFieldContentType::Alphanumeric;
+            $field->caretPosition = 2;
+            $field->restoreOnCancel = false;
+            $field->interactable = false;
+            $field->fontSize = 30.0;
+            $field->fontPath = 'Fonts/ui.ttf';
+            $field->backgroundImage = 'Images/field.png';
+            $field->caretColor = Color::fromRGBA(1, 2, 3, 4);
+
+            self::assertSame([
+                ['text', 7, 'Grace'],
+                ['placeholder', 7, 'Name'],
+                ['character_limit', 7, 16],
+                ['content_type', 7, 'Alphanumeric'],
+                ['caret_position', 7, 2],
+                ['restore_on_cancel', 7, false],
+                ['interactable', 7, false],
+                ['font_size', 7, 30.0],
+                ['font_path', 7, 'Fonts/ui.ttf'],
+                ['background_image', 7, 'Images/field.png'],
+                ['caret_color', 7, 1, 2, 3, 4],
+            ], $this->calls());
+        }
+
+        public function testNegativeCountsAndWidthsAreClampedBeforeTheEngineSeesThem(): void
+        {
+            $field = $this->makeField();
+
+            $field->characterLimit = -5;
+            $field->caretPosition = -1;
+            $field->caretWidth = 0.0;
+            $field->caretBlinkRate = -2.0;
+            $field->outlineWidth = -1.0;
+
+            self::assertSame([
+                ['character_limit', 7, 0],
+                ['caret_position', 7, 0],
+                ['caret_width', 7, 1.0],
+                ['caret_blink_rate', 7, 0.0],
+                ['outline_width', 7, 0.0],
+            ], $this->calls());
+        }
+
+        public function testBeginAndEndEditingAreActions(): void
+        {
+            $field = $this->makeField();
+
+            $field->beginEditing();
+            $field->endEditing();
+
+            self::assertSame([['editing', 7, true], ['editing', 7, false]], $this->calls());
+        }
+    }
+}

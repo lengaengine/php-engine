@@ -159,6 +159,22 @@ final class Canvas
         return $element;
     }
 
+    public function createInputField(string $name, ?UIElement $parent = null): InputField
+    {
+        /** @var array{id?: int, name?: string, type?: string, canvasId?: int|null}|false $data */
+        $data = NativeEngine::call('ui_canvas_create_input_field', $this->canvasId, $name, $parent?->getId());
+        if (!\is_array($data)) {
+            throw new RuntimeException("Failed to create UI InputField element '{$name}'.");
+        }
+
+        $element = UIElement::fromNativeLookupData($data);
+        if (!$element instanceof InputField) {
+            throw new RuntimeException("Native UI element '{$name}' was not returned as InputField.");
+        }
+
+        return $element;
+    }
+
     /**
      * @return list<UIElement>
      */
@@ -208,6 +224,12 @@ final class Canvas
     {
         $element = $this->findElementByName($name);
         return $element instanceof Slider ? $element : null;
+    }
+
+    public function findInputFieldByName(string $name): ?InputField
+    {
+        $element = $this->findElementByName($name);
+        return $element instanceof InputField ? $element : null;
     }
 
     public function getSelectedElement(): ?UIElement

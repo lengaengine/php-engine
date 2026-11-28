@@ -156,6 +156,16 @@ abstract class UIElement
         return $canvas->createSlider($name, $this);
     }
 
+    public function createInputField(string $name): InputField
+    {
+        $canvas = $this->getCanvas();
+        if ($canvas === null) {
+            throw new RuntimeException("UI element '{$this->name}' is not attached to a canvas.");
+        }
+
+        return $canvas->createInputField($name, $this);
+    }
+
     public function findDescendantByName(string $name): ?self
     {
         foreach ($this->getChildren() as $child) {
@@ -191,6 +201,7 @@ abstract class UIElement
             'Image' => new Image($name, $id, $canvasId),
             'Button' => new Button($name, $id, $canvasId),
             'Slider' => new Slider($name, $id, $canvasId),
+            'InputField' => new InputField($name, $id, $canvasId),
             default => throw new RuntimeException("Unsupported native UI element type '{$type}'."),
         };
     }
@@ -287,7 +298,23 @@ abstract class UIElement
      *     fillSize?: array{x?: float, y?: float},
      *     handleColor?: array{r?: int, g?: int, b?: int, a?: int},
      *     handleImagePath?: string,
-     *     handleSize?: array{x?: float, y?: float}
+     *     handleSize?: array{x?: float, y?: float},
+     *     placeholder?: string,
+     *     contentType?: string,
+     *     characterLimit?: int,
+     *     caretPosition?: int,
+     *     editing?: bool,
+     *     restoreOnCancel?: bool,
+     *     valueChangedThisFrame?: bool,
+     *     submittedThisFrame?: bool,
+     *     cancelledThisFrame?: bool,
+     *     editEndedThisFrame?: bool,
+     *     placeholderColor?: array{r?: int, g?: int, b?: int, a?: int},
+     *     caretColor?: array{r?: int, g?: int, b?: int, a?: int},
+     *     caretWidth?: float,
+     *     caretBlinkRate?: float,
+     *     editingColor?: array{r?: int, g?: int, b?: int, a?: int},
+     *     outlineWidth?: float
      * }
      */
     protected function getState(): array
@@ -345,7 +372,23 @@ abstract class UIElement
          *     fillSize?: array{x?: float, y?: float},
          *     handleColor?: array{r?: int, g?: int, b?: int, a?: int},
          *     handleImagePath?: string,
-         *     handleSize?: array{x?: float, y?: float}
+         *     handleSize?: array{x?: float, y?: float},
+         *     placeholder?: string,
+         *     contentType?: string,
+         *     characterLimit?: int,
+         *     caretPosition?: int,
+         *     editing?: bool,
+         *     restoreOnCancel?: bool,
+         *     valueChangedThisFrame?: bool,
+         *     submittedThisFrame?: bool,
+         *     cancelledThisFrame?: bool,
+         *     editEndedThisFrame?: bool,
+         *     placeholderColor?: array{r?: int, g?: int, b?: int, a?: int},
+         *     caretColor?: array{r?: int, g?: int, b?: int, a?: int},
+         *     caretWidth?: float,
+         *     caretBlinkRate?: float,
+         *     editingColor?: array{r?: int, g?: int, b?: int, a?: int},
+         *     outlineWidth?: float
          * }|false $state
          */
         $state = NativeEngine::call('ui_element_get_state', $this->elementId);

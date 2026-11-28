@@ -35,6 +35,7 @@ All notable changes to `lenga/engine` will be documented in this file.
 - `Color::toHex()`, `Color::fromHex()` and `Color::tryFromHex()` for `#RRGGBB` and `#RRGGBBAA` strings.
 - `Material::toRendererSlot()` and `Material::fromRendererSlot()` (internal), which describe a material to the renderer material bridge.
 - `Camera::getMain()`, which returns the camera the engine draws the active scene with: the first enabled camera marked primary on an active GameObject, otherwise the first enabled camera on an active GameObject, or null when no camera qualifies. The engine chooses the camera on every call, through the `camera_get_main` native function.
+- `InputField`, a single-line text box in a Canvas, with `Canvas::createInputField()`, `UIElement::createInputField()` and `Canvas::findInputFieldByName()`. Players focus it like a Button; a click, Submit or typing starts editing, Enter submits and Escape cancels. `$text`, `$placeholder`, `$characterLimit`, `$contentType` (`InputFieldContentType::Standard` or `InputFieldContentType::Alphanumeric`, in `Lenga\Engine\Enumerations`), `$caretPosition` and `$restoreOnCancel` set what it holds; `$editing`, `$valueChangedThisFrame`, `$submittedThisFrame`, `$cancelledThisFrame` and `$editEndedThisFrame` report what the player did; `beginEditing()` and `endEditing()` start and stop editing from a script. Text, placeholder, caret, background and outline have their own colour and size properties.
 
 ## 0.9.1 - 2026-08-07
 
