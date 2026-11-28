@@ -15,17 +15,26 @@ use function mb_strlen;
 use function mb_substr;
 
 /**
- * A single-line text box the player can type in.
+ * A UI element that holds a single line of text the player types, such as a player name, a chat line, a search box or a code.
  *
- * Moving focus onto the field highlights it. Clicking it, pressing Submit
- * (Enter or the gamepad's South button) or typing starts editing. While the
- * field is being edited it takes the keyboard: Enter submits, Escape cancels,
- * and Up or Down moves focus on.
+ * The player clicks or taps it, or moves focus onto it with the keyboard or a
+ * gamepad and presses Submit, then types. While the field is being edited it
+ * takes the keyboard: Enter submits, Escape cancels, and Up or Down moves
+ * focus on. {@see InputField::$contentType} limits which characters it accepts
+ * and {@see InputField::$characterLimit} how many.
  *
- * Hear what the player does through the `$valueChanged`, `$submitted`,
- * `$cancelled` and `$editEnded` Signals, whose listeners receive the field,
- * or read it each frame with `valueChangedThisFrame`, `submittedThisFrame`,
- * `cancelledThisFrame` and `editEndedThisFrame`.
+ * Hear what the player does through the {@see InputField::$valueChanged},
+ * {@see InputField::$submitted}, {@see InputField::$cancelled} and
+ * {@see InputField::$editEnded} Signals, whose listeners receive the field, or
+ * read {@see InputField::$submittedThisFrame} and the other flags each frame.
+ * Looking the same field up again returns the same object, so listeners stay.
+ *
+ * ```php
+ * $nameField = Scene::getActive()?->findCanvas('Menu')?->findInputFieldByName('Player Name');
+ * $nameField?->submitted->add(function (InputField $field): void {
+ *     $this->saveName($field->text);
+ * });
+ * ```
  */
 final class InputField extends UIElement
 {
@@ -35,27 +44,22 @@ final class InputField extends UIElement
     protected const string NATIVE_TYPE = 'InputField';
 
     /**
-     * Dispatched when the player changes the text, or Cancel restores it.
-     * Listeners receive the field.
+     * Dispatched when the player changes the text, or Cancel puts the earlier text back. Listeners receive the field.
      */
     public private(set) Signal $valueChanged;
 
     /**
-     * Dispatched when the player presses Submit (Enter). Listeners receive
-     * the field.
+     * Dispatched when the player presses Submit (Enter, or the gamepad's South button while editing). Listeners receive the field.
      */
     public private(set) Signal $submitted;
 
     /**
-     * Dispatched when the player presses Cancel (Escape). Listeners receive
-     * the field.
+     * Dispatched when the player presses Cancel (Escape, or the gamepad's East button while editing). Listeners receive the field.
      */
     public private(set) Signal $cancelled;
 
     /**
-     * Dispatched when editing ends for any reason: Submit, Cancel, or focus
-     * moving elsewhere. Comes after `$submitted` or `$cancelled`. Listeners
-     * receive the field.
+     * Dispatched when editing ends for any reason: Submit, Cancel, or focus moving elsewhere. It comes after {@see InputField::$submitted} or {@see InputField::$cancelled}. Listeners receive the field.
      */
     public private(set) Signal $editEnded;
 
@@ -69,8 +73,9 @@ final class InputField extends UIElement
     }
 
     /**
-     * The text in the field. Setting it leaves out characters the content
-     * type refuses and cuts it to the character limit.
+     * The text in the field.
+     *
+     * Setting it leaves out characters the {@see InputField::$contentType} refuses and cuts it to {@see InputField::$characterLimit}. Defaults to an empty string.
      */
     public string $text {
         get {
@@ -83,7 +88,7 @@ final class InputField extends UIElement
     }
 
     /**
-     * The hint shown while the field is empty.
+     * The hint shown while the field is empty, such as `Enter your name...`. Defaults to an empty string; a field made in the editor starts with `Enter text...`.
      */
     public string $placeholder {
         get {
@@ -96,8 +101,7 @@ final class InputField extends UIElement
     }
 
     /**
-     * The most characters the field holds. 0 means no limit. Lowering it cuts
-     * longer text.
+     * The most characters the field holds; `0` means no limit. Lowering it cuts longer text. Defaults to `0`.
      */
     public int $characterLimit {
         get {
@@ -110,8 +114,7 @@ final class InputField extends UIElement
     }
 
     /**
-     * Which characters the field accepts. Changing it removes characters the
-     * new type refuses.
+     * Which characters the field accepts and which keyboard phones and tablets show. Changing it removes characters the new type refuses. Defaults to {@see InputFieldContentType::Standard}.
      */
     public InputFieldContentType $contentType {
         get {
@@ -125,9 +128,9 @@ final class InputField extends UIElement
     }
 
     /**
-     * The character Password and Pin fields show for each character of their
-     * text. Setting anything but a single printable character throws an
-     * InvalidArgumentException.
+     * The character Password and Pin fields show for each character of their text. Defaults to `*`.
+     *
+     * @throws \InvalidArgumentException When set to anything but a single printable character.
      */
     public string $maskCharacter {
         get {
@@ -143,8 +146,7 @@ final class InputField extends UIElement
     }
 
     /**
-     * The caret's position, in characters from the start of the text.
-     * Setting it clears the selection.
+     * The caret's position, in characters from the start of the text. Setting it clears the selection. Defaults to `0`.
      */
     public int $caretPosition {
         get {
@@ -157,9 +159,9 @@ final class InputField extends UIElement
     }
 
     /**
-     * Where the selection starts from, in characters. The selection runs
-     * from here to the caret; it is empty when both are the same. Setting it
-     * keeps the caret where it is.
+     * Where the selection starts, in characters from the start of the text.
+     *
+     * The selection runs from here to {@see InputField::$caretPosition}; it is empty when both are the same. Setting it keeps the caret where it is. Defaults to `0`.
      */
     public int $selectionAnchor {
         get {
@@ -172,7 +174,7 @@ final class InputField extends UIElement
     }
 
     /**
-     * The selected text. Empty when nothing is selected.
+     * The selected text, or an empty string when nothing is selected. Read-only.
      */
     public string $selectedText {
         get {
@@ -185,7 +187,7 @@ final class InputField extends UIElement
     }
 
     /**
-     * Whether the player is typing in the field.
+     * Whether the player is typing in the field. Read-only; use {@see InputField::beginEditing()} and {@see InputField::endEditing()} to change it.
      */
     public bool $editing {
         get {
@@ -194,8 +196,7 @@ final class InputField extends UIElement
     }
 
     /**
-     * Whether Cancel (Escape) puts back the text the field had when editing
-     * began.
+     * Whether Cancel (Escape) puts back the text the field had when editing began. Defaults to `true`.
      */
     public bool $restoreOnCancel {
         get {
@@ -208,7 +209,7 @@ final class InputField extends UIElement
     }
 
     /**
-     * The player changed the text this frame.
+     * Whether the player changed the text this frame, or Cancel put the earlier text back. True for one frame.
      */
     public bool $valueChangedThisFrame {
         get {
@@ -217,7 +218,7 @@ final class InputField extends UIElement
     }
 
     /**
-     * The player pressed Submit (Enter) this frame.
+     * Whether the player pressed Submit this frame. True for one frame.
      */
     public bool $submittedThisFrame {
         get {
@@ -226,7 +227,7 @@ final class InputField extends UIElement
     }
 
     /**
-     * The player pressed Cancel (Escape) this frame.
+     * Whether the player pressed Cancel this frame. True for one frame.
      */
     public bool $cancelledThisFrame {
         get {
@@ -235,8 +236,7 @@ final class InputField extends UIElement
     }
 
     /**
-     * Editing ended this frame, for any reason: Submit, Cancel, or focus
-     * moving elsewhere.
+     * Whether editing ended this frame, for any reason: Submit, Cancel, or focus moving elsewhere. True for one frame.
      */
     public bool $editEndedThisFrame {
         get {
@@ -245,7 +245,7 @@ final class InputField extends UIElement
     }
 
     /**
-     * Whether the field can be focused and edited.
+     * Whether the player can focus and edit the field. A field that is not interactable draws its {@see InputField::$disabledColor} and stops editing. Defaults to `true`.
      */
     public bool $interactable {
         get {
@@ -258,7 +258,7 @@ final class InputField extends UIElement
     }
 
     /**
-     * Whether the pointer is over the field.
+     * Whether the pointer is over the field. Read-only.
      */
     public bool $hovered {
         get {
@@ -267,7 +267,7 @@ final class InputField extends UIElement
     }
 
     /**
-     * Whether the field has keyboard or gamepad focus.
+     * Whether the field has keyboard and gamepad focus. Read-only.
      */
     public bool $focused {
         get {
@@ -276,7 +276,7 @@ final class InputField extends UIElement
     }
 
     /**
-     * Text size in pixels.
+     * The size of the text and placeholder, in UI pixels. Defaults to `24.0`.
      */
     public float $fontSize {
         get {
@@ -289,8 +289,7 @@ final class InputField extends UIElement
     }
 
     /**
-     * Font asset path for the text and placeholder. Empty uses the default UI
-     * font.
+     * Project-relative path to the font for the text and placeholder, such as `Assets/Fonts/Body.ttf`. An empty string uses the default UI font. Defaults to an empty string.
      */
     public string $fontPath {
         get {
@@ -303,7 +302,7 @@ final class InputField extends UIElement
     }
 
     /**
-     * The color of the text.
+     * The color of the text. Defaults to white.
      */
     public Color $textColor {
         get => ColorBridge::fromState($this->getState()['textColor'] ?? null, Color::white());
@@ -314,7 +313,7 @@ final class InputField extends UIElement
     }
 
     /**
-     * The color of the placeholder.
+     * The color of the placeholder. Defaults to a light grey-blue, `#94A0B2`.
      */
     public Color $placeholderColor {
         get => ColorBridge::fromState($this->getState()['placeholderColor'] ?? null, Color::fromRGBA(148, 160, 178));
@@ -325,7 +324,7 @@ final class InputField extends UIElement
     }
 
     /**
-     * The color behind selected text.
+     * The color drawn behind selected text. Defaults to a light blue, `#A8CEFF` at 75% opacity.
      */
     public Color $selectionColor {
         get => ColorBridge::fromState($this->getState()['selectionColor'] ?? null, Color::fromRGBA(168, 206, 255, 192));
@@ -336,7 +335,7 @@ final class InputField extends UIElement
     }
 
     /**
-     * The color of the caret.
+     * The color of the caret. Defaults to white.
      */
     public Color $caretColor {
         get => ColorBridge::fromState($this->getState()['caretColor'] ?? null, Color::white());
@@ -347,7 +346,7 @@ final class InputField extends UIElement
     }
 
     /**
-     * Caret width in UI pixels.
+     * The caret's width, in UI pixels. Defaults to `1.0`.
      */
     public float $caretWidth {
         get {
@@ -360,7 +359,7 @@ final class InputField extends UIElement
     }
 
     /**
-     * Caret blinks per second. 0 keeps the caret steady.
+     * How many times a second the caret blinks; `0` keeps it steady. Defaults to `0.85`.
      */
     public float $caretBlinkRate {
         get {
@@ -373,7 +372,7 @@ final class InputField extends UIElement
     }
 
     /**
-     * Background color while the field is idle.
+     * The background color while the field is idle. Defaults to a dark blue-grey, `#181E2A`.
      */
     public Color $backgroundColor {
         get => ColorBridge::fromState($this->getState()['backgroundColor'] ?? null, Color::fromRGBA(24, 30, 42));
@@ -384,7 +383,7 @@ final class InputField extends UIElement
     }
 
     /**
-     * Background color while the field is hovered or focused.
+     * The background color while the pointer is over the field or it has focus. Defaults to `#222A3A`.
      */
     public Color $hoverColor {
         get => ColorBridge::fromState($this->getState()['hoverColor'] ?? null, Color::fromRGBA(34, 42, 58));
@@ -395,7 +394,7 @@ final class InputField extends UIElement
     }
 
     /**
-     * Background color while the field is being edited.
+     * The background color while the player is typing. Defaults to `#222A3A`.
      */
     public Color $editingColor {
         get => ColorBridge::fromState($this->getState()['editingColor'] ?? null, Color::fromRGBA(34, 42, 58));
@@ -406,7 +405,7 @@ final class InputField extends UIElement
     }
 
     /**
-     * Background color while the field is not interactable.
+     * The background color while the field is not interactable. Defaults to `#384252` at 70% opacity.
      */
     public Color $disabledColor {
         get => ColorBridge::fromState($this->getState()['disabledColor'] ?? null, Color::fromRGBA(56, 66, 82, 180));
@@ -417,7 +416,7 @@ final class InputField extends UIElement
     }
 
     /**
-     * Background image path. Empty draws the background color.
+     * Project-relative path to an image drawn behind the text, stretched to fill the field. An empty string draws {@see InputField::$backgroundColor} instead. Defaults to an empty string.
      */
     public string $backgroundImage {
         get {
@@ -430,7 +429,7 @@ final class InputField extends UIElement
     }
 
     /**
-     * The color of the line around the field.
+     * The color of the line around the field. Defaults to `#5A6880`.
      */
     public Color $outlineColor {
         get => ColorBridge::fromState($this->getState()['outlineColor'] ?? null, Color::fromRGBA(90, 104, 128));
@@ -441,7 +440,7 @@ final class InputField extends UIElement
     }
 
     /**
-     * Outline width in UI pixels. 0 hides the outline.
+     * The width of the line around the field, in UI pixels; `0` hides it. Defaults to `1.0`.
      */
     public float $outlineWidth {
         get {
@@ -454,8 +453,7 @@ final class InputField extends UIElement
     }
 
     /**
-     * Starts editing, with the caret at the end of the text. Does nothing if
-     * the field is not interactable.
+     * Starts editing, with the caret at the end of the text. Does nothing when the field is not interactable.
      */
     public function beginEditing(): void
     {
@@ -463,7 +461,7 @@ final class InputField extends UIElement
     }
 
     /**
-     * Stops editing and keeps the text. `editEndedThisFrame` reports it.
+     * Stops editing and keeps the text. {@see InputField::$editEndedThisFrame} reports it on the next frame.
      */
     public function endEditing(): void
     {

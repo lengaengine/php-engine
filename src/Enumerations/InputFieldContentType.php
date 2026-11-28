@@ -5,8 +5,15 @@ declare(strict_types=1);
 namespace Lenga\Engine\Enumerations;
 
 /**
- * Which characters an input field accepts, how it shows them and which
- * on-screen keyboard phones and tablets show for it.
+ * Which characters an {@see \Lenga\Engine\UI\InputField} accepts, how it shows them, and which on-screen keyboard phones and tablets show for it.
+ *
+ * Set it with {@see \Lenga\Engine\UI\InputField::$contentType}. Characters a
+ * type refuses are left out as the player types or pastes, and removed from
+ * the text when the type changes.
+ *
+ * ```php
+ * $codeField->contentType = InputFieldContentType::Alphanumeric;
+ * ```
  */
 enum InputFieldContentType: string
 {
