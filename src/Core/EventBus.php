@@ -179,6 +179,10 @@ final class EventBus
      * Listeners run immediately, in the order they were added. Nothing happens
      * when the event has no listeners.
      *
+     * A listener that throws an exception it does not catch does not stop the
+     * others: the exception is logged with its trace and the next listener
+     * runs. The exception does not reach the caller of `emit()`.
+     *
      * @param string $eventName The event to send.
      * @param mixed $payload Data passed to every listener, such as an array of details.
      */

@@ -91,6 +91,13 @@ use const DEBUG_BACKTRACE_IGNORE_ARGS;
  * {@see Behaviour::onEvent()}), cleaning both up when the behaviour is
  * destroyed.
  *
+ * When one of these methods throws an exception it does not catch, the
+ * engine logs the exception with its trace to the Console and the game
+ * carries on. The method is called again at its next turn, for example
+ * `update()` on the next frame. An `awake()` or `start()` that throws
+ * counts as done, and the behaviour goes on to receive its per-frame
+ * methods.
+ *
  * @example examples/Core/Behaviour.php Move a GameObject with the arrow keys
  */
 abstract class Behaviour implements ComponentInterface
@@ -934,8 +941,10 @@ abstract class Behaviour implements ComponentInterface
      *
      * Coroutines continue after this behaviour's {@see Behaviour::update()}
      * each frame, or after {@see Behaviour::fixedUpdate()} when waiting for a
-     * fixed step. They pause while the behaviour is disabled and stop when it
-     * is destroyed.
+     * fixed step, even in a frame where that method threw. They pause while
+     * the behaviour is disabled and stop when it is destroyed. A coroutine
+     * whose code throws an exception it does not catch ends; the exception
+     * is logged, and the behaviour's other coroutines keep running.
      *
      * @param Generator $routine The generator returned by calling your coroutine method.
      * @return Coroutine A handle you can pass to {@see Behaviour::stopCoroutine()}.
@@ -1408,7 +1417,8 @@ abstract class Behaviour implements ComponentInterface
      * Release anything the behaviour set up outside itself. Every
      * subscription the behaviour manages is removed just before it runs.
      * After it returns, the engine stops the behaviour's coroutines and
-     * clears the signals it created with {@see Behaviour::createSignal()}.
+     * clears the signals it created with {@see Behaviour::createSignal()},
+     * also when it throws.
      */
     public function onDestroy(): void {}
 }

@@ -168,6 +168,10 @@ final class Signal
      * runs from the next dispatch on, and a listener removed during a
      * dispatch is not called if it has not run yet.
      *
+     * A listener that throws an exception it does not catch does not stop the
+     * others: the exception is logged with its trace and the next listener
+     * runs. The exception does not reach the caller of `dispatch()`.
+     *
      * @param mixed ...$arguments The values to pass to each listener.
      */
     public function dispatch(mixed ...$arguments): void
