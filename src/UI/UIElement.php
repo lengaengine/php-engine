@@ -356,6 +356,7 @@ abstract class UIElement
             'Text' => new Text($name, $id, $canvasId),
             'Image' => new Image($name, $id, $canvasId),
             'Button' => new Button($name, $id, $canvasId),
+            'Toggle' => new Toggle($name, $id, $canvasId),
             'Slider' => new Slider($name, $id, $canvasId),
             'InputField' => new InputField($name, $id, $canvasId),
             default => throw new RuntimeException("Unsupported native UI element type '{$type}'."),

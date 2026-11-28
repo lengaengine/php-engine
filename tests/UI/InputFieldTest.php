@@ -3,20 +3,14 @@
 declare(strict_types=1);
 
 namespace {
-    /**
-     * @return array<string, mixed>|false
-     */
-    function lenga_internal_ui_element_get_state(int $elementId): array|false
-    {
-        return $GLOBALS['lenga_input_field_test_state']['elements'][$elementId] ?? false;
-    }
+    require_once __DIR__ . '/NativeUiTestDoubles.php';
 
     /**
      * @return array<string, mixed>|false
      */
     function lenga_internal_ui_canvas_create_input_field(int $canvasId, string $name, ?int $parentId = null): array|false
     {
-        $state = &$GLOBALS['lenga_input_field_test_state'];
+        $state = &$GLOBALS['lenga_ui_test_state'];
         $id = ++$state['nextId'];
         $state['elements'][$id] = ['id' => $id, 'type' => 'InputField', 'name' => $name, 'canvasId' => $canvasId];
         $state['created'][] = compact('canvasId', 'name', 'parentId');
@@ -24,28 +18,14 @@ namespace {
         return ['id' => $id, 'type' => 'InputField', 'name' => $name, 'canvasId' => $canvasId];
     }
 
-    function lenga_input_field_test_record(string $binding, int $elementId, mixed ...$values): bool
-    {
-        $state = &$GLOBALS['lenga_input_field_test_state'];
-        $state['calls'][] = [$binding, $elementId, ...$values];
-
-        return isset($state['elements'][$elementId]);
-    }
-
-    foreach ([
+    lenga_ui_test_declare_setters('input_field', [
         'text', 'placeholder', 'font_path', 'content_type', 'background_image', 'font_size', 'caret_width',
         'caret_blink_rate', 'outline_width', 'character_limit', 'caret_position', 'interactable',
         'restore_on_cancel', 'editing', 'text_color', 'placeholder_color', 'caret_color', 'background_color',
         'hover_color', 'editing_color', 'disabled_color', 'outline_color', 'mask_character',
-        'selection_anchor', 'selection_color',
-    ] as $property) {
-        eval(sprintf(
-            'function lenga_internal_ui_input_field_set_%1$s(int $elementId, mixed ...$values): bool'
-            . ' { return lenga_input_field_test_record(%2$s, $elementId, ...$values); }',
-            $property,
-            var_export($property, true),
-        ));
-    }
+        'selection_anchor', 'selection_color', 'disabled_text_color', 'disabled_placeholder_color',
+        'disabled_outline_color',
+    ]);
 }
 
 namespace Lenga\Engine\Tests\UI {
@@ -61,13 +41,13 @@ namespace Lenga\Engine\Tests\UI {
     {
         protected function setUp(): void
         {
-            $GLOBALS['lenga_input_field_test_state'] = ['nextId' => 40, 'elements' => [], 'calls' => [], 'created' => []];
+            $GLOBALS['lenga_ui_test_state'] = ['nextId' => 40, 'elements' => [], 'calls' => [], 'created' => []];
             UIElement::releaseNativeElements([7, 41, 42]);
         }
 
         private function makeField(array $state = []): InputField
         {
-            $GLOBALS['lenga_input_field_test_state']['elements'][7] = ['id' => 7, 'type' => 'InputField', 'name' => 'Name'] + $state;
+            $GLOBALS['lenga_ui_test_state']['elements'][7] = ['id' => 7, 'type' => 'InputField', 'name' => 'Name'] + $state;
 
             $field = UIElement::fromNativeLookupData(['id' => 7, 'type' => 'InputField', 'name' => 'Name', 'canvasId' => 3]);
             self::assertInstanceOf(InputField::class, $field);
@@ -80,7 +60,7 @@ namespace Lenga\Engine\Tests\UI {
          */
         private function calls(): array
         {
-            return $GLOBALS['lenga_input_field_test_state']['calls'];
+            return $GLOBALS['lenga_ui_test_state']['calls'];
         }
 
         public function testNativeLookupDataOfTypeInputFieldBuildsAnInputField(): void
@@ -98,7 +78,7 @@ namespace Lenga\Engine\Tests\UI {
             self::assertInstanceOf(InputField::class, $field);
             self::assertSame(
                 [['canvasId' => 3, 'name' => 'Player Name', 'parentId' => 7]],
-                $GLOBALS['lenga_input_field_test_state']['created'],
+                $GLOBALS['lenga_ui_test_state']['created'],
             );
         }
 
@@ -309,6 +289,28 @@ namespace Lenga\Engine\Tests\UI {
             $field->endEditing();
 
             self::assertSame([['editing', 7, true], ['editing', 7, false]], $this->calls());
+        }
+
+        public function testDisabledContentColorsDefaultAndSendToTheEngine(): void
+        {
+            $field = $this->makeField();
+
+            self::assertSame(['r' => 118, 'g' => 118, 'b' => 118, 'a' => 255], $field->disabledTextColor->toRGBA());
+            self::assertSame(['r' => 118, 'g' => 118, 'b' => 118, 'a' => 255], $field->disabledPlaceholderColor->toRGBA());
+            self::assertSame(['r' => 118, 'g' => 118, 'b' => 118, 'a' => 255], $field->disabledOutlineColor->toRGBA());
+
+            $field->disabledTextColor = Color::fromRGBA(1, 2, 3, 4);
+            $field->disabledPlaceholderColor = Color::fromRGBA(5, 6, 7, 8);
+            $field->disabledOutlineColor = Color::fromRGBA(9, 10, 11, 12);
+
+            self::assertSame(
+                [
+                    ['disabled_text_color', 7, 1, 2, 3, 4],
+                    ['disabled_placeholder_color', 7, 5, 6, 7, 8],
+                    ['disabled_outline_color', 7, 9, 10, 11, 12],
+                ],
+                $this->calls(),
+            );
         }
     }
 }

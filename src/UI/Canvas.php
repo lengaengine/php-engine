@@ -216,6 +216,29 @@ final class Canvas
     }
 
     /**
+     * Creates a {@see Toggle} on this canvas.
+     *
+     * @param string $name The name of the new element. The toggle's label starts as this name.
+     * @param UIElement|null $parent The element to create it under, or null to place it directly on the canvas.
+     * @throws RuntimeException When the element cannot be created.
+     */
+    public function createToggle(string $name, ?UIElement $parent = null): Toggle
+    {
+        /** @var array{id?: int, name?: string, type?: string, canvasId?: int|null}|false $data */
+        $data = NativeEngine::call('ui_canvas_create_toggle', $this->canvasId, $name, $parent?->getId());
+        if (!\is_array($data)) {
+            throw new RuntimeException("Failed to create UI Toggle element '{$name}'.");
+        }
+
+        $element = UIElement::fromNativeLookupData($data);
+        if (!$element instanceof Toggle) {
+            throw new RuntimeException("Native UI element '{$name}' was not returned as Toggle.");
+        }
+
+        return $element;
+    }
+
+    /**
      * Creates a Slider element on this canvas.
      *
      * @param string $name The name of the new element.
@@ -333,6 +356,20 @@ final class Canvas
     {
         $element = $this->findElementByName($name);
         return $element instanceof Button ? $element : null;
+    }
+
+    /**
+     * Returns the first {@see Toggle} on this canvas with the given name, or null when there is none.
+     *
+     * Works like {@see Canvas::findElementByName()} and returns null when the
+     * first element with that name is a different type.
+     *
+     * @param string $name The element name. The match is exact and case-sensitive.
+     */
+    public function findToggleByName(string $name): ?Toggle
+    {
+        $element = $this->findElementByName($name);
+        return $element instanceof Toggle ? $element : null;
     }
 
     /**

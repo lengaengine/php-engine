@@ -30,7 +30,12 @@ final class Slider extends UIElement
      */
     protected const string NATIVE_TYPE = 'Slider';
 
-    /** Whether the player can change the slider with the pointer, keyboard or gamepad. Defaults to `true`. */
+    /**
+     * Whether the player can change the slider with the pointer, keyboard or gamepad.
+     *
+     * A slider that is not interactable draws its track in {@see Slider::$disabledColor}, its fill in
+     * {@see Slider::$disabledFillColor} and its handle in {@see Slider::$disabledHandleColor}. Defaults to `true`.
+     */
     public bool $interactable {
         get {
             return (bool) ($this->getState()['interactable'] ?? true);
@@ -368,6 +373,48 @@ final class Slider extends UIElement
 
         set(Vector2 $value) {
             NativeEngine::call('ui_slider_set_handle_size', $this->getId(), $value->x, $value->y);
+        }
+    }
+
+    /**
+     * The track color while the slider is not interactable.
+     *
+     * Defaults to a translucent slate, `Color::fromRGBA(56, 66, 82, 180)`.
+     */
+    public Color $disabledColor {
+        get => ColorBridge::fromState($this->getState()['disabledColor'] ?? null, Color::fromRGBA(56, 66, 82, 180));
+
+        set(Color $value) {
+            $color = $value->toRGBA();
+            NativeEngine::call('ui_slider_set_disabled_color', $this->getId(), $color['r'], $color['g'], $color['b'], $color['a']);
+        }
+    }
+
+    /**
+     * The fill color while the slider is not interactable. It tints {@see Slider::$fillImage} too.
+     *
+     * Defaults to a mid grey, `Color::fromRGBA(118, 118, 118)`, which stays legible on light and dark backgrounds.
+     */
+    public Color $disabledFillColor {
+        get => ColorBridge::fromState($this->getState()['disabledFillColor'] ?? null, Color::fromRGBA(118, 118, 118));
+
+        set(Color $value) {
+            $color = $value->toRGBA();
+            NativeEngine::call('ui_slider_set_disabled_fill_color', $this->getId(), $color['r'], $color['g'], $color['b'], $color['a']);
+        }
+    }
+
+    /**
+     * The handle color while the slider is not interactable. It tints {@see Slider::$handleImage} too.
+     *
+     * Defaults to the same mid grey as {@see Slider::$disabledFillColor}, `Color::fromRGBA(118, 118, 118)`.
+     */
+    public Color $disabledHandleColor {
+        get => ColorBridge::fromState($this->getState()['disabledHandleColor'] ?? null, Color::fromRGBA(118, 118, 118));
+
+        set(Color $value) {
+            $color = $value->toRGBA();
+            NativeEngine::call('ui_slider_set_disabled_handle_color', $this->getId(), $color['r'], $color['g'], $color['b'], $color['a']);
         }
     }
 }

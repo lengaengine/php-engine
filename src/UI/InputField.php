@@ -245,7 +245,7 @@ final class InputField extends UIElement
     }
 
     /**
-     * Whether the player can focus and edit the field. A field that is not interactable draws its {@see InputField::$disabledColor} and stops editing. Defaults to `true`.
+     * Whether the player can focus and edit the field. A field that is not interactable draws its {@see InputField::$disabledColor}, draws its text, placeholder and outline in their disabled colors, and stops editing. Defaults to `true`.
      */
     public bool $interactable {
         get {
@@ -436,6 +436,45 @@ final class InputField extends UIElement
 
         set(Color $value) {
             $this->setColor('ui_input_field_set_outline_color', $value);
+        }
+    }
+
+    /**
+     * The text color while the field is not interactable.
+     *
+     * Defaults to a mid grey, `Color::fromRGBA(118, 118, 118)`, which stays legible on light and dark backgrounds.
+     */
+    public Color $disabledTextColor {
+        get => ColorBridge::fromState($this->getState()['disabledTextColor'] ?? null, Color::fromRGBA(118, 118, 118));
+
+        set(Color $value) {
+            $this->setColor('ui_input_field_set_disabled_text_color', $value);
+        }
+    }
+
+    /**
+     * The placeholder color while the field is not interactable.
+     *
+     * Defaults to the same mid grey as {@see InputField::$disabledTextColor}, `Color::fromRGBA(118, 118, 118)`.
+     */
+    public Color $disabledPlaceholderColor {
+        get => ColorBridge::fromState($this->getState()['disabledPlaceholderColor'] ?? null, Color::fromRGBA(118, 118, 118));
+
+        set(Color $value) {
+            $this->setColor('ui_input_field_set_disabled_placeholder_color', $value);
+        }
+    }
+
+    /**
+     * The outline color while the field is not interactable.
+     *
+     * Defaults to the same mid grey as {@see InputField::$disabledTextColor}, `Color::fromRGBA(118, 118, 118)`.
+     */
+    public Color $disabledOutlineColor {
+        get => ColorBridge::fromState($this->getState()['disabledOutlineColor'] ?? null, Color::fromRGBA(118, 118, 118));
+
+        set(Color $value) {
+            $this->setColor('ui_input_field_set_disabled_outline_color', $value);
         }
     }
 

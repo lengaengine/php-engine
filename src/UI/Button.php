@@ -82,7 +82,8 @@ final class Button extends UIElement
     /**
      * Whether the button can receive pointer input.
      *
-     * A button that is not interactable shows {@see Button::$disabledColor} and its disabled image. Defaults to `true`.
+     * A button that is not interactable shows {@see Button::$disabledColor} and its disabled image, and draws its text in
+     * {@see Button::$disabledTextColor} and its outline in {@see Button::$disabledOutlineColor}. Defaults to `true`.
      */
     public bool $interactable {
         get {
@@ -276,6 +277,36 @@ final class Button extends UIElement
     {
         $color = ColorBridge::toNative($red, $green, $blue, $alpha);
         NativeEngine::call('ui_button_set_outline_color', $this->getId(), $color['r'], $color['g'], $color['b'], $color['a']);
+    }
+
+    /**
+     * The text color while the button is not interactable.
+     *
+     * Use it with {@see Button::$disabledColor} so a button that cannot be pressed also looks it. Defaults to a mid grey,
+     * `Color::fromRGBA(118, 118, 118)`, which stays legible on light and dark backgrounds.
+     */
+    public Color $disabledTextColor {
+        get => ColorBridge::fromState($this->getState()['disabledTextColor'] ?? null, Color::fromRGBA(118, 118, 118));
+
+        set(Color $value) {
+            $color = $value->toRGBA();
+            NativeEngine::call('ui_button_set_disabled_text_color', $this->getId(), $color['r'], $color['g'], $color['b'], $color['a']);
+        }
+    }
+
+    /**
+     * The outline color while the button is not interactable. The outline is drawn only when
+     * {@see Button::$outlineWidth} is above 0.
+     *
+     * Defaults to the same mid grey as {@see Button::$disabledTextColor}, `Color::fromRGBA(118, 118, 118)`.
+     */
+    public Color $disabledOutlineColor {
+        get => ColorBridge::fromState($this->getState()['disabledOutlineColor'] ?? null, Color::fromRGBA(118, 118, 118));
+
+        set(Color $value) {
+            $color = $value->toRGBA();
+            NativeEngine::call('ui_button_set_disabled_outline_color', $this->getId(), $color['r'], $color['g'], $color['b'], $color['a']);
+        }
     }
 
     /**
