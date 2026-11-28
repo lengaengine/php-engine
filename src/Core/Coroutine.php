@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Lenga\Engine\Core;
 
 use Generator;
+use Throwable;
 
 final class Coroutine
 {
@@ -75,20 +76,27 @@ final class Coroutine
             return;
         }
 
-        if ($this->currentYield instanceof YieldInstruction) {
-            if ($this->currentYield->resumePhase() !== $phase) {
+        // A coroutine whose code throws has ended: PHP cannot resume a
+        // generator after an exception. The exception goes on to the caller.
+        try {
+            if ($this->currentYield instanceof YieldInstruction) {
+                if ($this->currentYield->resumePhase() !== $phase) {
+                    return;
+                }
+
+                if ($this->currentYield->keepWaiting()) {
+                    return;
+                }
+            } elseif ($phase !== YieldInstruction::PHASE_UPDATE) {
                 return;
             }
 
-            if ($this->currentYield->keepWaiting()) {
-                return;
-            }
-        } elseif ($phase !== YieldInstruction::PHASE_UPDATE) {
-            return;
+            $this->generator->next();
+            $this->captureCurrentYield();
+        } catch (Throwable $throwable) {
+            $this->stop();
+            throw $throwable;
         }
-
-        $this->generator->next();
-        $this->captureCurrentYield();
     }
 
     private function captureCurrentYield(): void

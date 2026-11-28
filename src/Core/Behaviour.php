@@ -14,6 +14,7 @@ use Lenga\Engine\Audio\AudioClip;
 use Lenga\Engine\Audio\AudioMixer;
 use Lenga\Engine\Interfaces\ComponentInterface;
 use Lenga\Engine\Interfaces\RendererInterface;
+use Lenga\Engine\Internal\ScriptExceptions;
 use Lenga\Engine\UI\Canvas;
 use Lenga\Engine\UI\UIElement;
 use ReflectionClass;
@@ -933,13 +934,25 @@ abstract class Behaviour implements ComponentInterface
 
     private function internalFixedUpdate(): void
     {
-        $this->fixedUpdate();
+        // FixedUpdate and the coroutines are guarded apart, so an exception
+        // in one does not stop the other.
+        try {
+            $this->fixedUpdate();
+        } catch (Throwable $throwable) {
+            ScriptExceptions::report($throwable, static::class . '::fixedUpdate()');
+        }
         $this->tickCoroutinesFixedUpdate();
     }
 
     private function internalUpdate(): void
     {
-        $this->update();
+        // Update and the coroutines are guarded apart, so an exception in
+        // one does not stop the other.
+        try {
+            $this->update();
+        } catch (Throwable $throwable) {
+            ScriptExceptions::report($throwable, static::class . '::update()');
+        }
         $this->tickCoroutines();
     }
 
@@ -964,9 +977,14 @@ abstract class Behaviour implements ComponentInterface
     {
         $this->lifecycleEnabled = false;
         $this->releaseOwnedSubscriptions();
-        $this->onDestroy();
-        $this->stopAllCoroutines();
-        $this->releaseOwnedSignals();
+        // The engine's own cleanup runs even when the script's onDestroy()
+        // throws; the engine then reports the exception.
+        try {
+            $this->onDestroy();
+        } finally {
+            $this->stopAllCoroutines();
+            $this->releaseOwnedSignals();
+        }
     }
 
     private function tickCoroutines(): void
@@ -980,7 +998,12 @@ abstract class Behaviour implements ComponentInterface
                 continue;
             }
 
-            $coroutine->tick();
+            // A coroutine that throws ends; the others carry on.
+            try {
+                $coroutine->tick();
+            } catch (Throwable $throwable) {
+                ScriptExceptions::report($throwable, static::class . ' coroutine');
+            }
 
             if ($coroutine->isFinished()) {
                 unset($this->coroutines[$id]);
@@ -999,7 +1022,12 @@ abstract class Behaviour implements ComponentInterface
                 continue;
             }
 
-            $coroutine->tickFixedUpdate();
+            // A coroutine that throws ends; the others carry on.
+            try {
+                $coroutine->tickFixedUpdate();
+            } catch (Throwable $throwable) {
+                ScriptExceptions::report($throwable, static::class . ' coroutine');
+            }
 
             if ($coroutine->isFinished()) {
                 unset($this->coroutines[$id]);

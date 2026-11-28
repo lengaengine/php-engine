@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace Lenga\Engine\Core;
 
 use InvalidArgumentException;
+use Lenga\Engine\Internal\ScriptExceptions;
+use Throwable;
 
 /**
  * Process-wide PHP event bus for cross-system gameplay and engine events.
@@ -96,7 +98,15 @@ final class EventBus
                 unset(self::$listeners[$eventName][$listenerId]);
             }
 
-            ($entry['listener'])($payload, $eventName);
+            // A listener that throws is reported, and the next listener runs.
+            try {
+                ($entry['listener'])($payload, $eventName);
+            } catch (Throwable $throwable) {
+                ScriptExceptions::report(
+                    $throwable,
+                    "EventBus listener for '{$eventName}' " . ScriptExceptions::describeListener($entry['listener'])
+                );
+            }
         }
 
         if (isset(self::$listeners[$eventName]) && self::$listeners[$eventName] === []) {

@@ -4,6 +4,9 @@ declare(strict_types=1);
 
 namespace Lenga\Engine\Core;
 
+use Lenga\Engine\Internal\ScriptExceptions;
+use Throwable;
+
 final class Signal
 {
     /**
@@ -82,7 +85,15 @@ final class Signal
                 unset($this->listeners[$listenerId]);
             }
 
-            ($entry['listener'])(...$arguments);
+            // A listener that throws is reported, and the next listener runs.
+            try {
+                ($entry['listener'])(...$arguments);
+            } catch (Throwable $throwable) {
+                ScriptExceptions::report(
+                    $throwable,
+                    'Signal listener ' . ScriptExceptions::describeListener($entry['listener'])
+                );
+            }
         }
     }
 
