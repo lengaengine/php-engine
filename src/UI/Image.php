@@ -10,6 +10,11 @@ use Lenga\Engine\Internal\ColorBridge;
 
 final class Image extends UIElement
 {
+    /**
+     * The element type's name, as the engine reports it.
+     */
+    protected const string NATIVE_TYPE = 'Image';
+
     public string $spritePath {
         get {
             return (string) ($this->getState()['spritePath'] ?? '');

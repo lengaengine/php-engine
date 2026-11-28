@@ -4,11 +4,15 @@ declare(strict_types=1);
 
 namespace Lenga\Engine\UI;
 
+use InvalidArgumentException;
 use Lenga\Engine\Core\Color;
 use Lenga\Engine\Core\NativeEngine;
+use Lenga\Engine\Core\Signal;
 use Lenga\Engine\Enumerations\InputFieldContentType;
 use Lenga\Engine\Internal\ColorBridge;
 use function max;
+use function mb_strlen;
+use function mb_substr;
 
 /**
  * A single-line text box the player can type in.
@@ -18,11 +22,52 @@ use function max;
  * field is being edited it takes the keyboard: Enter submits, Escape cancels,
  * and Up or Down moves focus on.
  *
- * Read what the player did this frame with `valueChangedThisFrame`,
- * `submittedThisFrame`, `cancelledThisFrame` and `editEndedThisFrame`.
+ * Hear what the player does through the `$valueChanged`, `$submitted`,
+ * `$cancelled` and `$editEnded` Signals, whose listeners receive the field,
+ * or read it each frame with `valueChangedThisFrame`, `submittedThisFrame`,
+ * `cancelledThisFrame` and `editEndedThisFrame`.
  */
 final class InputField extends UIElement
 {
+    /**
+     * The element type's name, as the engine reports it.
+     */
+    protected const string NATIVE_TYPE = 'InputField';
+
+    /**
+     * Dispatched when the player changes the text, or Cancel restores it.
+     * Listeners receive the field.
+     */
+    public private(set) Signal $valueChanged;
+
+    /**
+     * Dispatched when the player presses Submit (Enter). Listeners receive
+     * the field.
+     */
+    public private(set) Signal $submitted;
+
+    /**
+     * Dispatched when the player presses Cancel (Escape). Listeners receive
+     * the field.
+     */
+    public private(set) Signal $cancelled;
+
+    /**
+     * Dispatched when editing ends for any reason: Submit, Cancel, or focus
+     * moving elsewhere. Comes after `$submitted` or `$cancelled`. Listeners
+     * receive the field.
+     */
+    public private(set) Signal $editEnded;
+
+    public function __construct(string $nameValue, int $elementId, ?int $canvasId)
+    {
+        parent::__construct($nameValue, $elementId, $canvasId);
+        $this->valueChanged = new Signal();
+        $this->submitted = new Signal();
+        $this->cancelled = new Signal();
+        $this->editEnded = new Signal();
+    }
+
     /**
      * The text in the field. Setting it leaves out characters the content
      * type refuses and cuts it to the character limit.
@@ -80,7 +125,26 @@ final class InputField extends UIElement
     }
 
     /**
+     * The character Password and Pin fields show for each character of their
+     * text. Setting anything but a single printable character throws an
+     * InvalidArgumentException.
+     */
+    public string $maskCharacter {
+        get {
+            return (string) ($this->getState()['maskCharacter'] ?? '*');
+        }
+
+        set(string $value) {
+            if (mb_strlen($value, 'UTF-8') !== 1 || \preg_match('/^\p{C}$/u', $value) === 1) {
+                throw new InvalidArgumentException('The mask character must be one printable character.');
+            }
+            NativeEngine::call('ui_input_field_set_mask_character', $this->getId(), $value);
+        }
+    }
+
+    /**
      * The caret's position, in characters from the start of the text.
+     * Setting it clears the selection.
      */
     public int $caretPosition {
         get {
@@ -89,6 +153,34 @@ final class InputField extends UIElement
 
         set(int $value) {
             NativeEngine::call('ui_input_field_set_caret_position', $this->getId(), max(0, $value));
+        }
+    }
+
+    /**
+     * Where the selection starts from, in characters. The selection runs
+     * from here to the caret; it is empty when both are the same. Setting it
+     * keeps the caret where it is.
+     */
+    public int $selectionAnchor {
+        get {
+            return (int) ($this->getState()['selectionAnchor'] ?? $this->caretPosition);
+        }
+
+        set(int $value) {
+            NativeEngine::call('ui_input_field_set_selection_anchor', $this->getId(), max(0, $value));
+        }
+    }
+
+    /**
+     * The selected text. Empty when nothing is selected.
+     */
+    public string $selectedText {
+        get {
+            $state = $this->getState();
+            $anchor = (int) ($state['selectionAnchor'] ?? 0);
+            $caret = (int) ($state['caretPosition'] ?? 0);
+
+            return mb_substr((string) ($state['text'] ?? ''), \min($anchor, $caret), \abs($caret - $anchor), 'UTF-8');
         }
     }
 
@@ -233,6 +325,17 @@ final class InputField extends UIElement
     }
 
     /**
+     * The color behind selected text.
+     */
+    public Color $selectionColor {
+        get => ColorBridge::fromState($this->getState()['selectionColor'] ?? null, Color::fromRGBA(168, 206, 255, 192));
+
+        set(Color $value) {
+            $this->setColor('ui_input_field_set_selection_color', $value);
+        }
+    }
+
+    /**
      * The color of the caret.
      */
     public Color $caretColor {
@@ -365,6 +468,27 @@ final class InputField extends UIElement
     public function endEditing(): void
     {
         NativeEngine::call('ui_input_field_set_editing', $this->getId(), false);
+    }
+
+    /**
+     * Selects all of the text, with the caret at the end.
+     */
+    public function selectAll(): void
+    {
+        $this->caretPosition = mb_strlen($this->text, 'UTF-8');
+        $this->selectionAnchor = 0;
+    }
+
+    protected function receiveNativeEvent(string $event): void
+    {
+        $signal = match ($event) {
+            'valueChanged' => $this->valueChanged,
+            'submitted' => $this->submitted,
+            'cancelled' => $this->cancelled,
+            'editEnded' => $this->editEnded,
+            default => null,
+        };
+        $signal?->dispatch($this);
     }
 
     private function setColor(string $binding, Color $value): void

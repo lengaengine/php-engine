@@ -14,6 +14,11 @@ use Lenga\Engine\Internal\ColorBridge;
  */
 final class Slider extends UIElement
 {
+    /**
+     * The element type's name, as the engine reports it.
+     */
+    protected const string NATIVE_TYPE = 'Slider';
+
     public bool $interactable {
         get {
             return (bool) ($this->getState()['interactable'] ?? true);

@@ -9,6 +9,19 @@ use RuntimeException;
 
 abstract class UIElement
 {
+    /**
+     * One object per native element, so listeners added to an element's
+     * Signals stay with it however the element is looked up again.
+     *
+     * @var array<int, UIElement>
+     */
+    private static array $objects = [];
+
+    /**
+     * The element type's name, as the engine reports it.
+     */
+    protected const string NATIVE_TYPE = '';
+
     private readonly RectTransform $rectTransformValue;
 
     public function __construct(
@@ -19,6 +32,9 @@ abstract class UIElement
         $this->rectTransformValue = new RectTransform($elementId);
     }
 
+    /**
+     * The element's name, as shown in the Hierarchy.
+     */
     public string $name {
         get {
             $this->nameValue = (string) ($this->getState()['name'] ?? $this->nameValue);
@@ -26,6 +42,9 @@ abstract class UIElement
         }
     }
 
+    /**
+     * Whether the element and its children take part in the UI. A disabled element is hidden and cannot be interacted with.
+     */
     public bool $enabled {
         get {
             return (bool) ($this->getState()['enabled'] ?? true);
@@ -36,6 +55,9 @@ abstract class UIElement
         }
     }
 
+    /**
+     * Whether the element is drawn. A hidden element keeps its place and its children's settings.
+     */
     public bool $visible {
         get {
             return (bool) ($this->getState()['visible'] ?? true);
@@ -46,12 +68,18 @@ abstract class UIElement
         }
     }
 
+    /**
+     * Whether the element and every parent above it are enabled.
+     */
     public bool $activeInHierarchy {
         get {
             return (bool) ($this->getState()['activeInHierarchy'] ?? false);
         }
     }
 
+    /**
+     * Drawing order among its siblings: higher values draw on top and are hit first by the pointer.
+     */
     public int $sortOrder {
         get {
             return (int) ($this->getState()['sortOrder'] ?? 0);
@@ -62,22 +90,34 @@ abstract class UIElement
         }
     }
 
+    /**
+     * The element's position, size, anchors, pivot, scale and rotation in its parent.
+     */
     public RectTransform $rectTransform {
         get {
             return $this->rectTransformValue;
         }
     }
 
+    /**
+     * The id the engine knows this element by.
+     */
     public function getId(): int
     {
         return $this->elementId;
     }
 
+    /**
+     * Whether the element has keyboard or gamepad focus.
+     */
     public function isFocused(): bool
     {
         return (bool) ($this->getState()['focused'] ?? false);
     }
 
+    /**
+     * The Canvas the element belongs to.
+     */
     public function getCanvas(): ?Canvas
     {
         $state = $this->getState();
@@ -86,6 +126,9 @@ abstract class UIElement
         return \is_int($canvasId) ? Canvas::fromNativeLookupData(['id' => $canvasId]) : null;
     }
 
+    /**
+     * The element this one is a child of, or null for a root element of its Canvas.
+     */
     public function getParent(): ?self
     {
         /** @var array{id?: int, name?: string, type?: string, canvasId?: int|null}|null|false $data */
@@ -94,12 +137,17 @@ abstract class UIElement
         return \is_array($data) ? self::fromNativeLookupData($data) : null;
     }
 
+    /**
+     * Moves the element under another element of the same Canvas, or to the Canvas's root with null. Returns whether it moved.
+     */
     public function setParent(?self $parent): bool
     {
         return NativeEngine::call('ui_element_set_parent', $this->elementId, $parent?->getId());
     }
 
     /**
+     * The element's direct children, in Hierarchy order.
+     *
      * @return list<UIElement>
      */
     public function getChildren(): array
@@ -116,6 +164,9 @@ abstract class UIElement
         ));
     }
 
+    /**
+     * Creates a Text element as a child of this one.
+     */
     public function createText(string $name): Text
     {
         $canvas = $this->getCanvas();
@@ -126,6 +177,9 @@ abstract class UIElement
         return $canvas->createText($name, $this);
     }
 
+    /**
+     * Creates an Image element as a child of this one.
+     */
     public function createImage(string $name): Image
     {
         $canvas = $this->getCanvas();
@@ -136,6 +190,9 @@ abstract class UIElement
         return $canvas->createImage($name, $this);
     }
 
+    /**
+     * Creates a Button element as a child of this one.
+     */
     public function createButton(string $name): Button
     {
         $canvas = $this->getCanvas();
@@ -146,6 +203,9 @@ abstract class UIElement
         return $canvas->createButton($name, $this);
     }
 
+    /**
+     * Creates a Slider element as a child of this one.
+     */
     public function createSlider(string $name): Slider
     {
         $canvas = $this->getCanvas();
@@ -156,6 +216,9 @@ abstract class UIElement
         return $canvas->createSlider($name, $this);
     }
 
+    /**
+     * Creates an Input Field as a child of this one.
+     */
     public function createInputField(string $name): InputField
     {
         $canvas = $this->getCanvas();
@@ -166,6 +229,9 @@ abstract class UIElement
         return $canvas->createInputField($name, $this);
     }
 
+    /**
+     * The first element under this one, at any depth, with the given name.
+     */
     public function findDescendantByName(string $name): ?self
     {
         foreach ($this->getChildren() as $child) {
@@ -183,6 +249,10 @@ abstract class UIElement
     }
 
     /**
+     * The object that stands for a native UI element. Every lookup of the
+     * same element returns the same object, until the engine destroys the
+     * element.
+     *
      * @param array{id?: int, name?: string, type?: string, canvasId?: int|null} $data
      */
     public static function fromNativeLookupData(array $data): self
@@ -196,7 +266,12 @@ abstract class UIElement
         $canvasId = isset($data['canvasId']) && \is_int($data['canvasId']) ? $data['canvasId'] : null;
         $type = (string) ($data['type'] ?? '');
 
-        return match ($type) {
+        $existing = self::$objects[$id] ?? null;
+        if ($existing !== null && $existing::NATIVE_TYPE === $type) {
+            return $existing;
+        }
+
+        return self::$objects[$id] = match ($type) {
             'Text' => new Text($name, $id, $canvasId),
             'Image' => new Image($name, $id, $canvasId),
             'Button' => new Button($name, $id, $canvasId),
@@ -206,6 +281,42 @@ abstract class UIElement
         };
     }
 
+    /**
+     * Hands an event the engine reported for an element to that element's
+     * object, if a script has looked the element up.
+     *
+     * @internal Called by the C++ runtime after each UI frame.
+     */
+    public static function dispatchNativeEvent(int $elementId, string $event): void
+    {
+        (self::$objects[$elementId] ?? null)?->receiveNativeEvent($event);
+    }
+
+    /**
+     * Lets go of the objects of elements the engine destroyed.
+     *
+     * @internal Called by the C++ runtime before each UI frame.
+     *
+     * @param list<int> $elementIds
+     */
+    public static function releaseNativeElements(array $elementIds): void
+    {
+        foreach ($elementIds as $elementId) {
+            unset(self::$objects[$elementId]);
+        }
+    }
+
+    /**
+     * Receives an event the engine reported for this element. Elements with
+     * Signals dispatch them here.
+     */
+    protected function receiveNativeEvent(string $event): void
+    {
+    }
+
+    /**
+     * The element with the given id from the scene file, or null.
+     */
     public static function findBySceneId(string $sceneElementId): ?self
     {
         /** @var array{id?: int, name?: string, type?: string, canvasId?: int|null}|false $data */
@@ -217,6 +328,13 @@ abstract class UIElement
         return self::fromNativeLookupData($data);
     }
 
+    /**
+     * The element a serialized behaviour property refers to, by its scene id
+     * or, failing that, its engine id. Null when the element no longer
+     * exists.
+     *
+     * @param array{elementId?: string, instanceId?: int, type?: string, name?: string, canvasId?: int|null} $data
+     */
     public static function fromSerializedReference(array $data): ?self
     {
         $sceneElementId = isset($data['elementId']) && \is_string($data['elementId'])
@@ -245,6 +363,8 @@ abstract class UIElement
     }
 
     /**
+     * The element's current values, read from the engine.
+     *
      * @return array{
      *     id?: int,
      *     type?: string,

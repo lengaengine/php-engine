@@ -10,6 +10,11 @@ use Lenga\Engine\Internal\ColorBridge;
 
 final class Text extends UIElement
 {
+    /**
+     * The element type's name, as the engine reports it.
+     */
+    protected const string NATIVE_TYPE = 'Text';
+
     public string $text {
         get {
             return (string) ($this->getState()['text'] ?? '');

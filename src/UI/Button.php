@@ -15,6 +15,11 @@ use function max;
 final class Button extends UIElement
 {
     /**
+     * The element type's name, as the engine reports it.
+     */
+    protected const string NATIVE_TYPE = 'Button';
+
+    /**
      * Visible button label.
      */
     public string $text {

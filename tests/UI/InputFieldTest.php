@@ -36,7 +36,8 @@ namespace {
         'text', 'placeholder', 'font_path', 'content_type', 'background_image', 'font_size', 'caret_width',
         'caret_blink_rate', 'outline_width', 'character_limit', 'caret_position', 'interactable',
         'restore_on_cancel', 'editing', 'text_color', 'placeholder_color', 'caret_color', 'background_color',
-        'hover_color', 'editing_color', 'disabled_color', 'outline_color',
+        'hover_color', 'editing_color', 'disabled_color', 'outline_color', 'mask_character',
+        'selection_anchor', 'selection_color',
     ] as $property) {
         eval(sprintf(
             'function lenga_internal_ui_input_field_set_%1$s(int $elementId, mixed ...$values): bool'
@@ -52,6 +53,7 @@ namespace Lenga\Engine\Tests\UI {
     use Lenga\Engine\Enumerations\InputFieldContentType;
     use Lenga\Engine\UI\Canvas;
     use Lenga\Engine\UI\InputField;
+    use InvalidArgumentException;
     use Lenga\Engine\UI\UIElement;
     use PHPUnit\Framework\TestCase;
 
@@ -60,6 +62,7 @@ namespace Lenga\Engine\Tests\UI {
         protected function setUp(): void
         {
             $GLOBALS['lenga_input_field_test_state'] = ['nextId' => 40, 'elements' => [], 'calls' => [], 'created' => []];
+            UIElement::releaseNativeElements([7, 41, 42]);
         }
 
         private function makeField(array $state = []): InputField
@@ -199,6 +202,103 @@ namespace Lenga\Engine\Tests\UI {
                 ['caret_blink_rate', 7, 0.0],
                 ['outline_width', 7, 0.0],
             ], $this->calls());
+        }
+
+        public function testEveryLookupOfAnElementGivesTheSameObject(): void
+        {
+            $field = $this->makeField();
+            $again = UIElement::fromNativeLookupData(['id' => 7, 'type' => 'InputField', 'name' => 'Name']);
+
+            self::assertSame($field, $again);
+        }
+
+        public function testReleasedElementsGetANewObject(): void
+        {
+            $field = $this->makeField();
+            UIElement::releaseNativeElements([7]);
+
+            self::assertNotSame($field, $this->makeField());
+        }
+
+        public function testEngineEventsReachTheFieldsSignals(): void
+        {
+            $field = $this->makeField(['text' => 'Ada99']);
+            $heard = [];
+            foreach (['valueChanged', 'submitted', 'cancelled', 'editEnded'] as $name) {
+                $field->{$name}->add(static function (InputField $source) use (&$heard, $name, $field): void {
+                    $heard[] = [$name, $source === $field, $source->text];
+                });
+            }
+
+            UIElement::dispatchNativeEvent(7, 'valueChanged');
+            UIElement::dispatchNativeEvent(7, 'submitted');
+            UIElement::dispatchNativeEvent(7, 'cancelled');
+            UIElement::dispatchNativeEvent(7, 'editEnded');
+            UIElement::dispatchNativeEvent(7, 'unknown');
+            UIElement::dispatchNativeEvent(99, 'submitted');
+
+            self::assertSame([
+                ['valueChanged', true, 'Ada99'],
+                ['submitted', true, 'Ada99'],
+                ['cancelled', true, 'Ada99'],
+                ['editEnded', true, 'Ada99'],
+            ], $heard);
+        }
+
+        public function testListenersStayWhenTheFieldIsLookedUpAgain(): void
+        {
+            $count = 0;
+            $this->makeField()->submitted->add(static function () use (&$count): void {
+                ++$count;
+            });
+
+            UIElement::dispatchNativeEvent(7, 'submitted');
+
+            self::assertSame(1, $count);
+        }
+
+        public function testEveryContentTypeMatchesTheEnginesName(): void
+        {
+            self::assertSame(
+                ['Standard', 'IntegerNumber', 'DecimalNumber', 'Alphanumeric', 'Name', 'EmailAddress', 'Password', 'Pin'],
+                array_map(static fn (InputFieldContentType $type): string => $type->value, InputFieldContentType::cases()),
+            );
+            self::assertSame(InputFieldContentType::Pin, $this->makeField(['contentType' => 'Pin'])->contentType);
+        }
+
+        public function testMaskCharacterMustBeOnePrintableCharacter(): void
+        {
+            $field = $this->makeField(['maskCharacter' => '•']);
+            self::assertSame('•', $field->maskCharacter);
+
+            $field->maskCharacter = '#';
+            self::assertSame([['mask_character', 7, '#']], $this->calls());
+
+            $this->expectException(InvalidArgumentException::class);
+            $field->maskCharacter = '##';
+        }
+
+        public function testMaskCharacterRefusesControlCharacters(): void
+        {
+            $this->expectException(InvalidArgumentException::class);
+            $this->makeField()->maskCharacter = "\t";
+        }
+
+        public function testSelectionReadsFromTheAnchorToTheCaret(): void
+        {
+            $field = $this->makeField(['text' => 'Grüße Ada', 'selectionAnchor' => 9, 'caretPosition' => 6]);
+
+            self::assertSame(9, $field->selectionAnchor);
+            self::assertSame('Ada', $field->selectedText);
+            self::assertSame('', $this->makeField(['text' => 'Ada', 'selectionAnchor' => 2, 'caretPosition' => 2])->selectedText);
+        }
+
+        public function testSelectAllPutsTheCaretAtTheEnd(): void
+        {
+            $field = $this->makeField(['text' => 'Grüße']);
+            $field->selectAll();
+
+            self::assertSame([['caret_position', 7, 5], ['selection_anchor', 7, 0]], $this->calls());
         }
 
         public function testBeginAndEndEditingAreActions(): void
