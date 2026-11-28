@@ -313,10 +313,11 @@ final class InputField extends UIElement
     }
 
     /**
-     * The color of the placeholder. Defaults to a light grey-blue, `#94A0B2`.
+     * The color of the placeholder. Defaults to a muted grey-blue, `Color::fromRGBA(132, 140, 154)`, readable and clearly dimmer
+     * than typed text so an empty field does not look filled in.
      */
     public Color $placeholderColor {
-        get => ColorBridge::fromState($this->getState()['placeholderColor'] ?? null, Color::fromRGBA(148, 160, 178));
+        get => ColorBridge::fromState($this->getState()['placeholderColor'] ?? null, Color::fromRGBA(132, 140, 154));
 
         set(Color $value) {
             $this->setColor('ui_input_field_set_placeholder_color', $value);

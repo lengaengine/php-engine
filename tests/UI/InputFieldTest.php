@@ -295,6 +295,7 @@ namespace Lenga\Engine\Tests\UI {
         {
             $field = $this->makeField();
 
+            self::assertSame(['r' => 132, 'g' => 140, 'b' => 154, 'a' => 255], $field->placeholderColor->toRGBA());
             self::assertSame(['r' => 118, 'g' => 118, 'b' => 118, 'a' => 255], $field->disabledTextColor->toRGBA());
             self::assertSame(['r' => 118, 'g' => 118, 'b' => 118, 'a' => 255], $field->disabledPlaceholderColor->toRGBA());
             self::assertSame(['r' => 118, 'g' => 118, 'b' => 118, 'a' => 255], $field->disabledOutlineColor->toRGBA());
