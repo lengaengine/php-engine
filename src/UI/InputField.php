@@ -210,6 +210,9 @@ final class InputField extends UIElement
         }
     }
 
+    /**
+     * The color of the text.
+     */
     public Color $textColor {
         get => ColorBridge::fromState($this->getState()['textColor'] ?? null, Color::white());
 
@@ -218,6 +221,9 @@ final class InputField extends UIElement
         }
     }
 
+    /**
+     * The color of the placeholder.
+     */
     public Color $placeholderColor {
         get => ColorBridge::fromState($this->getState()['placeholderColor'] ?? null, Color::fromRGBA(148, 160, 178));
 
@@ -226,6 +232,9 @@ final class InputField extends UIElement
         }
     }
 
+    /**
+     * The color of the caret.
+     */
     public Color $caretColor {
         get => ColorBridge::fromState($this->getState()['caretColor'] ?? null, Color::white());
 
@@ -317,6 +326,9 @@ final class InputField extends UIElement
         }
     }
 
+    /**
+     * The color of the line around the field.
+     */
     public Color $outlineColor {
         get => ColorBridge::fromState($this->getState()['outlineColor'] ?? null, Color::fromRGBA(90, 104, 128));
 
