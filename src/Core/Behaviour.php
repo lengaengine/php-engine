@@ -39,6 +39,60 @@ use function property_exists;
 use function spl_object_id;
 use const DEBUG_BACKTRACE_IGNORE_ARGS;
 
+/**
+ * Base class for the game scripts you attach to GameObjects.
+ *
+ * Extend Behaviour when code belongs to something in the scene: it reads
+ * input, moves its GameObject, talks to other components, reacts to
+ * collisions or exposes values in the Inspector. Public fields of your
+ * class appear in the Inspector, so you can tune them per GameObject
+ * without editing code. Keep logic that does not belong to a GameObject in
+ * ordinary PHP classes.
+ *
+ * Add a script to a GameObject in the editor, or from code with
+ * {@see GameObject::addComponent()}. The engine creates the instance; do not
+ * create Behaviours with `new`.
+ *
+ * ## Lifecycle
+ *
+ * Override only the methods you need. The engine calls them in this order:
+ *
+ * 1. {@see Behaviour::awake()} once, the first time the GameObject is active
+ *    in the hierarchy. Inspector values are already applied. Use it to look
+ *    up components and set up state.
+ * 2. {@see Behaviour::onEnable()} each time the behaviour becomes enabled on
+ *    an active GameObject, starting right after `awake()`.
+ * 3. {@see Behaviour::start()} once, at the beginning of the first frame in
+ *    which the behaviour is enabled and active, before that frame's
+ *    `fixedUpdate()`. Every `awake()` in the scene has run by then.
+ * 4. Each frame:
+ *    - {@see Behaviour::fixedUpdate()} zero or more times, once per fixed
+ *      physics step, each call followed by a physics step;
+ *    - {@see Behaviour::update()} once;
+ *    - {@see Behaviour::lateUpdate()} once, after every `update()`.
+ * 5. {@see Behaviour::onDisable()} each time the behaviour is disabled or its
+ *    GameObject becomes inactive.
+ * 6. {@see Behaviour::onDestroy()} once, when the behaviour or its GameObject
+ *    is destroyed. `onDisable()` runs first if the behaviour was enabled.
+ *
+ * Per-frame methods run only while the behaviour is enabled and its
+ * GameObject is active. While the game is paused, `fixedUpdate()` and
+ * physics stop, and `update()` and `lateUpdate()` keep running with
+ * {@see Time::deltaTime()} at zero.
+ *
+ * The engine also calls collision and trigger methods when your class
+ * defines them: `onCollisionEnter2D(Collision2D $collision)`,
+ * `onTriggerEnter2D(...)` and their `Stay` and `Exit` forms for 2D physics,
+ * and `onCollisionEnter(Collision3D $collision)`, `onTriggerEnter(...)` and
+ * their `Stay` and `Exit` forms for 3D physics.
+ *
+ * Behaviours also run coroutines ({@see Behaviour::startCoroutine()}) and
+ * send and receive gameplay events ({@see Behaviour::emitEvent()},
+ * {@see Behaviour::onEvent()}), cleaning both up when the behaviour is
+ * destroyed.
+ *
+ * @example examples/Core/Behaviour.php Move a GameObject with the arrow keys
+ */
 abstract class Behaviour implements ComponentInterface
 {
     private ?GameObject $gameObjectValue = null;
@@ -66,12 +120,26 @@ abstract class Behaviour implements ComponentInterface
     private static array $eventSubscriptionsByOwnerCallsite = [];
     private bool $lifecycleEnabled = false;
 
+    /**
+     * Creates the behaviour instance.
+     *
+     * @internal The engine creates Behaviours when it adds them to a GameObject.
+     *     Add one with {@see GameObject::addComponent()}, and put setup code in
+     *     {@see Behaviour::awake()}.
+     */
     public function __construct() {}
 
     // ---------------------------------------------------------------------
     // Owning GameObject
     // ---------------------------------------------------------------------
 
+    /**
+     * The GameObject this behaviour is attached to.
+     *
+     * The engine attaches the GameObject before it calls
+     * {@see Behaviour::awake()}, so the property is ready in every lifecycle
+     * method.
+     */
     #[HideInInspector]
     public GameObject $gameObject {
         get {
@@ -89,6 +157,11 @@ abstract class Behaviour implements ComponentInterface
     // (always reflects this behaviour's GameObject)
     // ---------------------------------------------------------------------
 
+    /**
+     * The Transform of this behaviour's GameObject: its position, rotation and scale.
+     *
+     * Same as `$this->gameObject->transform`.
+     */
     #[HideInInspector]
     public Transform $transform {
         get {
@@ -162,6 +235,15 @@ abstract class Behaviour implements ComponentInterface
             . "reason='{$reason}'";
     }
 
+    /**
+     * Whether the behaviour is switched on.
+     *
+     * Setting it to false stops the per-frame methods and its coroutines and
+     * makes the engine call {@see Behaviour::onDisable()}. Setting it back to
+     * true calls {@see Behaviour::onEnable()} and resumes them. A behaviour
+     * that is not attached to a GameObject reads as enabled, and setting the
+     * property on it has no effect.
+     */
     #[HideInInspector]
     public bool $enabled {
         get {
@@ -181,11 +263,27 @@ abstract class Behaviour implements ComponentInterface
         }
     }
 
+    /**
+     * Returns the engine's ID for this behaviour.
+     *
+     * The ID is unique among the components in the running game, so you can
+     * use it to tell instances apart or as an array key. It can change
+     * between play sessions, so do not save it.
+     *
+     * @return int|null The instance ID, or null when the behaviour is not attached to a GameObject.
+     */
     public function getInstanceId(): ?int
     {
         return $this->componentId;
     }
 
+    /**
+     * Returns the ID this behaviour has in the saved scene file.
+     *
+     * @internal Engine bookkeeping used to resolve saved component references.
+     *
+     * @return string|null The scene ID, or null for a behaviour that has none.
+     */
     public function getSceneComponentId(): ?string
     {
         return $this->sceneComponentId;
@@ -815,6 +913,33 @@ abstract class Behaviour implements ComponentInterface
         return null;
     }
 
+    /**
+     * Starts a coroutine: a method that runs over several frames, pausing at each `yield`.
+     *
+     * Write the routine as a method that returns `\Generator`, then pass the
+     * generator it returns: `$this->startCoroutine($this->flash())`. The
+     * routine runs at once up to its first `yield`. What it yields decides
+     * when it continues:
+     *
+     * - `yield new WaitForSeconds(1.0);` waits for gameplay time, which stops
+     *   while the game is paused ({@see WaitForSeconds}).
+     * - `yield new WaitForSecondsRealtime(1.0);` waits for real time
+     *   ({@see WaitForSecondsRealtime}).
+     * - `yield new WaitUntil(fn () => ...);` and {@see WaitWhile} wait for a
+     *   condition.
+     * - `yield new WaitForFixedUpdate();` continues after the next
+     *   {@see Behaviour::fixedUpdate()} ({@see WaitForFixedUpdate}).
+     * - Any other value, or a bare `yield;`, continues the next time
+     *   coroutines advance after {@see Behaviour::update()}.
+     *
+     * Coroutines continue after this behaviour's {@see Behaviour::update()}
+     * each frame, or after {@see Behaviour::fixedUpdate()} when waiting for a
+     * fixed step. They pause while the behaviour is disabled and stop when it
+     * is destroyed.
+     *
+     * @param Generator $routine The generator returned by calling your coroutine method.
+     * @return Coroutine A handle you can pass to {@see Behaviour::stopCoroutine()}.
+     */
     public function startCoroutine(Generator $routine): Coroutine
     {
         $coroutine = new Coroutine($routine);
@@ -828,6 +953,15 @@ abstract class Behaviour implements ComponentInterface
         return $coroutine;
     }
 
+    /**
+     * Stops one coroutine this behaviour started.
+     *
+     * The coroutine does not run again. Nothing happens when the routine has
+     * already finished or was not started by this behaviour.
+     *
+     * @param Coroutine|Generator $routine The handle {@see Behaviour::startCoroutine()} returned,
+     *     or the generator you passed to it.
+     */
     public function stopCoroutine(Coroutine|Generator $routine): void
     {
         foreach ($this->coroutines as $id => $coroutine) {
@@ -845,6 +979,11 @@ abstract class Behaviour implements ComponentInterface
         }
     }
 
+    /**
+     * Stops every coroutine this behaviour started.
+     *
+     * The engine calls this for you when the behaviour is destroyed.
+     */
     public function stopAllCoroutines(): void
     {
         foreach ($this->coroutines as $coroutine) {
@@ -854,6 +993,18 @@ abstract class Behaviour implements ComponentInterface
         $this->coroutines = [];
     }
 
+    /**
+     * Creates a {@see Signal} owned by this behaviour.
+     *
+     * Use a signal when other code holds a reference to this behaviour and
+     * should react to something it does, such as a door that opens. The
+     * engine removes every listener from the signal when the behaviour is
+     * destroyed. For game-wide events that listeners receive without a
+     * reference to the sender, use {@see Behaviour::emitEvent()} and
+     * {@see Behaviour::onEvent()} instead.
+     *
+     * @return Signal A new, empty signal.
+     */
     protected function createSignal(): Signal
     {
         $signal = new Signal();
@@ -861,16 +1012,51 @@ abstract class Behaviour implements ComponentInterface
         return $signal;
     }
 
+    /**
+     * Sends a named event to every listener in the game.
+     *
+     * Every listener registered with {@see Behaviour::onEvent()},
+     * {@see Behaviour::onceEvent()} or {@see EventBus::on()} for the name
+     * receives the payload. The sender needs no reference to the listeners.
+     *
+     * @param string $eventName Name of the event, for example `game.door.opened`.
+     * @param mixed $payload Value passed to each listener, or null for none.
+     */
     protected function emitEvent(string $eventName, mixed $payload = null): void
     {
         EventBus::emit($eventName, $payload);
     }
 
+    /**
+     * Sends a named event to every listener in the game. Same as {@see Behaviour::emitEvent()}.
+     *
+     * @param string $eventName Name of the event, for example `game.door.opened`.
+     * @param mixed $payload Value passed to each listener, or null for none.
+     */
     protected function dispatchEvent(string $eventName, mixed $payload = null): void
     {
         $this->emitEvent($eventName, $payload);
     }
 
+    /**
+     * Runs a listener each time the named event is sent, until this behaviour removes it.
+     *
+     * The behaviour keeps the subscription and removes it for you: when the
+     * behaviour is disabled by default, or only when it is destroyed if
+     * `$disposeOnDisable` is false. Subscribe in {@see Behaviour::onEnable()}
+     * to listen whenever the behaviour is enabled.
+     *
+     * Calling `onEvent()` again from the same line of code for the same event
+     * replaces the earlier subscription, so listeners do not pile up when
+     * that line runs more than once.
+     *
+     * @param string $eventName Name of the event to listen for.
+     * @param callable $listener Function called with the event's payload.
+     * @param bool $disposeOnDisable True to remove the listener when the behaviour is disabled;
+     *     false to keep it until the behaviour is destroyed.
+     * @return SignalSubscription The subscription. Call {@see SignalSubscription::dispose()}
+     *     on it to stop listening early.
+     */
     protected function onEvent(
         string $eventName,
         callable $listener,
@@ -883,6 +1069,20 @@ abstract class Behaviour implements ComponentInterface
         );
     }
 
+    /**
+     * Runs a listener the next time the named event is sent, then removes it.
+     *
+     * Works like {@see Behaviour::onEvent()}: the behaviour removes the
+     * listener for you if the event has not arrived when it is disabled, or
+     * destroyed when `$disposeOnDisable` is false.
+     *
+     * @param string $eventName Name of the event to listen for.
+     * @param callable $listener Function called once with the event's payload.
+     * @param bool $disposeOnDisable True to remove the listener when the behaviour is disabled;
+     *     false to keep it until the behaviour is destroyed.
+     * @return SignalSubscription The subscription. Call {@see SignalSubscription::dispose()}
+     *     on it to cancel before the event arrives.
+     */
     protected function onceEvent(
         string $eventName,
         callable $listener,
@@ -895,6 +1095,18 @@ abstract class Behaviour implements ComponentInterface
         );
     }
 
+    /**
+     * Hands a subscription to this behaviour so it is removed with the behaviour.
+     *
+     * Use it for subscriptions you create yourself, for example with
+     * {@see EventBus::on()} or {@see Signal::add()}, so you do not have to
+     * dispose them by hand.
+     *
+     * @param SignalSubscription $subscription The subscription to manage.
+     * @param bool $disposeOnDisable True to dispose it when the behaviour is disabled;
+     *     false to keep it until the behaviour is destroyed.
+     * @return SignalSubscription The same subscription, so you can chain the call.
+     */
     protected function trackSubscription(
         SignalSubscription $subscription,
         bool $disposeOnDisable = true
@@ -1123,58 +1335,80 @@ abstract class Behaviour implements ComponentInterface
     }
 
     /**
-     * Called when the script instance is being loaded.
+     * Called once, the first time the GameObject is active in the hierarchy.
      *
-     * @return void
+     * Inspector values are applied before it runs. Use it to find
+     * components with {@see GameObject::getComponent()} and set up state the
+     * behaviour needs. It runs before {@see Behaviour::onEnable()} and
+     * {@see Behaviour::start()}. A GameObject that starts inactive receives
+     * `awake()` when it is first activated.
      */
     public function awake(): void {}
 
     /**
-     * Called when the object becomes enabled and active.
+     * Called each time the behaviour becomes enabled on an active GameObject.
      *
-     * @return void
+     * Runs right after {@see Behaviour::awake()} the first time, then again
+     * whenever {@see Behaviour::$enabled} is set back to true or the GameObject
+     * is reactivated. Subscribe to events here with {@see Behaviour::onEvent()}.
      */
     public function onEnable(): void {}
 
     /**
-     * Called before the first frame update, after all Awake calls.
+     * Called once, at the start of the first frame in which the behaviour is enabled and active.
      *
-     * @return void
+     * Every `awake()` in the scene has run by then, so other objects are set
+     * up and safe to read. It runs before that frame's first
+     * {@see Behaviour::fixedUpdate()} and {@see Behaviour::update()}.
      */
     public function start(): void {}
 
     /**
-     * Called on a fixed timestep, used for physics-like updates.
+     * Called once per fixed physics step, before the step runs.
      *
-     * @return void
+     * The engine runs as many fixed steps as the elapsed time needs, so a
+     * frame can have none, one or several calls. Apply forces and change
+     * physics bodies here. Read the step length with
+     * {@see Time::fixedDeltaTime()}. It does not run while the game is paused.
      */
     public function fixedUpdate(): void {}
 
     /**
      * Called once per frame.
      *
-     * @return void
+     * Read input and run most gameplay logic here. Multiply movement by
+     * {@see Time::deltaTime()} so it is the same at any frame rate. It runs
+     * after the frame's fixed steps and before {@see Behaviour::lateUpdate()}.
+     * It keeps running while the game is paused, with `Time::deltaTime()` at zero.
      */
     public function update(): void {}
 
     /**
-     * Called once per frame, after all Update calls.
+     * Called once per frame, after every behaviour's {@see Behaviour::update()}.
      *
-     * @return void
+     * Use it for work that depends on where objects ended up this frame, such
+     * as a camera that follows the player. It keeps running while the game is
+     * paused.
      */
     public function lateUpdate(): void {}
 
     /**
-     * Called when the object becomes disabled or inactive.
+     * Called each time the behaviour is disabled or its GameObject becomes inactive.
      *
-     * @return void
+     * Listeners added with {@see Behaviour::onEvent()} and
+     * {@see Behaviour::onceEvent()} with the default `$disposeOnDisable` are
+     * removed just before it runs. It also runs before
+     * {@see Behaviour::onDestroy()} when an enabled behaviour is destroyed.
      */
     public function onDisable(): void {}
 
     /**
-     * Called when the behaviour is destroyed.
+     * Called once, when the behaviour or its GameObject is destroyed.
      *
-     * @return void
+     * Release anything the behaviour set up outside itself. Every
+     * subscription the behaviour manages is removed just before it runs.
+     * After it returns, the engine stops the behaviour's coroutines and
+     * clears the signals it created with {@see Behaviour::createSignal()}.
      */
     public function onDestroy(): void {}
 }

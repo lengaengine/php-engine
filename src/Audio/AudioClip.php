@@ -13,11 +13,44 @@ use function pathinfo;
 use const PATHINFO_FILENAME;
 
 /**
- * A reference to an imported audio asset.
+ * A reference to an audio file in your project, such as a `.wav`, `.mp3` or `.ogg` file.
  *
- * Audio clips are assigned in the Inspector and can be passed to an AudioSource
- * at runtime. The engine owns the underlying audio data; this object is the
- * script-facing handle for that asset.
+ * Expose an `AudioClip` field on a Behaviour, assign the clip in the
+ * Inspector, then hand it to an {@see AudioSource} to play it:
+ *
+ * ```php
+ * use Lenga\Engine\Audio\AudioClip;
+ * use Lenga\Engine\Audio\AudioSource;
+ * use Lenga\Engine\Core\Behaviour;
+ *
+ * final class MenuSounds extends Behaviour
+ * {
+ *     public ?AudioClip $confirm = null;
+ *
+ *     private ?AudioSource $audio = null;
+ *
+ *     public function start(): void
+ *     {
+ *         $this->audio = $this->gameObject->getComponent(AudioSource::class);
+ *     }
+ *
+ *     public function playConfirm(): void
+ *     {
+ *         if ($this->audio === null || $this->confirm === null) {
+ *             return;
+ *         }
+ *
+ *         $this->audio->clip = $this->confirm;
+ *         $this->audio->play();
+ *     }
+ * }
+ * ```
+ *
+ * The properties that describe the audio, such as {@see AudioClip::$length},
+ * open and decode the audio file each time you read them. Read them once and
+ * keep the values rather than reading them every frame. They are `0` or
+ * `false` when the file is missing or cannot be decoded, and
+ * {@see AudioClip::$loadState} is then {@see AudioDataLoadState::Failed}.
  */
 final class AudioClip
 {
@@ -32,7 +65,7 @@ final class AudioClip
     }
 
     /**
-     * The display name of the clip, derived from the assigned asset.
+     * The clip's name: its file name without the folder or extension.
      */
     public string $name {
         get {
@@ -43,7 +76,9 @@ final class AudioClip
     }
 
     /**
-     * Whether the clip contains ambisonic audio data.
+     * Whether the clip holds ambisonic (full-sphere surround) audio.
+     *
+     * Lenga does not detect ambisonic files, so this is `false` for every clip.
      */
     public bool $ambisonic {
         get {
@@ -52,7 +87,7 @@ final class AudioClip
     }
 
     /**
-     * The number of audio channels in the clip.
+     * The number of audio channels in the clip, such as `1` for mono or `2` for stereo.
      */
     public int $channels {
         get {
@@ -61,7 +96,7 @@ final class AudioClip
     }
 
     /**
-     * The clip sample rate in hertz.
+     * The clip's sample rate in hertz, such as `44100`.
      */
     public int $frequency {
         get {
@@ -79,7 +114,10 @@ final class AudioClip
     }
 
     /**
-     * Whether this clip may load its audio data asynchronously.
+     * Whether the clip's audio data may load in the background while the game keeps running.
+     *
+     * Lenga has no background loading setting for clips, so this is `false`
+     * for every clip.
      */
     public bool $loadInBackground {
         get {
@@ -88,7 +126,12 @@ final class AudioClip
     }
 
     /**
-     * The current loading state for this clip's audio data.
+     * Whether the clip's audio data is loaded, loading, unloaded or failed to load.
+     *
+     * {@see AudioDataLoadState::Loaded} when the file can be decoded and
+     * {@see AudioDataLoadState::Failed} when it is missing or cannot be
+     * decoded. Defaults to {@see AudioDataLoadState::Unloaded} when the clip
+     * names no file.
      */
     public AudioDataLoadState $loadState {
         get {
@@ -97,7 +140,7 @@ final class AudioClip
     }
 
     /**
-     * The number of sample frames in the clip.
+     * The number of sample frames in the clip, one frame per point in time across all channels.
      */
     public int $samples {
         get {
@@ -106,10 +149,11 @@ final class AudioClip
     }
 
     /**
-     * Reads sample data from the audio clip starting at the given sample offset.
+     * Reads the clip's sample values, starting at a sample offset.
      *
-     * Returned sample data is interleaved by channel (for example: L, R, L, R for
-     * stereo) and normalized to the range of -1.0 to 1.0.
+     * Use it to analyse audio from a script, for example to draw a waveform.
+     * The values are interleaved by channel (left, right, left, right for
+     * stereo) and range from -1.0 to 1.0.
      *
      * @param int $offsetSamples Zero-based start index in the clip sample buffer.
      * @param int|null $sampleCount Maximum number of interleaved samples to read, or null for the remainder.
@@ -147,7 +191,13 @@ final class AudioClip
     }
 
     /**
-     * Rehydrates an audio clip reference from scene or inspector data.
+     * Creates a clip reference from saved scene or Inspector data.
+     *
+     * @internal Lenga calls this when it loads clip fields and AudioSource
+     *     clips. Scripts get clips from `AudioClip` fields set in the Inspector.
+     *
+     * @param mixed $value A clip, a project-relative asset path, or saved clip data.
+     * @return self|null The clip, or null when the value names no clip.
      */
     public static function fromSerializedReference(mixed $value): ?self
     {
@@ -161,7 +211,12 @@ final class AudioClip
     }
 
     /**
-     * Returns true when both handles point to the same imported audio asset.
+     * Checks whether two clip references point to the same audio file.
+     *
+     * Use it to compare clips: `===` is false for two separate references to
+     * the same file.
+     *
+     * @param AudioClip|null $other The clip to compare with. Null never matches.
      */
     public function matches(?self $other): bool
     {

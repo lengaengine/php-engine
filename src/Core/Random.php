@@ -5,11 +5,20 @@ declare(strict_types=1);
 namespace Lenga\Engine\Core;
 
 /**
- * Gameplay-oriented pseudo-random helper with a deterministic fallback path.
+ * Picks random numbers for gameplay, such as spawn positions, damage rolls or a ball's starting direction.
  *
- * PHP's random extension can depend on host entropy and can currently abort the
- * wasm runtime when it throws internally. This helper intentionally stays in
- * pure PHP so gameplay samples have the same path on desktop and Web exports.
+ * Random works the same way in desktop and Web builds. Until a script calls
+ * {@see Random::setSeed()}, it is seeded from the current time, so each run
+ * gives different numbers. Set a seed to get the same sequence of numbers
+ * every time, for example to replay a level layout.
+ *
+ * The numbers are predictable to anyone who knows the seed. Do not use them
+ * for passwords, tokens or anything security-related.
+ *
+ * ```php
+ * $direction = Random::rangeInt(0, 1) === 0 ? -1.0 : 1.0;
+ * $speed = Random::rangeFloat(180.0, 240.0);
+ * ```
  */
 final class Random
 {
@@ -25,12 +34,26 @@ final class Random
     {
     }
 
+    /**
+     * Starts the random sequence from a seed, so the same seed always produces the same numbers.
+     *
+     * @param int $seed Any integer. Zero and negative values are accepted.
+     */
     public static function setSeed(int $seed): void
     {
         self::$seed = self::normalizeSeed($seed);
         self::$lcgState = self::$seed;
     }
 
+    /**
+     * Picks a random whole number between two values, including both.
+     *
+     * `Random::rangeInt(1, 6)` rolls a six-sided die. When `$max` is less than
+     * `$min`, the two are swapped.
+     *
+     * @param int $min The smallest number that can be returned.
+     * @param int $max The largest number that can be returned.
+     */
     public static function rangeInt(int $min, int $max): int
     {
         if ($max < $min) {
@@ -44,6 +67,15 @@ final class Random
         return $min + (self::nextLcgValue() % (($max - $min) + 1));
     }
 
+    /**
+     * Picks a random decimal number between two values.
+     *
+     * When `$max` is less than `$min`, the two are swapped. When they are
+     * equal, that value is returned.
+     *
+     * @param float $min The lower end of the range.
+     * @param float $max The upper end of the range.
+     */
     public static function rangeFloat(float $min, float $max): float
     {
         if ($max < $min) {

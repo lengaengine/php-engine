@@ -12,10 +12,32 @@ use function pathinfo;
 use const PATHINFO_FILENAME;
 
 /**
- * A reference to an AudioMixer asset.
+ * A reference to an audio mixer asset, which balances groups of sounds through named channels.
  *
- * Audio mixers route AudioSource output through named channels so projects can
- * group music, sound effects, UI sounds, ambience, and voice separately.
+ * A mixer has a Master channel and the channels you add, such as Music, SFX,
+ * UI and Ambience. Route an {@see AudioSource} into a channel to control its
+ * level together with the other sounds in that group. Expose an `AudioMixer`
+ * field on a Behaviour and assign the mixer in the Inspector:
+ *
+ * ```php
+ * use Lenga\Engine\Audio\AudioMixer;
+ * use Lenga\Engine\Audio\AudioSource;
+ * use Lenga\Engine\Core\Behaviour;
+ *
+ * final class LevelAudio extends Behaviour
+ * {
+ *     public ?AudioMixer $mainMixer = null;
+ *
+ *     public function start(): void
+ *     {
+ *         $source = $this->gameObject->getComponent(AudioSource::class);
+ *         $source?->setOutput($this->mainMixer, 'channel-1');
+ *     }
+ * }
+ * ```
+ *
+ * When the routing never changes, set the source's Mixer and Output Channel
+ * in the Inspector instead.
  */
 final class AudioMixer
 {
@@ -30,7 +52,7 @@ final class AudioMixer
     }
 
     /**
-     * The mixer display name, derived from the assigned asset.
+     * The mixer's name: its file name without the folder or extension.
      */
     public string $name {
         get {
@@ -41,7 +63,7 @@ final class AudioMixer
     }
 
     /**
-     * The project-relative asset path represented by this mixer handle.
+     * The path of the mixer asset, relative to the project folder.
      */
     public string $assetPath {
         get {
@@ -69,7 +91,13 @@ final class AudioMixer
     }
 
     /**
-     * Rehydrates a mixer reference from scene or inspector data.
+     * Creates a mixer reference from saved scene or Inspector data.
+     *
+     * @internal Lenga calls this when it loads mixer fields and AudioSource
+     *     outputs. Scripts get mixers from `AudioMixer` fields set in the Inspector.
+     *
+     * @param mixed $value A mixer, a project-relative asset path, or saved mixer data.
+     * @return self|null The mixer, or null when the value names no mixer.
      */
     public static function fromSerializedReference(mixed $value): ?self
     {
@@ -83,7 +111,12 @@ final class AudioMixer
     }
 
     /**
-     * Returns true when both handles point to the same mixer asset.
+     * Checks whether two mixer references point to the same mixer asset.
+     *
+     * Use it to compare mixers: `===` is false for two separate references to
+     * the same asset.
+     *
+     * @param AudioMixer|null $other The mixer to compare with. Null never matches.
      */
     public function matches(?self $other): bool
     {
@@ -119,9 +152,11 @@ final class AudioMixer
     }
 
     /**
-     * Applies a runtime gain to all sounds routed through this channel.
-     * Use 0 for silence and 1 for the authored level. Finite gains are clamped
-     * to that range. The gain persists across preset changes for this run.
+     * Scales the volume of every sound routed through a channel of this mixer.
+     *
+     * Use `0` for silence and `1` for the level saved on the mixer. Finite
+     * values outside that range are clamped. The gain stays in place when the
+     * mixer moves to another preset, until the game stops.
      *
      * @param string $channelId Channel ID saved on the mixer asset.
      * @param float $gain Linear volume multiplier.

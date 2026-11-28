@@ -4,8 +4,57 @@ declare(strict_types=1);
 
 namespace Lenga\Engine\Core;
 
+/**
+ * Position, rotation and scale of a GameObject, and its place in the scene hierarchy.
+ *
+ * Every GameObject has a Transform. Reach it from a script with `$this->transform`
+ * or {@see GameObject::$transform}. A Transform can have a parent: moving, rotating or
+ * scaling the parent moves, rotates and scales its children with it.
+ *
+ * Each value comes in two spaces:
+ *
+ * - Local values ({@see Transform::$localPosition}, {@see Transform::$localRotation},
+ *   {@see Transform::$localScale}) are relative to the parent. They are the values the
+ *   Inspector shows.
+ * - World values ({@see Transform::$position}, {@see Transform::$rotation},
+ *   {@see Transform::$lossyScale}) are the final placement in the scene.
+ *
+ * Without a parent, local and world values are the same. Positions are in world units
+ * and Euler angles are in degrees. In 2D scenes you mostly change position X and Y,
+ * rotation Z and scale X and Y.
+ *
+ * Reading a vector or rotation property returns a copy. Changing a component of that
+ * copy does not move the object, so assign a whole new value:
+ *
+ * ```php
+ * // Does not move the object:
+ * $this->transform->position->x += 1.0;
+ *
+ * // Moves the object:
+ * $position = $this->transform->position;
+ * $this->transform->position = new Vector3($position->x + 1.0, $position->y, $position->z);
+ * ```
+ *
+ * A {@see Rigidbody2D} or {@see Rigidbody3D} on the same GameObject owns its motion
+ * during play. Move such objects through the rigidbody instead of the Transform.
+ *
+ * @example examples/Core/Transform.php Patrol between waypoints, face the direction of travel and spin a child
+ */
 final class Transform
 {
+    /**
+     * Creates a Transform.
+     *
+     * @internal The engine creates a Transform for every GameObject. Scripts use
+     *     `$this->transform` or {@see GameObject::$transform}.
+     *
+     * @param Transform|null $parent Parent Transform, or `null` for none.
+     * @param Vector3|null $localPosition Starting local position; `null` means `(0, 0, 0)`.
+     * @param Vector3|null $localEulerAngles Starting local rotation in degrees; `null` means `(0, 0, 0)`.
+     * @param Vector3|null $localScale Starting local scale; `null` means `(1, 1, 1)`.
+     * @param int|null $nativeId Instance ID of the engine Transform this object wraps.
+     * @param int|null $gameObjectId Instance ID of the GameObject that owns this Transform.
+     */
     public function __construct(
         ?Transform $parent = null,
         ?Vector3 $localPosition = null,
@@ -46,6 +95,9 @@ final class Transform
     private Vector3 $localScaleValue;
     private Vector3 $worldPositionCache;
 
+    /**
+     * The GameObject this Transform belongs to.
+     */
     public GameObject $gameObject {
         get {
             if ($this->gameObjectValue !== null) {
@@ -67,6 +119,13 @@ final class Transform
         }
     }
 
+    /**
+     * Parent Transform, or `null` when the GameObject is at the top of the scene hierarchy.
+     *
+     * Assigning a parent works like {@see Transform::setParent()} with
+     * `$worldPositionStays` set to `true`, so the object stays where it is in the world.
+     * Assign `null` to move it to the top level.
+     */
     public ?Transform $parent {
         get {
             return $this->getParent();
@@ -77,6 +136,11 @@ final class Transform
         }
     }
 
+    /**
+     * Topmost Transform in this object's hierarchy.
+     *
+     * Returns this Transform when it has no parent.
+     */
     public Transform $root {
         get {
             $current = $this;
@@ -88,6 +152,12 @@ final class Transform
         }
     }
 
+    /**
+     * Position relative to the parent, in the parent's local units.
+     *
+     * Equals {@see Transform::$position} when there is no parent. This is the position the
+     * Inspector shows. Reading it returns a copy, so assign a whole Vector3 to change it.
+     */
     public Vector3 $localPosition {
         get {
             if ($this->nativeId !== null) {
@@ -111,6 +181,13 @@ final class Transform
         }
     }
 
+    /**
+     * Rotation relative to the parent, as X, Y and Z angles in degrees.
+     *
+     * This is the rotation the Inspector shows. Use it for readable angle edits, and
+     * {@see Transform::$localRotation} for composing rotations in code. Reading it returns
+     * a copy, so assign a whole Vector3 to change it.
+     */
     public Vector3 $localEulerAngles {
         get {
             if ($this->nativeId !== null) {
@@ -135,6 +212,12 @@ final class Transform
         }
     }
 
+    /**
+     * Rotation relative to the parent, as a quaternion.
+     *
+     * Assigned values are normalized. Use quaternions to combine rotations or turn
+     * smoothly between orientations in 3D.
+     */
     public Quaternion $localRotation {
         get {
             if ($this->nativeId !== null) {
@@ -161,6 +244,13 @@ final class Transform
         }
     }
 
+    /**
+     * Scale relative to the parent.
+     *
+     * `(1, 1, 1)` is the original size and `(2, 2, 2)` is twice as large. A negative
+     * value mirrors the object on that axis. Reading it returns a copy, so assign a whole
+     * Vector3 to change it.
+     */
     public Vector3 $localScale {
         get {
             if ($this->nativeId !== null) {
@@ -184,6 +274,13 @@ final class Transform
         }
     }
 
+    /**
+     * Position in world space, in world units.
+     *
+     * Assigning it moves the object to that world position and updates
+     * {@see Transform::$localPosition} to match under the current parent. Reading it
+     * returns a copy, so assign a whole Vector3 to change it.
+     */
     public Vector3 $position {
         get {
             return $this->nativeId !== null
@@ -217,6 +314,12 @@ final class Transform
         }
     }
 
+    /**
+     * Rotation in world space, as X, Y and Z angles in degrees.
+     *
+     * Reading it returns a copy, so assign a whole Vector3 to change it. Use
+     * {@see Transform::$rotation} when combining rotations in code.
+     */
     public Vector3 $eulerAngles {
         get {
             if ($this->nativeId !== null) {
@@ -253,6 +356,12 @@ final class Transform
         }
     }
 
+    /**
+     * Rotation in world space, as a quaternion.
+     *
+     * Assigned values are normalized, and {@see Transform::$localRotation} is updated to
+     * match under the current parent.
+     */
     public Quaternion $rotation {
         get {
             if ($this->nativeId !== null) {
@@ -292,6 +401,11 @@ final class Transform
         }
     }
 
+    /**
+     * Scale relative to the parent. Same as {@see Transform::$localScale}.
+     *
+     * Use {@see Transform::$lossyScale} to read the final scale in world space.
+     */
     public Vector3 $scale {
         get {
             return $this->localScale;
@@ -302,6 +416,11 @@ final class Transform
         }
     }
 
+    /**
+     * Final scale in world space, after the scale of every parent is applied. Read-only.
+     *
+     * Change the scale with {@see Transform::$localScale}.
+     */
     public Vector3 $lossyScale {
         get {
             return $this->nativeId !== null
@@ -310,24 +429,44 @@ final class Transform
         }
     }
 
+    /**
+     * Unit vector pointing along this object's local +X axis, in world space. Read-only.
+     */
     public Vector3 $right {
         get {
             return $this->rotation->rotateVector(Vector3::right())->normalized;
         }
     }
 
+    /**
+     * Unit vector pointing along this object's local +Y axis, in world space. Read-only.
+     */
     public Vector3 $up {
         get {
             return $this->rotation->rotateVector(Vector3::up())->normalized;
         }
     }
 
+    /**
+     * Unit vector pointing the way this object faces, in world space. Read-only.
+     *
+     * Lenga objects face their local -Z axis, so this is the local `(0, 0, -1)` direction
+     * rotated by {@see Transform::$rotation}. {@see Transform::lookAt()} turns an object so
+     * this vector points at a target.
+     */
     public Vector3 $forward {
         get {
             return $this->rotation->rotateVector(Vector3::back())->normalized;
         }
     }
 
+    /**
+     * Returns the parent Transform, or `null` when there is none.
+     *
+     * Same as reading {@see Transform::$parent}. Each call can return a new Transform
+     * object for the same parent, so use {@see Transform::isChildOf()} to compare
+     * hierarchy relationships instead of `===`.
+     */
     public function getParent(): ?Transform
     {
         if ($this->nativeId !== null) {
@@ -340,6 +479,15 @@ final class Transform
         return $this->parentValue;
     }
 
+    /**
+     * Moves this Transform under a new parent.
+     *
+     * @param Transform|null $newParent New parent, or `null` to move the object to the top
+     *     of the hierarchy.
+     * @param bool $worldPositionStays When `true`, the object keeps its world position,
+     *     rotation and scale, and its local values are recalculated for the new parent.
+     *     When `false`, it keeps its local values, so it moves along with the new parent.
+     */
     public function setParent(?Transform $newParent, bool $worldPositionStays = true): void
     {
         if ($this->nativeId !== null) {
@@ -376,6 +524,14 @@ final class Transform
         }
     }
 
+    /**
+     * Makes another Transform a child of this one.
+     *
+     * The child keeps its world position, rotation and scale. Same as calling
+     * `$child->setParent($this)`.
+     *
+     * @param Transform $child Transform to attach under this one.
+     */
     public function addChild(Transform $child): void
     {
         if ($this->nativeId !== null) {
@@ -395,6 +551,14 @@ final class Transform
         $child->parentValue = $this;
     }
 
+    /**
+     * Detaches a child and moves it to the top of the hierarchy.
+     *
+     * The child keeps its world position. Does nothing when `$child` is not a direct
+     * child of this Transform.
+     *
+     * @param Transform $child Child Transform to detach.
+     */
     public function removeChild(Transform $child): void
     {
         if ($this->nativeId !== null) {
@@ -417,6 +581,14 @@ final class Transform
     /**
      * @return list<Transform>
      */
+    /**
+     * Returns the direct children of this Transform.
+     *
+     * Grandchildren are not included. Use {@see Transform::find()} to reach a deeper child
+     * by name.
+     *
+     * @return list<Transform> The child Transforms, or an empty list when there are none.
+     */
     public function getChildren(): array
     {
         if ($this->nativeId !== null) {
@@ -435,16 +607,37 @@ final class Transform
         return $this->children;
     }
 
+    /**
+     * Returns the number of direct children.
+     */
     public function childCount(): int
     {
         return \count($this->getChildren());
     }
 
+    /**
+     * Returns a direct child by its position in the child list.
+     *
+     * @param int $index Index from `0` to {@see Transform::childCount()} minus one.
+     * @return Transform|null The child, or `null` when the index is out of range.
+     */
     public function getChild(int $index): ?Transform
     {
         return $this->getChildren()[$index] ?? null;
     }
 
+    /**
+     * Finds a descendant by the names of the GameObjects on the way to it.
+     *
+     * Each part of the path names a direct child of the previous part, starting from this
+     * Transform's children. For example, `Weapon/Muzzle` finds the child named `Muzzle`
+     * inside the child named `Weapon`. When several children share a name, the first one
+     * is used.
+     *
+     * @param string $path Child names separated by `/`.
+     * @return Transform|null The Transform at the end of the path, or `null` when any part
+     *     is missing or the path is empty.
+     */
     public function find(string $path): ?Transform
     {
         $segments = array_values(array_filter(explode('/', $path), static fn (string $segment): bool => $segment !== ''));
@@ -472,6 +665,14 @@ final class Transform
         return $current;
     }
 
+    /**
+     * Returns whether this Transform is anywhere below another Transform in the hierarchy.
+     *
+     * Checks the parent, the parent's parent and so on, so it also returns `true` for
+     * grandchildren. A Transform is not a child of itself.
+     *
+     * @param Transform $parent Transform to look for above this one.
+     */
     public function isChildOf(Transform $parent): bool
     {
         $current = $this->getParent();
@@ -486,6 +687,11 @@ final class Transform
         return false;
     }
 
+    /**
+     * Moves every direct child to the top of the hierarchy.
+     *
+     * Each child keeps its world position, rotation and scale.
+     */
     public function detachChildren(): void
     {
         foreach ($this->getChildren() as $child) {
@@ -493,6 +699,16 @@ final class Transform
         }
     }
 
+    /**
+     * Moves the object by an offset.
+     *
+     * Multiply the offset by {@see Time::deltaTime()} to move at a steady speed in `update()`.
+     *
+     * @param Vector3 $offset Distance to move, in world units.
+     * @param bool $relativeToSelf When `true`, the offset follows the object's own axes, so
+     *     `(0, 0, -1)` moves it one unit forward whichever way it faces. When `false`, the
+     *     offset follows the world axes.
+     */
     public function translate(Vector3 $offset, bool $relativeToSelf = true): void
     {
         if ($this->nativeId !== null) {
@@ -523,11 +739,39 @@ final class Transform
         $this->position = Vector3::sum($this->position, $offset);
     }
 
+    /**
+     * Moves the object by a 2D offset on the X and Y axes.
+     *
+     * Same as {@see Transform::translate()} with a Z offset of `0`.
+     *
+     * @param Vector2 $offset Distance to move on X and Y, in world units.
+     * @param bool $relativeToSelf When `true`, the offset follows the object's own axes.
+     *     When `false`, it follows the world axes.
+     */
     public function translate2D(Vector2 $offset, bool $relativeToSelf = true): void
     {
         $this->translate(new Vector3($offset->x, $offset->y, 0.0), $relativeToSelf);
     }
 
+    /**
+     * Rotates the object by Euler angles in degrees.
+     *
+     * Pass either one Vector3 of angles or separate X, Y and Z angles. Multiply the angles
+     * by {@see Time::deltaTime()} to spin at a steady rate in `update()`.
+     *
+     * ```php
+     * // Spin 90 degrees per second around the Y axis.
+     * $this->transform->rotate(0.0, 90.0 * Time::deltaTime(), 0.0);
+     * ```
+     *
+     * @param Vector3|float $xOrEuler All three angles as a Vector3, or the X angle in degrees.
+     * @param float|null $y Y angle in degrees when `$xOrEuler` is a float; `null` means `0`.
+     *     Ignored when `$xOrEuler` is a Vector3.
+     * @param float|null $z Z angle in degrees when `$xOrEuler` is a float; `null` means `0`.
+     *     Ignored when `$xOrEuler` is a Vector3.
+     * @param bool $relativeToSelf When `true`, the rotation turns the object around its own
+     *     axes. When `false`, it turns around the world axes.
+     */
     public function rotate(Vector3|float $xOrEuler, ?float $y = null, ?float $z = null, bool $relativeToSelf = true): void
     {
         $delta = $xOrEuler instanceof Vector3
@@ -555,6 +799,13 @@ final class Transform
         $this->rotation = $deltaRotation->multiply($this->rotation);
     }
 
+    /**
+     * Rotates the object around the Z axis, the rotation axis for 2D objects.
+     *
+     * @param float $degrees Angle to turn, in degrees.
+     * @param bool $relativeToSelf When `true`, the rotation uses the object's own Z axis.
+     *     When `false`, it uses the world Z axis.
+     */
     public function rotate2D(float $degrees, bool $relativeToSelf = true): void
     {
         $this->rotate(0.0, 0.0, $degrees, $relativeToSelf);
@@ -562,6 +813,14 @@ final class Transform
 
     /**
      * Rotates this transform around a world-space point and axis.
+     *
+     * The object moves on a circle around the point and turns by the same angle, like a
+     * satellite or an orbit camera. Nothing happens when the axis has zero length.
+     *
+     * @param Vector3 $point Pivot point in world space.
+     * @param Vector3 $axis Axis to rotate around, in world space. It does not need to be
+     *     normalized.
+     * @param float $angleDegrees Angle to rotate, in degrees.
      */
     public function rotateAround(Vector3 $point, Vector3 $axis, float $angleDegrees): void
     {
@@ -589,6 +848,14 @@ final class Transform
         $this->rotation = $deltaRotation->multiply($this->rotation)->normalized;
     }
 
+    /**
+     * Turns the object so {@see Transform::$forward} points at a world position.
+     *
+     * The object's roll (Z angle) is set to `0`. Use it for cameras that follow a target
+     * and for turrets. Nothing happens when the target is at the object's own position.
+     *
+     * @param Vector3 $worldPosition Point to face, in world space.
+     */
     public function lookAt(Vector3 $worldPosition): void
     {
         if ($this->nativeId !== null) {
@@ -613,6 +880,12 @@ final class Transform
 
     /**
      * Converts a point from this transform's local space to world space.
+     *
+     * Position, rotation and scale are all applied. Use it to find a world position on the
+     * object, such as a muzzle point in front of a gun.
+     *
+     * @param Vector3 $localPoint Point in this transform's local space.
+     * @return Vector3 The same point in world space.
      */
     public function transformPoint(Vector3 $localPoint): Vector3
     {
@@ -625,6 +898,11 @@ final class Transform
 
     /**
      * Converts a point from world space to this transform's local space.
+     *
+     * The reverse of {@see Transform::transformPoint()}.
+     *
+     * @param Vector3 $worldPoint Point in world space.
+     * @return Vector3 The same point in this transform's local space.
      */
     public function inverseTransformPoint(Vector3 $worldPoint): Vector3
     {
@@ -637,6 +915,11 @@ final class Transform
 
     /**
      * Converts a direction from this transform's local space to world space without applying scale or position.
+     *
+     * Only rotation is applied, so the length of the vector stays the same.
+     *
+     * @param Vector3 $localDirection Direction in this transform's local space.
+     * @return Vector3 The same direction in world space.
      */
     public function transformDirection(Vector3 $localDirection): Vector3
     {
@@ -649,6 +932,11 @@ final class Transform
 
     /**
      * Converts a direction from world space to this transform's local space without applying scale or position.
+     *
+     * The reverse of {@see Transform::transformDirection()}.
+     *
+     * @param Vector3 $worldDirection Direction in world space.
+     * @return Vector3 The same direction in this transform's local space.
      */
     public function inverseTransformDirection(Vector3 $worldDirection): Vector3
     {
@@ -661,6 +949,12 @@ final class Transform
 
     /**
      * Converts a vector from this transform's local space to world space without applying position.
+     *
+     * Rotation and {@see Transform::$lossyScale} are applied, so the length changes with
+     * the object's scale.
+     *
+     * @param Vector3 $localVector Vector in this transform's local space.
+     * @return Vector3 The same vector in world space.
      */
     public function transformVector(Vector3 $localVector): Vector3
     {
@@ -673,6 +967,11 @@ final class Transform
 
     /**
      * Converts a vector from world space to this transform's local space without applying position.
+     *
+     * The reverse of {@see Transform::transformVector()}: rotation and scale are removed.
+     *
+     * @param Vector3 $worldVector Vector in world space.
+     * @return Vector3 The same vector in this transform's local space.
      */
     public function inverseTransformVector(Vector3 $worldVector): Vector3
     {
@@ -723,6 +1022,13 @@ final class Transform
         $this->worldPositionCache = new Vector3(0.0, 0.0, 0.0);
     }
 
+    /**
+     * Returns the instance ID of the engine Transform this object wraps.
+     *
+     * @internal Engine bookkeeping used by the runtime bindings.
+     *
+     * @return int|null The instance ID, or `null` for a Transform that is not in a scene.
+     */
     public function getNativeId(): ?int
     {
         return $this->nativeId;

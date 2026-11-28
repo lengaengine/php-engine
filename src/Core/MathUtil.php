@@ -51,6 +51,8 @@ final class MathUtil
 
     /**
      * Returns the absolute value of f.
+     *
+     * @param float $f The input value.
      */
     public static function abs(float $f): float
     {
@@ -59,6 +61,8 @@ final class MathUtil
 
     /**
      * Returns the smallest integer greater than or equal to f.
+     *
+     * @param float $f The input value.
      */
     public static function ceil(float $f): float
     {
@@ -67,6 +71,8 @@ final class MathUtil
 
     /**
      * Returns the smallest integer greater than or equal to f (as int).
+     *
+     * @param float $f The input value.
      */
     public static function ceilToInt(float $f): int
     {
@@ -75,6 +81,8 @@ final class MathUtil
 
     /**
      * Returns the largest integer smaller than or equal to f.
+     *
+     * @param float $f The input value.
      */
     public static function floor(float $f): float
     {
@@ -83,6 +91,8 @@ final class MathUtil
 
     /**
      * Returns the largest integer smaller than or equal to f (as int).
+     *
+     * @param float $f The input value.
      */
     public static function floorToInt(float $f): int
     {
@@ -91,6 +101,8 @@ final class MathUtil
 
     /**
      * Returns f rounded to the nearest integer.
+     *
+     * @param float $f The input value.
      */
     public static function round(float $f): float
     {
@@ -99,6 +111,8 @@ final class MathUtil
 
     /**
      * Returns f rounded to the nearest integer (as int).
+     *
+     * @param float $f The input value.
      */
     public static function roundToInt(float $f): int
     {
@@ -107,6 +121,8 @@ final class MathUtil
 
     /**
      * Returns the mathematical sign of f: -1, 0 or 1.
+     *
+     * @param float $f The input value.
      */
     public static function sign(float $f): float
     {
@@ -121,6 +137,8 @@ final class MathUtil
 
     /**
      * Returns the square root of f.
+     *
+     * @param float $f The value to take the square root of. Negative values give NAN.
      */
     public static function sqrt(float $f): float
     {
@@ -129,6 +147,9 @@ final class MathUtil
 
     /**
      * Returns f raised to the power p.
+     *
+     * @param float $f The base.
+     * @param float $p The exponent.
      */
     public static function pow(float $f, float $p): float
     {
@@ -137,6 +158,8 @@ final class MathUtil
 
     /**
      * Returns e raised to the power power.
+     *
+     * @param float $power The exponent e is raised to.
      */
     public static function exp(float $power): float
     {
@@ -146,8 +169,10 @@ final class MathUtil
     /**
      * Returns the logarithm of f in a specified base.
      *
-     * When $base is omitted the natural logarithm (base e) is returned,
-     * matching C#'s default.
+     * When $base is omitted the natural logarithm (base e) is returned.
+     *
+     * @param float $f The value to take the logarithm of.
+     * @param float $base The logarithm base. Defaults to e.
      */
     public static function log(float $f, float $base = M_E): float
     {
@@ -160,6 +185,8 @@ final class MathUtil
 
     /**
      * Returns the base-10 logarithm of f.
+     *
+     * @param float $f The value to take the logarithm of.
      */
     public static function log10(float $f): float
     {
@@ -172,6 +199,8 @@ final class MathUtil
 
     /**
      * Returns the arc-cosine of f (radians).
+     *
+     * @param float $f The cosine value, from -1 to 1.
      */
     public static function acos(float $f): float
     {
@@ -180,6 +209,8 @@ final class MathUtil
 
     /**
      * Returns the arc-sine of f (radians).
+     *
+     * @param float $f The sine value, from -1 to 1.
      */
     public static function asin(float $f): float
     {
@@ -188,6 +219,8 @@ final class MathUtil
 
     /**
      * Returns the arc-tangent of f (radians).
+     *
+     * @param float $f The tangent value.
      */
     public static function atan(float $f): float
     {
@@ -196,6 +229,9 @@ final class MathUtil
 
     /**
      * Returns the angle in radians whose tangent is y/x.
+     *
+     * @param float $y The y coordinate.
+     * @param float $x The x coordinate.
      */
     public static function atan2(float $y, float $x): float
     {
@@ -204,6 +240,8 @@ final class MathUtil
 
     /**
      * Returns the cosine of angle f (radians).
+     *
+     * @param float $f The angle in radians.
      */
     public static function cos(float $f): float
     {
@@ -212,6 +250,8 @@ final class MathUtil
 
     /**
      * Returns the sine of angle f (radians).
+     *
+     * @param float $f The angle in radians.
      */
     public static function sin(float $f): float
     {
@@ -220,6 +260,8 @@ final class MathUtil
 
     /**
      * Returns the tangent of angle f (radians).
+     *
+     * @param float $f The angle in radians.
      */
     public static function tan(float $f): float
     {
@@ -232,6 +274,10 @@ final class MathUtil
 
     /**
      * Clamps value between min and max and returns the clamped value.
+     *
+     * @param float $value The value to clamp.
+     * @param float $min The lowest allowed value.
+     * @param float $max The highest allowed value.
      */
     public static function clamp(float $value, float $min, float $max): float
     {
@@ -240,6 +286,8 @@ final class MathUtil
 
     /**
      * Clamps value between 0 and 1.
+     *
+     * @param float $value The value to clamp.
      */
     public static function clamp01(float $value): float
     {
@@ -250,6 +298,9 @@ final class MathUtil
      * Returns the minimum of two or more values.
      *
      * Accepts exactly two floats or an arbitrary number of floats.
+     *
+     * @param float $a The first value.
+     * @param float ...$rest More values to compare.
      */
     public static function min(float $a, float ...$rest): float
     {
@@ -264,6 +315,9 @@ final class MathUtil
 
     /**
      * Returns the maximum of two or more values.
+     *
+     * @param float $a The first value.
+     * @param float ...$rest More values to compare.
      */
     public static function max(float $a, float ...$rest): float
     {
@@ -281,6 +335,9 @@ final class MathUtil
      * smaller than 0.
      *
      * Useful for looping timers, animation phases, and cyclic indices.
+     *
+     * @param float $t The value to loop.
+     * @param float $length The length of the loop. A length of 0 always returns 0.
      */
     public static function repeat(float $t, float $length): float
     {
@@ -297,6 +354,9 @@ final class MathUtil
      * The returned value moves back and forth as t increases: it follows
      * the triangle wave formula where the bottom is 0 and the peak is
      * length.
+     *
+     * @param float $t The value that moves the result, usually a time.
+     * @param float $length The highest value returned. A length of 0 always returns 0.
      */
     public static function pingPong(float $t, float $length): float
     {
@@ -331,6 +391,10 @@ final class MathUtil
      *
      * If you need an inclusive integer clamp instead of wraparound behavior,
      * use {@see clamp()}.
+     *
+     * @param float $value The value to wrap.
+     * @param float $min The inclusive lower bound.
+     * @param float $max The exclusive upper bound. When it is not greater than `$min`, the method returns `$min`.
      */
     public static function wrap(float $value, float $min, float $max): float
     {
@@ -353,6 +417,10 @@ final class MathUtil
 
     /**
      * Linearly interpolates between a and b by t (clamped to [0, 1]).
+     *
+     * @param float $a The value returned when `$t` is 0.
+     * @param float $b The value returned when `$t` is 1.
+     * @param float $t The interpolation factor, clamped to [0, 1].
      */
     public static function lerp(float $a, float $b, float $t): float
     {
@@ -363,6 +431,10 @@ final class MathUtil
 
     /**
      * Linearly interpolates between a and b by t with no clamping.
+     *
+     * @param float $a The value returned when `$t` is 0.
+     * @param float $b The value returned when `$t` is 1.
+     * @param float $t The interpolation factor. Values outside [0, 1] extrapolate past `$a` or `$b`.
      */
     public static function lerpUnclamped(float $a, float $b, float $t): float
     {
@@ -391,6 +463,10 @@ final class MathUtil
     /**
      * Determines the interpolation factor of value between a and b
      * (clamped to [0, 1]).
+     *
+     * @param float $a The start of the range.
+     * @param float $b The end of the range. When it equals `$a`, the method returns 0.
+     * @param float $t The value to find within the range.
      */
     public static function inverseLerp(float $a, float $b, float $t): float
     {
@@ -405,6 +481,10 @@ final class MathUtil
      * Interpolates between from and to with smoothing at the limits.
      *
      * Uses the classic smoothstep polynomial 3t² − 2t³.
+     *
+     * @param float $from The value returned when `$t` is 0.
+     * @param float $to The value returned when `$t` is 1.
+     * @param float $t The interpolation factor, clamped to [0, 1].
      */
     public static function smoothStep(float $from, float $to, float $t): float
     {
@@ -505,6 +585,10 @@ final class MathUtil
      * This is essentially the same as lerp but the function ensures the
      * speed never exceeds maxDelta. Negative maxDelta pushes the value
      * away from target.
+     *
+     * @param float $current The current value.
+     * @param float $target The value to move towards.
+     * @param float $maxDelta The largest change allowed in this call.
      */
     public static function moveTowards(float $current, float $target, float $maxDelta): float
     {
@@ -547,6 +631,9 @@ final class MathUtil
      *
      * Values are considered equal when the absolute difference is less than
      * max(1E-06 * max(|a|,|b|), Epsilon * 8).
+     *
+     * @param float $a The first value.
+     * @param float $b The second value.
      */
     public static function approximately(float $a, float $b): bool
     {
@@ -560,6 +647,9 @@ final class MathUtil
      * Calculates the shortest difference between two angles in degrees.
      *
      * The result is always in the range (−180, 180].
+     *
+     * @param float $current The start angle in degrees.
+     * @param float $target The end angle in degrees.
      */
     public static function deltaAngle(float $current, float $target): float
     {
@@ -573,6 +663,8 @@ final class MathUtil
 
     /**
      * Returns the closest power of two to the given value.
+     *
+     * @param int $value The value to round. Values of 0 or less return 1.
      */
     public static function closestPowerOfTwo(int $value): int
     {
@@ -589,6 +681,8 @@ final class MathUtil
 
     /**
      * Returns true if the value is a power of two.
+     *
+     * @param int $value The value to check.
      */
     public static function isPowerOfTwo(int $value): bool
     {
@@ -598,6 +692,8 @@ final class MathUtil
     /**
      * Returns the next power of two that is equal to or greater than the
      * given value.
+     *
+     * @param int $value The value to round up. Values of 0 or less return 1.
      */
     public static function nextPowerOfTwo(int $value): int
     {
@@ -622,6 +718,9 @@ final class MathUtil
      * Returns a value in the range [0, 1]. The implementation uses a
      * classic permutation-table approach so that output is deterministic
      * and reproducible across runs.
+     *
+     * @param float $x The x coordinate to sample.
+     * @param float $y The y coordinate to sample.
      */
     public static function perlinNoise(float $x, float $y): float
     {
@@ -660,10 +759,12 @@ final class MathUtil
     }
 
     /**
-     * Generates 1D pseudo-random pattern of float values across a 2D
-     * plane.
+     * Generates 1D Perlin noise for the given coordinate.
      *
-     * Convenience alias — samples Perlin noise along the x-axis at y = 0.
+     * Samples {@see MathUtil::perlinNoise()} along the x-axis at y = 0, so it
+     * returns a smoothly varying value in the range [0, 1].
+     *
+     * @param float $x The coordinate to sample.
      */
     public static function perlinNoise1D(float $x): float
     {
@@ -673,6 +774,9 @@ final class MathUtil
     /**
      * Encode a 32-bit float into its IEEE 754 half-precision (16-bit)
      * representation returned as an int.
+     *
+     * @param float $f The value to encode.
+     * @return int The 16-bit half-precision bit pattern.
      */
     public static function floatToHalf(float $f): int
     {
@@ -701,6 +805,8 @@ final class MathUtil
 
     /**
      * Convert a half-precision float (16-bit int) to a 32-bit float.
+     *
+     * @param int $half The 16-bit half-precision bit pattern.
      */
     public static function halfToFloat(int $half): float
     {
@@ -732,6 +838,8 @@ final class MathUtil
 
     /**
      * Converts a value from gamma (sRGB) to linear colour space.
+     *
+     * @param float $value A gamma (sRGB) channel value from 0 to 1.
      */
     public static function gammaToLinearSpace(float $value): float
     {
@@ -744,6 +852,8 @@ final class MathUtil
 
     /**
      * Converts a value from linear to gamma (sRGB) colour space.
+     *
+     * @param float $value A linear channel value from 0 to 1.
      */
     public static function linearToGammaSpace(float $value): float
     {
@@ -761,7 +871,8 @@ final class MathUtil
      * Uses Tanner Helland's approximation algorithm which is a widely
      * adopted approach for real-time colour temperature conversion.
      *
-     * @return array{r: float, g: float, b: float}
+     * @param float $kelvin The colour temperature in Kelvin, clamped to 1000 to 40000. Daylight is about 6500.
+     * @return array{r: float, g: float, b: float} The red, green and blue channels, each from 0 to 1.
      */
     public static function correlatedColorTemperatureToRGB(float $kelvin): array
     {

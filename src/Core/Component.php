@@ -7,16 +7,65 @@ namespace Lenga\Engine\Core;
 use Lenga\Engine\Attributes\HideInInspector;
 use Lenga\Engine\Interfaces\ComponentInterface;
 
+/**
+ * Base class of the built-in components the engine provides, such as
+ * {@see Camera}, {@see Rigidbody2D}, {@see BoxCollider3D} and the renderers.
+ *
+ * A component belongs to one {@see GameObject} and gives it a capability:
+ * drawing, physics, a camera view and so on. You do not create components
+ * with `new`. Add one with {@see GameObject::addComponent()}, find one with
+ * {@see GameObject::getComponent()}, or assign one to a typed field of your
+ * {@see Behaviour} in the Inspector.
+ *
+ * Inspector fields can also point at a component stored inside a prefab
+ * asset. Pass that component to {@see GameObject::instantiate()} to clone the
+ * prefab and receive the matching component on the clone.
+ *
+ * Your own game scripts extend {@see Behaviour}, which is a separate base
+ * class with lifecycle methods.
+ */
 abstract class Component implements ComponentInterface
 {
+    /**
+     * Wraps an engine component for PHP.
+     *
+     * @internal The engine creates component wrappers. Get one with
+     *     {@see GameObject::getComponent()} or add one with {@see GameObject::addComponent()}.
+     *
+     * @param GameObject $gameObjectValue GameObject the component is attached to.
+     * @param int $componentId Native instance ID of the component.
+     * @param string $componentType Engine type name of the component, for example `Rigidbody2D`.
+     * @param string|null $sceneComponentId ID of the component in the saved scene, or null when it has none.
+     */
     public function __construct(
+        /**
+         * The GameObject this component is attached to.
+         *
+         * @internal Storage behind {@see Component::$gameObject}. Read that property instead.
+         */
         protected GameObject $gameObjectValue,
+        /**
+         * The engine's instance ID for this component.
+         *
+         * @internal Storage behind {@see Component::getInstanceId()}. Call that method instead.
+         */
         protected int $componentId,
+        /**
+         * The engine type name of this component.
+         *
+         * @internal Storage behind {@see Component::$type}. Read that property instead.
+         */
         protected string $componentType,
+        /**
+         * The ID of this component in the saved scene file.
+         *
+         * @internal Engine bookkeeping used to resolve saved component references.
+         */
         protected ?string $sceneComponentId = null,
     ) {
     }
 
+    /** The GameObject this component is attached to. */
     #[HideInInspector]
     public GameObject $gameObject {
         get {
@@ -24,6 +73,9 @@ abstract class Component implements ComponentInterface
         }
     }
 
+    /**
+     * The engine type name of this component, for example `Camera` or `Rigidbody2D`.
+     */
     #[HideInInspector]
     public string $type {
         get {
@@ -31,6 +83,13 @@ abstract class Component implements ComponentInterface
         }
     }
 
+    /**
+     * Whether the component is switched on.
+     *
+     * A disabled component stays on its GameObject but stops doing its job:
+     * a disabled renderer draws nothing and a disabled collider takes no
+     * part in physics. Set it to true to switch the component back on.
+     */
     #[HideInInspector]
     public bool $enabled {
         get {
@@ -42,11 +101,27 @@ abstract class Component implements ComponentInterface
         }
     }
 
+    /**
+     * Returns the engine's ID for this component.
+     *
+     * The ID is unique among the components in the running game, so you can
+     * use it to tell components apart or as an array key. It can change
+     * between play sessions, so do not save it.
+     *
+     * @return int The component's instance ID.
+     */
     public function getInstanceId(): int
     {
         return $this->componentId;
     }
 
+    /**
+     * Returns the ID this component has in the saved scene file.
+     *
+     * @internal Engine bookkeeping used to resolve saved component references.
+     *
+     * @return string|null The scene ID, or null for a component that has none.
+     */
     public function getSceneComponentId(): ?string
     {
         return $this->sceneComponentId;

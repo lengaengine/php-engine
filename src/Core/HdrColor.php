@@ -10,7 +10,8 @@ use function is_int;
 use function is_string;
 
 /**
- * A colour that can be brighter than white, as Unity's HDR colour fields hold one.
+ * A colour that can be brighter than white, used for glowing colours such as a
+ * material's {@see Material::$emissionColor}.
  *
  * It is an authored colour, 8-bit sRGB with alpha like every other colour,
  * and an intensity in exposure stops. Each stop doubles the colour: an
@@ -75,6 +76,9 @@ final readonly class HdrColor
      * and intensity. A plain hex string is the colour at the neutral intensity.
      * A missing or mistyped part keeps the fallback's value, and any other
      * value gives the fallback.
+     *
+     * @param mixed $value The stored value: an object with `color` and `intensity`, or a hex colour string.
+     * @param self $fallback The HDR colour whose parts are used for anything missing or invalid. Defaults to white at the neutral intensity.
      */
     public static function fromAssetValue(mixed $value, self $fallback = new self()): self
     {

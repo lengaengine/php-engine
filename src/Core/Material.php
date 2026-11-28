@@ -73,41 +73,57 @@ final class Material implements Stringable
     public const int MAX_SORTING_PRIORITY = 50;
 
     /**
+     * The shader mode name of a material that reacts to scene lighting.
+     *
      * @deprecated Use {@see MaterialShaderMode::Lit} with {@see $shaderMode}.
      */
     public const string SHADER_LIT = 'Lit';
 
     /**
+     * The shader mode name of a material that ignores scene lighting.
+     *
      * @deprecated Use {@see MaterialShaderMode::Unlit} with {@see $shaderMode}.
      */
     public const string SHADER_UNLIT = 'Unlit';
 
     /**
+     * The rendering mode name of a solid surface.
+     *
      * @deprecated Use {@see MaterialSurfaceType::Opaque}.
      */
     public const string RENDERING_OPAQUE = 'Opaque';
 
     /**
+     * The rendering mode name of a solid surface with see-through parts cut out by alpha clipping.
+     *
      * @deprecated Use {@see MaterialSurfaceType::Opaque} with {@see $alphaClipping}.
      */
     public const string RENDERING_CUTOUT = 'Cutout';
 
     /**
+     * The rendering mode name of a see-through surface that fades out entirely with its alpha.
+     *
      * @deprecated Use {@see MaterialSurfaceType::Transparent} with {@see MaterialBlendingMode::Alpha}.
      */
     public const string RENDERING_FADE = 'Fade';
 
     /**
+     * The rendering mode name of a see-through surface, such as glass, that keeps its highlights.
+     *
      * @deprecated Use {@see MaterialSurfaceType::Transparent} with {@see MaterialBlendingMode::Premultiply}.
      */
     public const string RENDERING_TRANSPARENT = 'Transparent';
 
     /**
+     * The name of the first UV channel of a mesh.
+     *
      * @deprecated Use {@see MaterialUvSet::UV0} with {@see $secondaryUv}.
      */
     public const string UV0 = 'UV0';
 
     /**
+     * The name of the second UV channel of a mesh.
+     *
      * @deprecated Use {@see MaterialUvSet::UV1} with {@see $secondaryUv}.
      */
     public const string UV1 = 'UV1';
@@ -553,6 +569,9 @@ final class Material implements Stringable
 
     /**
      * Creates a material reference from a project-relative material asset path.
+     *
+     * @param string $assetPath The project-relative path of the material file, such as `Assets/Materials/Rock.material.json`.
+     * @throws InvalidArgumentException When the path is empty.
      */
     public static function fromAssetPath(string $assetPath): self
     {
@@ -561,6 +580,8 @@ final class Material implements Stringable
 
     /**
      * Creates an inline material that uses a base color without requiring an asset.
+     *
+     * @param Color $baseColor The color of the surface.
      */
     public static function fromColor(Color $baseColor): self
     {
@@ -568,9 +589,12 @@ final class Material implements Stringable
     }
 
     /**
-     * Creates a material from native renderer state.
+     * Creates a material from the state a renderer reports.
      *
-     * @param array<string, mixed> $state
+     * @internal Engine bookkeeping. Scripts read a renderer's material with
+     *     {@see Renderer::$material}.
+     *
+     * @param array<string, mixed> $state The renderer state.
      */
     public static function fromRendererState(array $state): self
     {
@@ -596,7 +620,7 @@ final class Material implements Stringable
      * field's default, as the engine reads material files. The engine converts
      * version 1 files when it loads them; this method does not read them.
      *
-     * @param array<string, mixed> $document
+     * @param array<string, mixed> $document The decoded JSON of a material file.
      * @param ?string $assetPath Project-relative path of the file the document came from.
      *
      * @throws InvalidArgumentException When the document is not a version 2 material document.

@@ -13,6 +13,9 @@ namespace Lenga\Engine\Enumerations;
  */
 enum MaterialSurfaceType: string
 {
+    /** The surface hides what is behind it. */
     case Opaque = 'Opaque';
+
+    /** The surface is combined with what is behind it through the material's {@see MaterialBlendingMode}. */
     case Transparent = 'Transparent';
 }
