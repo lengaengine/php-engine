@@ -71,6 +71,7 @@ namespace Lenga\Engine\Tests\Networking {
     use Lenga\Engine\Enumerations\WebRequestResult;
     use Lenga\Engine\Exceptions\LengaRuntimeException;
     use Lenga\Engine\Exceptions\WebRequestRefusedException;
+    use Lenga\Engine\Internal\WebRequestDispatcher;
     use Lenga\Engine\Networking\WebRequest;
     use LogicException;
     use PHPUnit\Framework\TestCase;
@@ -87,6 +88,21 @@ namespace Lenga\Engine\Tests\Networking {
                 'releases' => [],
                 'requests' => [7 => ['result' => 'InProgress']],
             ];
+        }
+
+        protected function tearDown(): void
+        {
+            // The engine gives every request its own id; this fake reuses 7.
+            // Finish and dispatch it so no test's request stays held for the
+            // next test.
+            $state = &$GLOBALS['lenga_web_request_test_state'];
+            if (\is_int($state['sendAnswer']) && $state['sent'] !== []) {
+                $state['requests'][7] ??= ['result' => 'Cancelled', 'statusCode' => 0, 'error' => '', 'body' => '', 'headers' => []];
+                if ($state['requests'][7]['result'] === 'InProgress') {
+                    $state['requests'][7]['result'] = 'Cancelled';
+                }
+                WebRequestDispatcher::dispatchFinished(7);
+            }
         }
 
         public function testSendHandsTheEngineTheHostPathMethodHeadersBodyAndTimeout(): void
@@ -220,6 +236,22 @@ namespace Lenga\Engine\Tests\Networking {
             self::assertSame([7], $this->state()['cancels'], 'a finished request is not cancelled again');
         }
 
+        public function testCancellingFiresCompletedWhenTheEngineReportsIt(): void
+        {
+            $request = new WebRequest('leaderboard', '/v1/scores');
+            $heard = [];
+            $request->completed->add(static function (WebRequest $done) use (&$heard): void {
+                $heard[] = $done->result;
+            });
+            $request->send();
+
+            $request->cancel();
+            self::assertSame([], $heard, 'listeners run when the engine reports the end, not inside cancel()');
+
+            WebRequestDispatcher::dispatchFinished(7);
+            self::assertSame([WebRequestResult::Cancelled], $heard);
+        }
+
         public function testCancellingAnUnsentRequestDoesNothing(): void
         {
             (new WebRequest('leaderboard', '/v1/scores'))->cancel();
@@ -227,14 +259,65 @@ namespace Lenga\Engine\Tests\Networking {
             self::assertSame([], $this->state()['cancels']);
         }
 
-        public function testDroppingARequestInProgressReleasesItInTheEngine(): void
+        public function testASentRequestTheScriptDropsKeepsRunningUntilItFinishes(): void
+        {
+            $pendingBefore = WebRequestDispatcher::getPendingCount();
+            $heard = [];
+            (static function () use (&$heard): void {
+                $request = new WebRequest('leaderboard', '/v1/scores');
+                $request->completed->add(static function (WebRequest $done) use (&$heard): void {
+                    $heard[] = [$done->path, $done->result, $done->responseCode];
+                });
+                $request->send();
+            })();
+
+            self::assertSame([], $this->state()['releases'], 'a dropped request is not stopped');
+            self::assertSame([], $this->state()['cancels']);
+            self::assertSame($pendingBefore + 1, WebRequestDispatcher::getPendingCount());
+
+            $this->finish(7, 'Success', 200, 'ok', []);
+            WebRequestDispatcher::dispatchFinished(7);
+
+            self::assertSame([['/v1/scores', WebRequestResult::Success, 200]], $heard);
+            self::assertSame([7], $this->state()['releases'], 'the engine forgets it once its answer is read');
+            self::assertSame($pendingBefore, WebRequestDispatcher::getPendingCount());
+        }
+
+        public function testCompletedFiresOnceWithTheRequestItself(): void
         {
             $request = new WebRequest('leaderboard', '/v1/scores');
+            $received = [];
+            $request->completed->add(static function (WebRequest $done) use (&$received): void {
+                $received[] = $done;
+            });
             $request->send();
 
-            unset($request);
+            self::assertSame([], $received, 'nothing fires while the request runs');
 
-            self::assertSame([7], $this->state()['releases']);
+            $this->finish(7, 'ProtocolError', 404, 'missing', [], 'HTTP 404');
+            self::assertTrue($request->isDone, 'a script may read the answer before the listener runs');
+            WebRequestDispatcher::dispatchFinished(7);
+            WebRequestDispatcher::dispatchFinished(7);
+
+            self::assertCount(1, $received);
+            self::assertSame($request, $received[0]);
+            self::assertSame(WebRequestResult::ProtocolError, $received[0]->result);
+            self::assertSame('missing', $received[0]->text);
+        }
+
+        public function testDispatchingAnUnknownRequestDoesNothing(): void
+        {
+            WebRequestDispatcher::dispatchFinished(4242);
+
+            self::assertSame([], $this->state()['polls']);
+        }
+
+        public function testCompletedIsASignal(): void
+        {
+            $request = new WebRequest('leaderboard', '/v1/scores');
+
+            self::assertInstanceOf(\Lenga\Engine\Core\Signal::class, $request->completed);
+            self::assertFalse($request->completed->hasListeners());
         }
 
         public function testARequestTheEngineNoLongerKnowsEndsAsCancelled(): void

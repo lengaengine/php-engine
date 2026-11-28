@@ -5,10 +5,12 @@ declare(strict_types=1);
 namespace Lenga\Engine\Networking;
 
 use Lenga\Engine\Core\NativeEngine;
+use Lenga\Engine\Core\Signal;
 use Lenga\Engine\Core\WaitForWebRequest;
 use Lenga\Engine\Enumerations\WebRequestMethod;
 use Lenga\Engine\Enumerations\WebRequestResult;
 use Lenga\Engine\Exceptions\WebRequestRefusedException;
+use Lenga\Engine\Internal\WebRequestDispatcher;
 use InvalidArgumentException;
 use JsonException;
 use LogicException;
@@ -35,11 +37,15 @@ use const JSON_UNESCAPED_UNICODE;
  * refuses any host the project does not list.
  *
  * A request runs in the background. Wait for it in a coroutine with
- * `yield $request->send()`, or send it and check {@see WebRequest::$isDone}
- * each frame. When it has finished, {@see WebRequest::$result} says how it
- * went, and {@see WebRequest::$responseCode}, {@see WebRequest::$text},
+ * `yield $request->send()`, connect a listener to
+ * {@see WebRequest::$completed}, or check {@see WebRequest::$isDone} each
+ * frame. When it has finished, {@see WebRequest::$result} says how it went,
+ * and {@see WebRequest::$responseCode}, {@see WebRequest::$text},
  * {@see WebRequest::$responseHeaders} and {@see WebRequest::$error} hold the
  * answer.
+ *
+ * A sent request keeps running until it finishes, times out or is cancelled,
+ * even when the script no longer holds it.
  *
  * ```php
  * use Lenga\Engine\Core\Behaviour;
@@ -75,6 +81,22 @@ use const JSON_UNESCAPED_UNICODE;
  *     }
  * }
  * ```
+ *
+ * Without a coroutine, connect a listener before sending:
+ *
+ * ```php
+ * $request = new WebRequest('leaderboard', '/v1/scores?limit=10');
+ * $request->completed->add(function (WebRequest $request): void {
+ *     if ($request->result === WebRequestResult::Success) {
+ *         $this->showScores($request->decodeJsonResponse());
+ *     }
+ * });
+ * $request->send();
+ * ```
+ *
+ * The URL a request goes to depends on the build: Release builds use the
+ * host's URL, and editor Play and Development builds use its Development
+ * URL when it has one.
  *
  * In a Web build the browser sends the request. The page and the web service
  * are on different origins, so the service must allow the game's origin with
@@ -166,6 +188,16 @@ final class WebRequest
         get => (string) ($this->readOutcome()['error'] ?? '');
     }
 
+    /**
+     * Fires once when the request ends, with the WebRequest as its only
+     * argument, at the start of the next frame before any Behaviour's Update.
+     * It fires for every ending: success, an error, a timeout, or
+     * {@see WebRequest::cancel()}, so check {@see WebRequest::$result}.
+     * Requests that end in the same frame fire in the order they were sent.
+     * Connect listeners with `$request->completed->add(...)`.
+     */
+    public readonly Signal $completed;
+
     private ?int $requestId = null;
 
     /**
@@ -190,6 +222,7 @@ final class WebRequest
         public readonly string $path,
         public readonly WebRequestMethod $method = WebRequestMethod::Get,
     ) {
+        $this->completed = new Signal();
     }
 
     /**
@@ -226,14 +259,16 @@ final class WebRequest
         }
 
         $this->requestId = $sent;
+        WebRequestDispatcher::track($sent, $this);
 
         return new WaitForWebRequest($this);
     }
 
     /**
      * Stops the request if it is still in progress. Its result becomes
-     * {@see WebRequestResult::Cancelled}. Does nothing to a request that has
-     * finished or was never sent.
+     * {@see WebRequestResult::Cancelled} at once, and
+     * {@see WebRequest::$completed} fires at the start of the next frame.
+     * Does nothing to a request that has finished or was never sent.
      */
     public function cancel(): void
     {
@@ -270,13 +305,25 @@ final class WebRequest
     }
 
     /**
-     * Stops the request if it is still in progress when the object goes away.
+     * Stops the request if it is still in progress when PHP shuts down. A
+     * sent request is held until it finishes, so this only happens when the
+     * engine stops first.
      */
     public function __destruct()
     {
         if ($this->requestId !== null && $this->outcome === null && NativeEngine::hasFunction('web_request_release')) {
             NativeEngine::call('web_request_release', $this->requestId);
         }
+    }
+
+    /**
+     * Reads the finished request and runs the completed listeners. Called by
+     * the engine through WebRequestDispatcher.
+     */
+    private function notifyCompleted(): void
+    {
+        $this->readOutcome();
+        $this->completed->dispatch($this);
     }
 
     /**
